@@ -1,19 +1,21 @@
+
 from pydantic import BaseModel
-from typing import Optional, List
-from .document import DocumentType, PassportData, AadhaarData, PANData
+
+from .document import AadhaarData, DocumentType, PANData, PassportData
+
 
 class OCRResult(BaseModel):
     document_type: DocumentType
-    passport: Optional[PassportData] = None
-    aadhaar: Optional[AadhaarData] = None
-    pan: Optional[PANData] = None
+    passport: PassportData | None = None
+    aadhaar: AadhaarData | None = None
+    pan: PANData | None = None
     raw_text: str
     confidence_score: float
 
 class TamperingResult(BaseModel):
     is_tampered: bool
     tamper_score: float
-    tampering_regions: List[str]
+    tampering_regions: list[str]
     detection_method: str
 
 class FaceVerificationResult(BaseModel):

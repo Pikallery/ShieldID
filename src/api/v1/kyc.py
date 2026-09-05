@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from src.schemas import KYCRequest, KYCResponse
 
 router = APIRouter()

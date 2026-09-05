@@ -1,9 +1,11 @@
 # src/core/database.py
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from sqlalchemy import String, Integer, Float, DateTime, func, Index
-from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
+
+from sqlalchemy import DateTime, Float, Index, String, func
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column
+
 from src.core.config import settings
 
 engine = create_async_engine(settings.DATABASE_URL, echo=settings.MODE == "development")
