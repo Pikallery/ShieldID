@@ -1,0 +1,80 @@
+# docker-compose.yml
+# ⚠️ OWNER: Dev 1 - DO NOT MODIFY WITHOUT PERMISSION ⚠️
+
+services:
+  # ---------- BACKEND API ----------
+  backend:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile.backend
+    container_name: shieldid-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://shieldid:admin123@db:5432/shieldid
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - MODE=${MODE:-development}
+      - ALLOWED_ORIGINS=["*"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./migrations:/app/migrations
+      - ./alembic.ini:/app/alembic.ini
+      - ./models:/app/models
+    restart: unless-stopped
+    networks:
+      - shieldid-network
+
+  # ---------- POSTGRESQL ----------
+  db:
+    image: postgres:15-alpine
+    container_name: shieldid-db
+    environment:
+      POSTGRES_USER: shieldid
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: shieldid
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shieldid -d shieldid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - shieldid-network
+
+  # ---------- REDIS (Cache & Rate Limiting) ----------
+  redis:
+    image: redis:7-alpine
+    container_name: shieldid-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - shieldid-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  shieldid-network:
+    driver: bridge
