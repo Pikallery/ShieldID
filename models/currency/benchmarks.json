@@ -1,0 +1,52 @@
+{
+  "500": {
+    "name": "Five Hundred Rupees",
+    "aspect_ratio": 2.27,
+    "color_name": "Stone Grey",
+    "hsv_hue_range": [[0, 180]],
+    "max_saturation": 85,
+    "thread_expected_x_pct": [0.38, 0.48],
+    "watermark_expected_x_pct": [0.70, 0.95],
+    "min_intaglio_variance": 45.0
+  },
+  "200": {
+    "name": "Two Hundred Rupees",
+    "aspect_ratio": 2.21,
+    "color_name": "Bright Yellow",
+    "hsv_hue_range": [[18, 38]],
+    "min_saturation": 70,
+    "thread_expected_x_pct": [0.38, 0.48],
+    "watermark_expected_x_pct": [0.70, 0.95],
+    "min_intaglio_variance": 40.0
+  },
+  "100": {
+    "name": "One Hundred Rupees",
+    "aspect_ratio": 2.15,
+    "color_name": "Lavender",
+    "hsv_hue_range": [[120, 165]],
+    "min_saturation": 40,
+    "thread_expected_x_pct": [0.38, 0.48],
+    "watermark_expected_x_pct": [0.70, 0.95],
+    "min_intaglio_variance": 40.0
+  },
+  "50": {
+    "name": "Fifty Rupees",
+    "aspect_ratio": 2.05,
+    "color_name": "Fluorescent Blue",
+    "hsv_hue_range": [[85, 115]],
+    "min_saturation": 60,
+    "thread_expected_x_pct": [0.38, 0.48],
+    "watermark_expected_x_pct": [0.70, 0.95],
+    "min_intaglio_variance": 35.0
+  },
+  "10": {
+    "name": "Ten Rupees",
+    "aspect_ratio": 1.95,
+    "color_name": "Chocolate Brown",
+    "hsv_hue_range": [[8, 25]],
+    "min_saturation": 50,
+    "thread_expected_x_pct": [0.38, 0.48],
+    "watermark_expected_x_pct": [0.70, 0.95],
+    "min_intaglio_variance": 35.0
+  }
+}
