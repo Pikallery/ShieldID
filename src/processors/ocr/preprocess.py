@@ -151,7 +151,7 @@ def calculate_skew_angle(image: np.ndarray) -> float:
     if lines is not None and len(lines) > 0:
         hough_angles = []
         for line in lines:
-            x1, y1, x2, y2 = line[0]
+            x1, y1, x2, y2 = np.asarray(line).reshape(-1)[:4]
             if x2 - x1 != 0:
                 rad = math.atan2(y2 - y1, x2 - x1)
                 deg = math.degrees(rad)
