@@ -29,3 +29,16 @@ class PANData(BaseModel):
     name: str
     pan_number: str
     date_of_birth: Optional[date] = None
+
+class DrivingLicenseData(BaseModel):
+    name: str
+    license_number: str
+    date_of_birth: Optional[date] = None
+    date_of_expiry: Optional[date] = None
+    gender: Optional[str] = None
+
+class VoterIDData(BaseModel):
+    name: str
+    voter_id_number: str
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = None
