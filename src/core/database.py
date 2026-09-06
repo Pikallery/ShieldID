@@ -72,8 +72,8 @@ async def create_db_tables() -> None:
     NOTE: In production, use Alembic migrations instead.
     This is a convenience helper for development / testing.
     """
-    from src.models.base import Base  # noqa: F401 — imports all model metadata
     import src.models  # noqa: F401 — ensures all models are registered
+    from src.models.base import Base
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -134,10 +134,6 @@ class ReportRecord(Base):
     location_lng: Mapped[float] = mapped_column(Float, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending", nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, server_default=func.now(), nullable=True)
-
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
 
 async def init_db():
     async with engine.begin() as conn:

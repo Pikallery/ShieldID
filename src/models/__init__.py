@@ -22,14 +22,14 @@ from src.models.tampering_analysis import TamperingAnalysis
 from src.models.user import User
 
 __all__ = [
-    "Base",
-    "User",
-    "Document",
-    "OCRResult",
-    "TamperingAnalysis",
-    "FaceVerification",
-    "ScreeningResult",
-    "KYCSession",
-    "FraudReport",
     "AuditLog",
+    "Base",
+    "Document",
+    "FaceVerification",
+    "FraudReport",
+    "KYCSession",
+    "OCRResult",
+    "ScreeningResult",
+    "TamperingAnalysis",
+    "User",
 ]

@@ -2,13 +2,16 @@
 
 import uuid
 from datetime import date
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, UUIDMixin
-from src.models.base import TimestampMixin as _TS
+
+if TYPE_CHECKING:
+    from src.models.document import Document
 
 
 class OCRResult(UUIDMixin, Base):
@@ -62,7 +65,9 @@ class OCRResult(UUIDMixin, Base):
 
     # ── Timestamp ─────────────────────────────────────────────────────────
     from datetime import datetime
-    from sqlalchemy import DateTime, func as _func
+
+    from sqlalchemy import DateTime
+    from sqlalchemy import func as _func
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=_func.now()
     )

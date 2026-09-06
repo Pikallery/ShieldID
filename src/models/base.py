@@ -21,7 +21,6 @@ class Base(DeclarativeBase):
     All models inherit from this class so that Alembic's
     target_metadata can discover them in one place.
     """
-    pass
 
 
 class UUIDMixin:

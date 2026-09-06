@@ -2,12 +2,18 @@
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from src.models.document import Document
+    from src.models.fraud_report import FraudReport
+    from src.models.user import User
 
 
 class ScreeningResult(UUIDMixin, TimestampMixin, Base):

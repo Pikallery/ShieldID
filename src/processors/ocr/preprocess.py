@@ -7,13 +7,12 @@ to maximize OCR accuracy on Indian identity documents (Passport, Aadhaar, PAN, D
 
 import math
 from pathlib import Path
-from typing import Any, Tuple, Union
 
 import cv2
 import numpy as np
 
 
-def load_image(input_data: Union[np.ndarray, bytes, str, Path]) -> np.ndarray:
+def load_image(input_data: np.ndarray | bytes | str | Path) -> np.ndarray:
     """
     Load image from a file path, raw bytes, or numpy ndarray.
 
@@ -45,7 +44,7 @@ def load_image(input_data: Union[np.ndarray, bytes, str, Path]) -> np.ndarray:
 def enhance_contrast(
     image: np.ndarray,
     clip_limit: float = 2.0,
-    tile_grid_size: Tuple[int, int] = (8, 8),
+    tile_grid_size: tuple[int, int] = (8, 8),
 ) -> np.ndarray:
     """
     Enhance image contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization).
@@ -170,9 +169,9 @@ def calculate_skew_angle(image: np.ndarray) -> float:
 
 def deskew(
     image: np.ndarray,
-    background_color: Tuple[int, int, int] = (255, 255, 255),
-    angle: float = None,
-) -> Tuple[np.ndarray, float]:
+    background_color: tuple[int, int, int] = (255, 255, 255),
+    angle: float | None = None,
+) -> tuple[np.ndarray, float]:
     """
     Deskew document image to align horizontal text lines.
 
@@ -269,10 +268,10 @@ def binarize(
 
 
 def preprocess_document(
-    input_data: Union[np.ndarray, bytes, str, Path],
+    input_data: np.ndarray | bytes | str | Path,
     deskew_enabled: bool = True,
     denoise_method: str = "bilateral",
-    binarize_method: Union[str, None] = None,
+    binarize_method: str | None = None,
 ) -> np.ndarray:
     """
     Full preprocessing pipeline for Indian document OCR.

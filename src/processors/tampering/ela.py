@@ -6,13 +6,15 @@ and digital splices by analyzing localized compression error differentials.
 """
 
 from __future__ import annotations
+
 import io
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
+
 import numpy as np
 
 try:
-    from PIL import Image, ImageChops, ImageEnhance
+    from PIL import Image, ImageChops
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -58,7 +60,7 @@ def compute_ela(
     image_input: Any,
     quality: int = 90,
     scale: float = 15.0,
-) -> Tuple[np.ndarray, Dict[str, float]]:
+) -> tuple[np.ndarray, dict[str, float]]:
     """
     Compute Error Level Analysis (ELA) for a given image.
 
@@ -121,7 +123,7 @@ def detect_ela_tampering(
     quality: int = 90,
     block_size: int = 32,
     anomaly_threshold_std: float = 2.4,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Detect edited or spliced regions using block-wise Error Level Analysis.
 
@@ -142,7 +144,7 @@ def detect_ela_tampering(
             - ela_image (np.ndarray)
     """
     ela_img, stats = compute_ela(image_input, quality=quality)
-    h, w, c = ela_img.shape
+    h, w, _c = ela_img.shape
 
     # Compute block-level error distribution
     gray_ela = np.mean(ela_img.astype(np.float32), axis=2)
@@ -168,7 +170,7 @@ def detect_ela_tampering(
     cutoff = global_mean + (anomaly_threshold_std * max(global_std, 1.0))
     anomalous_blocks = block_means > cutoff
 
-    tampered_regions: List[str] = []
+    tampered_regions: list[str] = []
     suspicious_count = int(np.sum(anomalous_blocks))
     total_blocks = n_blocks_y * n_blocks_x
 

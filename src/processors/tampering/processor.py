@@ -12,15 +12,18 @@ Inherits from BaseProcessor and integrates:
 """
 
 from __future__ import annotations
+
 import io
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
+
 import numpy as np
 
 from src.processors.base_processor import BaseProcessor
 from src.schemas.verification import TamperingResult
-from .ela import compute_ela, detect_ela_tampering
+
+from .ela import detect_ela_tampering
 from .metadata import analyze_metadata
 
 try:
@@ -37,10 +40,10 @@ class TamperingProcessor(BaseProcessor):
     stamp forgery, ELA compression anomalies, and digital editing traces.
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         super().__init__(model_path=model_path)
         self._cached_input: Any = None
-        self._cached_metadata: Optional[Dict[str, Any]] = None
+        self._cached_metadata: dict[str, Any] | None = None
         self.tamper_threshold: float = 35.0
 
     def load_model(self):
@@ -105,17 +108,16 @@ class TamperingProcessor(BaseProcessor):
                 with Image.open(input_data) as img:
                     return np.array(img.convert("RGB"), dtype=np.uint8)
 
-        if isinstance(input_data, (bytes, bytearray)):
-            if HAS_PIL:
-                with Image.open(io.BytesIO(input_data)) as img:
-                    return np.array(img.convert("RGB"), dtype=np.uint8)
+        if isinstance(input_data, (bytes, bytearray)) and HAS_PIL:
+            with Image.open(io.BytesIO(input_data)) as img:
+                return np.array(img.convert("RGB"), dtype=np.uint8)
 
         if HAS_PIL and isinstance(input_data, Image.Image):
             return np.array(input_data.convert("RGB"), dtype=np.uint8)
 
         raise TypeError(f"Unsupported input type for TamperingProcessor: {type(input_data)}")
 
-    def detect_photo_replacement(self, image: np.ndarray) -> Dict[str, Any]:
+    def detect_photo_replacement(self, image: np.ndarray) -> dict[str, Any]:
         """
         Detect swapped or pasted portrait photo in the document.
         Checks:
@@ -176,7 +178,7 @@ class TamperingProcessor(BaseProcessor):
             "details": details,
         }
 
-    def detect_text_manipulation(self, image: np.ndarray) -> Dict[str, Any]:
+    def detect_text_manipulation(self, image: np.ndarray) -> dict[str, Any]:
         """
         Detect altered, erased, or digitally patched text lines.
         Checks:
@@ -198,7 +200,7 @@ class TamperingProcessor(BaseProcessor):
         # Scan text bands (horizontal slices across document body)
         slice_h = max(16, h // 15)
         num_slices = h // slice_h
-        flagged_regions: List[str] = []
+        flagged_regions: list[str] = []
         slice_energies = []
 
         for i in range(num_slices):
@@ -225,7 +227,7 @@ class TamperingProcessor(BaseProcessor):
             "regions": flagged_regions,
         }
 
-    def detect_date_alteration(self, image: np.ndarray) -> Dict[str, Any]:
+    def detect_date_alteration(self, image: np.ndarray) -> dict[str, Any]:
         """
         Detect altered date of birth, expiry, or issue dates.
         Examines character baseline alignment and digit-to-digit variance.
@@ -239,7 +241,7 @@ class TamperingProcessor(BaseProcessor):
             ("expiry_field", int(0.48 * h), int(0.68 * h), int(0.20 * w), int(0.65 * w)),
         ]
 
-        flagged_regions: List[str] = []
+        flagged_regions: list[str] = []
         max_score = 0.0
 
         for name, y1, y2, x1, x2 in date_search_zones:
@@ -260,8 +262,7 @@ class TamperingProcessor(BaseProcessor):
 
             if jitter > 18.0 and row_jitter > 12.0:
                 score = min(85.0, (jitter + row_jitter) * 1.8)
-                if score > max_score:
-                    max_score = score
+                max_score = max(max_score, score)
                 flagged_regions.append(f"{name}_anomaly: [{x1}, {y1}, {x2}, {y2}]")
 
         return {
@@ -270,14 +271,14 @@ class TamperingProcessor(BaseProcessor):
             "regions": flagged_regions,
         }
 
-    def detect_stamp_forgery(self, image: np.ndarray) -> Dict[str, Any]:
+    def detect_stamp_forgery(self, image: np.ndarray) -> dict[str, Any]:
         """
         Detect forged, digitally inserted, or copy-pasted official seals and stamps.
         Checks for:
         1. Monolithic digital color without paper fiber ink-bleed
         2. Transparent alpha / artificial overlay border
         """
-        h, w, _ = image.shape
+        _h, _w, _ = image.shape
 
         # Extract blue/purple/red ink candidate pixels (typical stamp colors)
         r = image[:, :, 0].astype(np.float32)
@@ -292,7 +293,7 @@ class TamperingProcessor(BaseProcessor):
         stamp_mask = blue_stamp_mask | red_stamp_mask
         stamp_pixel_count = int(np.sum(stamp_mask))
 
-        flagged_regions: List[str] = []
+        flagged_regions: list[str] = []
         score = 0.0
 
         if stamp_pixel_count > 300:
@@ -301,7 +302,7 @@ class TamperingProcessor(BaseProcessor):
             min_y, max_y = int(np.min(ys)), int(np.max(ys))
             min_x, max_x = int(np.min(xs)), int(np.max(xs))
 
-            stamp_crop_r = r[min_y:max_y, min_x:max_x]
+            r[min_y:max_y, min_x:max_x]
             stamp_crop_b = b[min_y:max_y, min_x:max_x]
 
             # In authentic ink stamps, color varies continuously with stamp pressure.
@@ -318,7 +319,7 @@ class TamperingProcessor(BaseProcessor):
             "regions": flagged_regions,
         }
 
-    def detect_digital_editing(self, image: np.ndarray) -> Dict[str, Any]:
+    def detect_digital_editing(self, image: np.ndarray) -> dict[str, Any]:
         """
         Detect software editing traces (Photoshop, GIMP, Canva) and JPEG recompression
         discrepancies using Error Level Analysis (ELA) and metadata inspection.
@@ -348,11 +349,11 @@ class TamperingProcessor(BaseProcessor):
 
     def calculate_tamper_score(
         self,
-        photo_res: Dict[str, Any],
-        text_res: Dict[str, Any],
-        date_res: Dict[str, Any],
-        stamp_res: Dict[str, Any],
-        digital_res: Dict[str, Any],
+        photo_res: dict[str, Any],
+        text_res: dict[str, Any],
+        date_res: dict[str, Any],
+        stamp_res: dict[str, Any],
+        digital_res: dict[str, Any],
     ) -> float:
         """
         Compute aggregate tamper score (0.0 to 100.0) via multi-signal weighted fusion.
@@ -384,14 +385,14 @@ class TamperingProcessor(BaseProcessor):
 
     def identify_tampering_regions(
         self,
-        photo_res: Dict[str, Any],
-        text_res: Dict[str, Any],
-        date_res: Dict[str, Any],
-        stamp_res: Dict[str, Any],
-        digital_res: Dict[str, Any],
-    ) -> List[str]:
+        photo_res: dict[str, Any],
+        text_res: dict[str, Any],
+        date_res: dict[str, Any],
+        stamp_res: dict[str, Any],
+        digital_res: dict[str, Any],
+    ) -> list[str]:
         """Collect and deduplicate all identified suspicious regions."""
-        regions: List[str] = []
+        regions: list[str] = []
 
         if photo_res.get("region"):
             regions.append(photo_res["region"])

@@ -6,17 +6,20 @@ software (Photoshop, GIMP, Canva, etc.) and date/timestamp discrepancies.
 """
 
 from __future__ import annotations
+
 import io
+import logging
 import os
-import re
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import datetime, timezone
+from typing import Any
 
 try:
-    from PIL import Image, ExifTags
+    from PIL import ExifTags, Image
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
+
+logger = logging.getLogger(__name__)
 
 
 # Known editing and graphic design software signatures (case-insensitive)
@@ -45,11 +48,11 @@ EDITING_SOFTWARE_SIGNATURES = [
 ]
 
 
-def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
+def extract_raw_metadata(image_input: Any) -> dict[str, Any]:
     """
     Extract all discoverable metadata tags, EXIF dictionary, and raw text headers.
     """
-    raw_info: Dict[str, Any] = {
+    raw_info: dict[str, Any] = {
         "format": None,
         "mode": None,
         "size": None,
@@ -58,7 +61,7 @@ def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
         "raw_string_matches": [],
     }
 
-    raw_bytes: Optional[bytes] = None
+    raw_bytes: bytes | None = None
 
     if isinstance(image_input, (str, os.PathLike)):
         if os.path.exists(image_input):
@@ -75,7 +78,7 @@ def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
                 raw_info["raw_string_matches"].append(sig)
 
     if HAS_PIL:
-        img: Optional[Image.Image] = None
+        img: Image.Image | None = None
         try:
             if raw_bytes:
                 img = Image.open(io.BytesIO(raw_bytes))
@@ -100,8 +103,8 @@ def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
                                 decoded = v.decode("utf-8", errors="ignore").strip()
                                 if len(decoded) < 500:
                                     raw_info["info"][k] = decoded
-                            except Exception:
-                                pass
+                            except (UnicodeDecodeError, AttributeError):
+                                logger.debug("Unable to decode image metadata value")
 
                 # Extract standard EXIF tags
                 exif_data = img.getexif()
@@ -113,8 +116,8 @@ def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
                         elif isinstance(val, bytes):
                             try:
                                 raw_info["exif"][tag_name] = val.decode("utf-8", errors="ignore").strip()
-                            except Exception:
-                                pass
+                            except (UnicodeDecodeError, AttributeError):
+                                logger.debug("Unable to decode EXIF metadata value")
 
                 # If IFD SubExif exists
                 try:
@@ -125,31 +128,31 @@ def extract_raw_metadata(image_input: Any) -> Dict[str, Any]:
                                 tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
                                 if isinstance(val, (str, int, float, bool, list)):
                                     raw_info["exif"][f"{ifd_id.name}_{tag_name}"] = val
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                        except (AttributeError, KeyError, TypeError, ValueError):
+                            logger.debug("Unable to read EXIF IFD", exc_info=True)
+                except (AttributeError, KeyError, TypeError, ValueError):
+                    logger.debug("Unable to enumerate EXIF IFDs", exc_info=True)
+        except (AttributeError, OSError, TypeError, ValueError):
+            logger.debug("Unable to extract image metadata", exc_info=True)
 
     return raw_info
 
 
-def check_editing_software(metadata: Dict[str, Any]) -> Tuple[List[str], float]:
+def check_editing_software(metadata: dict[str, Any]) -> tuple[list[str], float]:
     """
     Scan metadata fields and raw markers for editing software signatures.
 
     Returns:
         Tuple of (detected_software_names, software_risk_score [0-100])
     """
-    detected: List[str] = []
+    detected: list[str] = []
 
     # Search extracted EXIF fields
     exif = metadata.get("exif", {})
     info = metadata.get("info", {})
     raw_matches = metadata.get("raw_string_matches", [])
 
-    candidates_to_check: List[str] = []
+    candidates_to_check: list[str] = []
 
     for key in ["Software", "ProcessingSoftware", "ImageDescription", "Artist", "HostComputer", "XMP"]:
         if key in exif and isinstance(exif[key], str):
@@ -183,7 +186,7 @@ def check_editing_software(metadata: Dict[str, Any]) -> Tuple[List[str], float]:
     return detected, risk_score
 
 
-def _parse_exif_date(date_str: Any) -> Optional[datetime]:
+def _parse_exif_date(date_str: Any) -> datetime | None:
     """Helper to parse EXIF date formats."""
     if not isinstance(date_str, str):
         return None
@@ -191,20 +194,20 @@ def _parse_exif_date(date_str: Any) -> Optional[datetime]:
     clean_str = date_str.strip().replace("-", ":")
     for fmt in ("%Y:%m:%d %H:%M:%S", "%Y:%m:%d"):
         try:
-            return datetime.strptime(clean_str, fmt)
+            return datetime.strptime(clean_str, fmt).replace(tzinfo=timezone.utc)
         except ValueError:
             pass
     return None
 
 
-def check_date_consistency(metadata: Dict[str, Any]) -> Tuple[List[str], float]:
+def check_date_consistency(metadata: dict[str, Any]) -> tuple[list[str], float]:
     """
     Verify creation, digitization, and modification dates for inconsistencies.
 
     Returns:
         Tuple of (inconsistencies_list, date_risk_score [0-100])
     """
-    inconsistencies: List[str] = []
+    inconsistencies: list[str] = []
     exif = metadata.get("exif", {})
 
     dt_orig_raw = exif.get("DateTimeOriginal") or exif.get("Exif_DateTimeOriginal")
@@ -216,7 +219,7 @@ def check_date_consistency(metadata: Dict[str, Any]) -> Tuple[List[str], float]:
     dt_mod = _parse_exif_date(dt_mod_raw)
 
     risk_score = 0.0
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     # 1. Check for future dates
     for label, dt in [("DateTimeOriginal", dt_orig), ("DateTimeDigitized", dt_dig), ("ModifyDate", dt_mod)]:
@@ -243,7 +246,7 @@ def check_date_consistency(metadata: Dict[str, Any]) -> Tuple[List[str], float]:
     return inconsistencies, risk_score
 
 
-def analyze_metadata(image_input: Any) -> Dict[str, Any]:
+def analyze_metadata(image_input: Any) -> dict[str, Any]:
     """
     Analyze image metadata to detect digital editing software and timestamp anomalies.
 
@@ -260,7 +263,7 @@ def analyze_metadata(image_input: Any) -> Dict[str, Any]:
     software_detected, sw_score = check_editing_software(meta)
     date_inconsistencies, date_score = check_date_consistency(meta)
 
-    flags: List[str] = []
+    flags: list[str] = []
     if software_detected:
         flags.append(f"Editing software signature detected: {', '.join(software_detected)}")
     if date_inconsistencies:

@@ -1,46 +1,38 @@
 from .document import (
-    DocumentType,
-    PassportData,
     AadhaarData,
-    PANData,
+    DocumentType,
     DrivingLicenseData,
+    PANData,
+    PassportData,
     VoterIDData,
 )
+from .kyc import KYCRequest, KYCResponse, KYCToken
 from .verification import (
-    OCRResult,
-    TamperingResult,
+    CurrencyVerificationResult,
     FaceVerificationResult,
+    OCRResult,
     RiskScoreResult,
     SecurityFeatureCheck,
-    CurrencyVerificationResult,
+    TamperingResult,
 )
-from .kyc import KYCRequest, KYCResponse, KYCToken
 
 __all__ = [
-    "DocumentType",
-    "PassportData",
     "AadhaarData",
-    "PANData",
-    "DrivingLicenseData",
-    "VoterIDData",
-    "OCRResult",
-    "TamperingResult",
-    "FaceVerificationResult",
-    "RiskScoreResult",
-    "SecurityFeatureCheck",
     "CurrencyVerificationResult",
+    "DocumentType",
+    "DrivingLicenseData",
+    "FaceVerificationResult",
     "KYCRequest",
     "KYCResponse",
     "KYCToken",
+    "OCRResult",
+    "PANData",
+    "PassportData",
+    "RiskScoreResult",
+    "SecurityFeatureCheck",
+    "TamperingResult",
+    "VoterIDData",
 ]
-from .document import AadhaarData, DocumentType, PANData, PassportData
-from .kyc import KYCRequest, KYCResponse, KYCToken
-from .verification import (
-    FaceVerificationResult,
-    OCRResult,
-    RiskScoreResult,
-    TamperingResult,
-)
 
 __all__ = [
     "AadhaarData",

@@ -14,7 +14,7 @@ Inherits from BaseProcessor and implements AI/computer vision inspection for:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import cv2
 import numpy as np
@@ -92,7 +92,7 @@ class CurrencyProcessor(BaseProcessor):
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
+        model_path: str | None = None,
         confidence_threshold: float = 0.70,
     ):
         super().__init__(model_path=model_path or "models/currency/benchmarks.json")
@@ -112,7 +112,7 @@ class CurrencyProcessor(BaseProcessor):
                         int(k) if k.isdigit() else k: v for k, v in data.items()
                     }
                 logger.info(f"Loaded currency benchmarks from {self.model_path}")
-            except Exception as e:
+            except (OSError, TypeError, ValueError) as e:
                 logger.warning(
                     f"Failed loading benchmarks from {self.model_path}: {e}. Using default benchmarks."
                 )
@@ -129,18 +129,18 @@ class CurrencyProcessor(BaseProcessor):
         """
         return load_image(input_data)
 
-    def predict(self, processed_input: np.ndarray) -> Dict[str, Any]:
+    def predict(self, processed_input: np.ndarray) -> dict[str, Any]:
         """
         Inspect banknote security features, determine authenticity,
         and return standardized dictionary matching CurrencyVerificationResult schema.
         """
         # 1. Boundary Detection & Rectification
-        rectified_note, boundary_detected, boundary_info = self.detect_note_boundaries(
+        rectified_note, boundary_detected, _boundary_info = self.detect_note_boundaries(
             processed_input
         )
 
         # 2. Denomination Identification
-        denomination, denom_conf = self.identify_denomination(rectified_note)
+        denomination, _denom_conf = self.identify_denomination(rectified_note)
 
         # 3. Watermark Inspection
         watermark_check = self.check_watermark(rectified_note, denomination)
@@ -190,7 +190,7 @@ class CurrencyProcessor(BaseProcessor):
 
     def detect_note_boundaries(
         self, image: np.ndarray
-    ) -> Tuple[np.ndarray, bool, Dict[str, Any]]:
+    ) -> tuple[np.ndarray, bool, dict[str, Any]]:
         """
         Detect note boundaries, isolate from background, and perspective warp to canonical rectangle.
         """
@@ -273,7 +273,7 @@ class CurrencyProcessor(BaseProcessor):
 
     def identify_denomination(
         self, note_image: np.ndarray
-    ) -> Tuple[Optional[int], float]:
+    ) -> tuple[int | None, float]:
         """
         Identify note denomination (10, 50, 100, 200, 500) based on HSV color profile.
         """
@@ -286,7 +286,7 @@ class CurrencyProcessor(BaseProcessor):
         mean_s = np.mean(hsv[:, :, 1])
         mean_v = np.mean(hsv[:, :, 2])
 
-        scores: Dict[int, float] = {}
+        scores: dict[int, float] = {}
 
         # ₹500: Stone Grey (Low saturation, neutral tone)
         if mean_s < 75:
@@ -331,7 +331,7 @@ class CurrencyProcessor(BaseProcessor):
     # ── 3. Watermark Inspection ───────────────────────────────────────────
 
     def check_watermark(
-        self, note_image: np.ndarray, denomination: Optional[int] = 500
+        self, note_image: np.ndarray, denomination: int | None = 500
     ) -> SecurityFeatureCheck:
         """
         Inspect Mahatma Gandhi watermark & electrotype denomination numeral.
@@ -399,13 +399,13 @@ class CurrencyProcessor(BaseProcessor):
     # ── 4. Security Thread Inspection ─────────────────────────────────────
 
     def check_security_thread(
-        self, note_image: np.ndarray, denomination: Optional[int] = 500
+        self, note_image: np.ndarray, denomination: int | None = 500
     ) -> SecurityFeatureCheck:
         """
         Inspect security thread for vertical continuity, windowing (dashed segments),
         and metallic luster/color shift.
         """
-        h, w = note_image.shape[:2]
+        _h, w = note_image.shape[:2]
         # Security thread region: vertically from 38% to 48% across note width
         x1, x2 = int(w * 0.38), int(w * 0.48)
         roi = note_image[:, x1:x2]
@@ -442,7 +442,7 @@ class CurrencyProcessor(BaseProcessor):
         sat_strip = hsv_roi[
             :, max(0, peak_col_idx - 3) : min(roi.shape[1], peak_col_idx + 4), 1
         ]
-        mean_sat = float(np.mean(sat_strip))
+        float(np.mean(sat_strip))
 
         # Thread validation logic:
         # A valid thread must have a distinguishable vertical edge peak (peak_val > 10.0)
@@ -475,7 +475,7 @@ class CurrencyProcessor(BaseProcessor):
     # ── 5. Micro-printing Inspection ──────────────────────────────────────
 
     def check_microprinting(
-        self, note_image: np.ndarray, denomination: Optional[int] = 500
+        self, note_image: np.ndarray, denomination: int | None = 500
     ) -> SecurityFeatureCheck:
         """
         Inspect micro-printing sharpness and high-frequency edge definition.
@@ -553,7 +553,7 @@ class CurrencyProcessor(BaseProcessor):
                 details="Standard RGB mode; UV inspection within nominal range.",
             )
 
-        b, g, r = cv2.split(border_roi)
+        b, _g, r = cv2.split(border_roi)
         mean_b = float(np.mean(b))
         mean_r = float(np.mean(r))
 
@@ -584,13 +584,13 @@ class CurrencyProcessor(BaseProcessor):
         watermark_check: SecurityFeatureCheck,
         thread_check: SecurityFeatureCheck,
         micro_check: SecurityFeatureCheck,
-        uv_check: Optional[SecurityFeatureCheck],
-        denomination: Optional[int],
-    ) -> Tuple[bool, float, List[str]]:
+        uv_check: SecurityFeatureCheck | None,
+        denomination: int | None,
+    ) -> tuple[bool, float, list[str]]:
         """
         Synthesize individual security check results into an overall authenticity score.
         """
-        reasons: List[str] = []
+        reasons: list[str] = []
 
         # Weights
         w_wm = 0.30

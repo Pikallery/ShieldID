@@ -12,9 +12,8 @@ and specialized heuristic/regex parsing for:
 
 import logging
 import re
-from datetime import date, datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import date
+from typing import Any
 
 import numpy as np
 
@@ -41,8 +40,8 @@ class OCRProcessor(BaseProcessor):
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
-        languages: Optional[List[str]] = None,
+        model_path: str | None = None,
+        languages: list[str] | None = None,
         gpu: bool = False,
     ):
         super().__init__(model_path=model_path or "models/easyocr")
@@ -86,7 +85,7 @@ class OCRProcessor(BaseProcessor):
         """
         return preprocess_document(input_data, deskew_enabled=True, denoise_method="bilateral")
 
-    def predict(self, processed_input: np.ndarray) -> Dict[str, Any]:
+    def predict(self, processed_input: np.ndarray) -> dict[str, Any]:
         """
         Run OCR inference on preprocessed image, extract structured identity fields,
         and return standardized dictionary matching OCRResult schema.
@@ -106,7 +105,7 @@ class OCRProcessor(BaseProcessor):
 
     def _extract_text_and_confidence(
         self, image: np.ndarray
-    ) -> Tuple[str, float]:
+    ) -> tuple[str, float]:
         """
         Run EasyOCR Reader if available; otherwise return placeholder / inspect image.
         """
@@ -135,7 +134,7 @@ class OCRProcessor(BaseProcessor):
         self,
         raw_text: str,
         confidence_score: float = 0.90,
-        forced_type: Optional[DocumentType] = None,
+        forced_type: DocumentType | None = None,
     ) -> OCRResult:
         """
         Classify document type and extract structured fields from raw text.
@@ -615,7 +614,7 @@ class OCRProcessor(BaseProcessor):
 
     # ── Date Helpers ──────────────────────────────────────────────────────
 
-    def _extract_all_dates(self, text: str) -> List[date]:
+    def _extract_all_dates(self, text: str) -> list[date]:
         """Extract all valid dates from text (DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY)."""
         date_pattern = r"\b(\d{2})[/-](\d{2})[/-](\d{4})\b"
         matches = re.findall(date_pattern, text)
@@ -631,7 +630,7 @@ class OCRProcessor(BaseProcessor):
                 continue
         return results
 
-    def _parse_single_date(self, date_str: str) -> Optional[date]:
+    def _parse_single_date(self, date_str: str) -> date | None:
         """Parse single date string (DD/MM/YYYY or YYYY)."""
         date_str = date_str.strip()
         # Full date DD/MM/YYYY or DD-MM-YYYY

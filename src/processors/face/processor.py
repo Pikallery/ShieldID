@@ -11,14 +11,17 @@ Inherits from BaseProcessor and implements:
 """
 
 from __future__ import annotations
+
 import io
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
+
 import numpy as np
 
 from src.processors.base_processor import BaseProcessor
 from src.schemas.verification import FaceVerificationResult
+
 from .liveness import evaluate_liveness
 
 try:
@@ -70,11 +73,11 @@ class FaceProcessor(BaseProcessor):
     Verifies match between document photo and live selfie with liveness assurance.
     """
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         super().__init__(model_path=model_path)
         self.similarity_threshold: float = 0.70
-        self._cached_frames: Optional[List[Any]] = None
-        self._last_liveness_result: Optional[Dict[str, Any]] = None
+        self._cached_frames: list[Any] | None = None
+        self._last_liveness_result: dict[str, Any] | None = None
 
     def load_model(self):
         """
@@ -102,8 +105,8 @@ class FaceProcessor(BaseProcessor):
         self._cached_frames = None
         target_size = (256, 256)
 
-        doc_raw: Optional[Any] = None
-        selfie_raw: Optional[Any] = None
+        doc_raw: Any | None = None
+        selfie_raw: Any | None = None
 
         if isinstance(input_data, dict):
             # Dict input: {"document": doc, "selfie": selfie, "sequence": [...]}
@@ -138,7 +141,7 @@ class FaceProcessor(BaseProcessor):
                 return np.array(pil_img, dtype=np.uint8)
             else:
                 # Pure numpy nearest neighbor resize
-                h, w, c = rgb.shape
+                h, w, _c = rgb.shape
                 y_coords = (np.linspace(0, h - 1, target_size[0])).astype(int)
                 x_coords = (np.linspace(0, w - 1, target_size[1])).astype(int)
                 return rgb[np.ix_(y_coords, x_coords)]
@@ -153,7 +156,7 @@ class FaceProcessor(BaseProcessor):
         else:
             raise ValueError("No valid image input provided to preprocess.")
 
-    def detect_face(self, image: np.ndarray) -> Tuple[bool, float, Optional[np.ndarray], Tuple[int, int, int, int]]:
+    def detect_face(self, image: np.ndarray) -> tuple[bool, float, np.ndarray | None, tuple[int, int, int, int]]:
         """
         Detect face in an image.
         Returns:
@@ -210,7 +213,7 @@ class FaceProcessor(BaseProcessor):
         detected = confidence >= 0.65
 
         # Resize face crop to standard 128x128 embedding input
-        standard_crop: Optional[np.ndarray] = None
+        standard_crop: np.ndarray | None = None
         if detected:
             if HAS_PIL:
                 pil_crop = Image.fromarray(face_crop).resize((128, 128), Image.Resampling.BILINEAR)
@@ -234,7 +237,7 @@ class FaceProcessor(BaseProcessor):
         gray = np.mean(face_crop.astype(np.float32), axis=2)
         h, w = gray.shape
 
-        features: List[float] = []
+        features: list[float] = []
 
         # 1. 8x8 Grid block mean intensities (64 dimensions)
         block_h = h // 8
@@ -366,7 +369,7 @@ class FaceProcessor(BaseProcessor):
         self,
         document_image: Any,
         selfie_image: Any,
-        selfie_sequence: Optional[List[Any]] = None,
+        selfie_sequence: list[Any] | None = None,
     ) -> FaceVerificationResult:
         """
         Convenience typed method for Dev 1's verification orchestration.

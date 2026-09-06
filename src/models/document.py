@@ -1,13 +1,23 @@
 """Document ORM model — central hub for each uploaded document submission."""
 
 import uuid
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from src.models.audit_log import AuditLog
+    from src.models.face_verification import FaceVerification
+    from src.models.fraud_report import FraudReport
+    from src.models.kyc_session import KYCSession
+    from src.models.ocr_result import OCRResult
+    from src.models.screening_result import ScreeningResult
+    from src.models.tampering_analysis import TamperingAnalysis
+    from src.models.user import User
 
 
 class Document(UUIDMixin, TimestampMixin, Base):

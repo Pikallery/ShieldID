@@ -2,12 +2,18 @@
 
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from src.models.document import Document
+    from src.models.screening_result import ScreeningResult
+    from src.models.user import User
 
 
 class FraudReport(UUIDMixin, TimestampMixin, Base):

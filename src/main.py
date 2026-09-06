@@ -1,13 +1,12 @@
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.core.config import settings
-from src.core.database import create_db_tables, dispose_engine
 from src.api.v1.router import api_router
 from src.core.config import settings
+from src.core.database import create_db_tables, dispose_engine
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

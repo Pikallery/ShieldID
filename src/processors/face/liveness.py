@@ -16,9 +16,11 @@ Implements:
 """
 
 from __future__ import annotations
+
 import io
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
+
 import numpy as np
 
 try:
@@ -80,10 +82,10 @@ def _to_rgb_array(image_input: Any) -> np.ndarray:
 
 
 def check_active_liveness(
-    frames: List[Any],
+    frames: list[Any],
     ear_closed_threshold: float = 0.20,
     movement_threshold_pixels: float = 4.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Evaluate active liveness across a sequential list of selfie frames.
     Checks for:
@@ -115,8 +117,8 @@ def check_active_liveness(
     eye_zone_y1, eye_zone_y2 = int(0.20 * h), int(0.45 * h)
     eye_zone_x1, eye_zone_x2 = int(0.18 * w), int(0.82 * w)
 
-    eye_energies: List[float] = []
-    frame_shifts: List[float] = []
+    eye_energies: list[float] = []
+    frame_shifts: list[float] = []
 
     prev_frame = gray_frames[0]
     for frame in gray_frames:
@@ -163,7 +165,7 @@ def check_active_liveness(
     }
 
 
-def check_passive_liveness(image_input: Any) -> Dict[str, Any]:
+def check_passive_liveness(image_input: Any) -> dict[str, Any]:
     """
     Analyze passive liveness for single image presentation attack detection:
     - Screen Moiré patterns via 2D Fast Fourier Transform (FFT)
@@ -249,7 +251,7 @@ def check_passive_liveness(image_input: Any) -> Dict[str, Any]:
     }
 
 
-def detect_deepfake(image_input: Any) -> Dict[str, Any]:
+def detect_deepfake(image_input: Any) -> dict[str, Any]:
     """
     Detect GAN / Diffusion / Face-swap deepfake anomalies.
     Examines:
@@ -325,8 +327,8 @@ def detect_deepfake(image_input: Any) -> Dict[str, Any]:
 
 def evaluate_liveness(
     selfie_image: Any,
-    sequence: Optional[List[Any]] = None,
-) -> Dict[str, Any]:
+    sequence: list[Any] | None = None,
+) -> dict[str, Any]:
     """
     Unified Liveness & Anti-Spoofing Evaluator.
     Combines active liveness, passive presentation attack detection, and deepfake screening.
