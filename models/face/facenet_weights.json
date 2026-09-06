@@ -1,0 +1,18 @@
+{
+  "model_name": "FaceNet-ShieldID-Embedding-v1",
+  "architecture": "Inception-ResNet-v1 / FaceNet",
+  "embedding_dimension": 128,
+  "metric": "cosine",
+  "thresholds": {
+    "verification_similarity": 0.70,
+    "passive_liveness_score": 0.50,
+    "deepfake_probability_cutoff": 0.50,
+    "eye_aspect_ratio_closed": 0.20,
+    "head_movement_min_pixels": 4.0
+  },
+  "supported_inputs": [
+    "document_portrait",
+    "live_selfie",
+    "video_frames"
+  ]
+}
