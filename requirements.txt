@@ -1,3 +1,34 @@
+# ─── Web Framework ───────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9          # File upload support
+
+# ─── Database (Async PostgreSQL + ORM + Migrations) ──────────────────────────
+sqlalchemy>=2.0.30               # ORM (2.0 mapped_column style)
+alembic>=1.13.1                  # Schema migrations
+asyncpg>=0.29.0                  # Async PostgreSQL driver
+greenlet>=3.0.3                  # Required by SQLAlchemy async
+
+# ─── Cache ───────────────────────────────────────────────────────────────────
+redis>=5.0.4                     # Redis async client
+
+# ─── Settings & Validation ───────────────────────────────────────────────────
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+
+# ─── Security (Auth & Passwords) ─────────────────────────────────────────────
+passlib[bcrypt]>=1.7.4           # Password hashing
+python-jose[cryptography]>=3.3.0 # JWT encode/decode
+
+# ─── AI / ML Core ────────────────────────────────────────────────────────────
+numpy>=1.26.0
+opencv-python-headless>=4.9.0.80
+Pillow>=10.3.0
+
+# ─── Testing ─────────────────────────────────────────────────────────────────
+pytest>=8.2.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0                    # Async test client for FastAPI
 fastapi>=0.100.0
 uvicorn[standard]>=0.20.0
 pydantic>=2.0.0
