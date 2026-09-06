@@ -13,6 +13,8 @@ app = FastAPI(
     title="ShieldID API",
     description="AI-Powered Identity Verification Platform",
     version="1.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
 )
 
 # CORS

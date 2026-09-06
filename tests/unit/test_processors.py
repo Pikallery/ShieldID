@@ -1,6 +1,7 @@
-import pytest
-import numpy as np
 from typing import Any
+
+import numpy as np
+import pytest
 
 from src.processors.base_processor import BaseProcessor
 

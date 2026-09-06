@@ -1,19 +1,18 @@
-import pytest
 from datetime import date
+
+import pytest
 from pydantic import ValidationError
 
 from src.schemas import (
-    DocumentType,
-    PassportData,
     AadhaarData,
-    PANData,
-    OCRResult,
-    TamperingResult,
+    DocumentType,
     FaceVerificationResult,
-    RiskScoreResult,
-    KYCRequest,
     KYCResponse,
     KYCToken,
+    OCRResult,
+    PassportData,
+    RiskScoreResult,
+    TamperingResult,
 )
 
 

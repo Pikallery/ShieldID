@@ -1,15 +1,15 @@
 import io
-import pytest
 from datetime import date
+
+import pytest
 from fastapi.testclient import TestClient
 
 from src.main import app
 from src.schemas import (
-    DocumentType,
-    PassportData,
     AadhaarData,
-    PANData,
     KYCRequest,
+    PANData,
+    PassportData,
 )
 
 

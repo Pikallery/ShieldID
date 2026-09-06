@@ -1,4 +1,4 @@
-from src.core.config import settings, Settings
+from src.core.config import Settings, settings
 
 
 def test_default_settings():

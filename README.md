@@ -30,7 +30,7 @@
 | :--- | :--- |
 | **API & Backend** | FastAPI, Uvicorn, Pydantic v2 |
 | **Database & Cache** | PostgreSQL (asyncpg / SQLAlchemy), Redis |
-| **AI / ML Modules** | PyTorch, OpenCV, EasyOCR, DeepFace, Scikit-learn |
+| **AI / ML Modules** | OpenCV, NumPy, Pillow, model artifacts in `models/` |
 | **Security** | OAuth2, JWT, Cryptographic Password Hashing |
 | **Infrastructure** | Docker, Docker Compose, GitHub Actions |
 
@@ -40,23 +40,57 @@
 
 ```text
 ShieldID/
+├── alembic.ini                   # Alembic configuration
+├── deployment/
+│   ├── docker/                   # Backend container definition
+│   ├── k8s/                      # Kubernetes manifests
+│   ├── scripts/                  # Database initialization scripts
+│   ├── docker-compose.yml        # Deployment Compose configuration
+│   └── Dockerfile.backend        # Deployment backend image
+├── docs/                         # API, database, and deployment guides
+├── migrations/
+│   ├── env.py                    # Alembic runtime configuration
+│   ├── script.py.mako            # Migration template
+│   └── versions/                 # Versioned schema migrations
 ├── src/
 │   ├── api/
-│   │   └── v1/
+│   │   ├── v1/
 │   │       ├── router.py          # API v1 route aggregator
 │   │       ├── verify.py          # Document verification & status endpoints
 │   │       ├── kyc.py             # Instant KYC & token endpoints
 │   │       └── report.py          # Fraud report & FIR dispatch endpoints
+│   │   └── v2/                    # Reserved for API v2 routes
 │   ├── core/
-│   │   └── config.py              # Central application settings (Pydantic v2)
+│   │   ├── config.py              # Central application settings (Pydantic v2)
+│   │   └── database.py            # SQLAlchemy models and async database session
 │   ├── processors/
-│   │   └── base_processor.py      # Abstract base processor for AI modules
+│   │   ├── base_processor.py      # Abstract base processor for AI modules
+│   │   ├── currency/              # Currency authenticity processor
+│   │   ├── face/                  # Face matching processor
+│   │   ├── ocr/                   # Document text extraction processor
+│   │   ├── predictive/             # Risk prediction processor
+│   │   └── tampering/              # Document tampering processor
 │   ├── schemas/
 │   │   ├── document.py            # Document schemas (Passport, Aadhaar, PAN, etc.)
 │   │   ├── verification.py        # OCR, tampering, and risk score schemas
 │   │   └── kyc.py                 # KYC request and response schemas
+│   ├── services/
+│   │   ├── database_services.py   # Shared database operations
+│   │   ├── verification_service.py # Verification workflow service
+│   │   ├── kyc_service.py         # KYC workflow service
+│   │   └── report_service.py      # Fraud reporting service
 │   └── main.py                    # FastAPI application entry point
-├── tests/                         # Unit and integration test suites
+├── frontend/
+│   ├── dashboard/src/             # Dashboard components, pages, and utilities
+│   ├── kiosk/                     # Kiosk web client
+│   └── mobile/lib/                # Mobile models, screens, services, and widgets
+├── models/                        # Local model files
+├── scripts/                       # Project utility scripts
+├── tests/
+│   ├── unit/                      # Processor, schema, config, and API tests
+│   └── integration/               # API and database integration tests
+├── docker-compose.yml              # API, PostgreSQL, and Redis services
+├── Dockerfile                      # Root container definition
 ├── requirements.txt               # Application dependencies
 └── README.md
 ```
@@ -106,12 +140,44 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run Development Server
+### 4. Configure the Environment
+```bash
+# Windows
+copy .env.example .env
+
+# Linux / macOS
+cp .env.example .env
+```
+
+Update `DATABASE_URL`, `REDIS_URL`, and `SECRET_KEY` in `.env` for your environment.
+
+### 5. Run Development Server
 ```bash
 uvicorn src.main:app --reload --port 8080
 ```
 
 Access the API documentation at: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+
+### Docker Compose
+
+Docker Compose starts the API, PostgreSQL, and Redis services:
+
+```bash
+docker compose up --build
+```
+
+The containerized API is available at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
+
+## Development Checks
+
+Run the same checks used by CI from the repository root:
+
+```bash
+ruff check src/
+pytest tests/ -v --cov=src
+```
+
+The test suite includes unit and integration coverage. PostgreSQL and Redis are not required for the local unit tests, but are started by Docker Compose for service-level development.
 
 ---
 
