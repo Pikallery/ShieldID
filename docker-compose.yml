@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL 16 ────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: shieldid_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shieldid
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: shieldid
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shieldid -d shieldid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis 7 ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: shieldid_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── ShieldID Backend API ─────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shieldid_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://shieldid:admin123@db:5432/shieldid
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: change-me-in-production
+      MODE: development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  postgres_data:
+  redis_data:
