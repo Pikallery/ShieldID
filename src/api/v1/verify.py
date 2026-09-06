@@ -1,14 +1,12 @@
-from typing import Optional
-from fastapi import APIRouter, File, UploadFile
-from src.schemas import RiskScoreResult
+from fastapi import APIRouter, UploadFile
 
 router = APIRouter()
 
 
 @router.post("/document")
 async def verify_document(
-    document: UploadFile = File(...),
-    selfie: Optional[UploadFile] = File(default=None),
+    document: UploadFile,
+    selfie: UploadFile | None = None,
 ):
     """Verify document authenticity"""
     return {

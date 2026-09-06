@@ -1,3 +1,5 @@
+# migrations/script.py.mako
+# ⚠️ OWNER: Dev 1 - Alembic migration template ⚠️
 """${message}
 
 Revision ID: ${up_revision}
@@ -10,6 +12,10 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 ${imports if imports else ""}
+"""
+from typing import Sequence, Union
+from alembic import op
+import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = ${repr(up_revision)}

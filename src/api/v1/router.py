@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from . import verify, kyc, report
+
+from . import kyc, report, verify
 
 api_router = APIRouter()
 

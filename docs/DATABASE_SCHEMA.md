@@ -242,3 +242,4 @@ alembic history --verbose
 | Docker Compose | `postgresql+asyncpg://shieldid:admin123@db:5432/shieldid` |
 
 Set via `DATABASE_URL` in your `.env` file (copy from `.env.example`).
+

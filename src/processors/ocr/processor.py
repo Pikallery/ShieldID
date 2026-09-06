@@ -649,3 +649,4 @@ class OCRProcessor(BaseProcessor):
             return date(int(year_match.group(1)), 1, 1)
 
         return None
+

@@ -1,0 +1,27 @@
+{
+  "model_name": "ShieldID-Tamper-Detector-v1",
+  "architecture": "CNN-ResNet-Heuristic-Ensemble",
+  "version": "1.0.0",
+  "thresholds": {
+    "overall_tamper_score": 35.0,
+    "ela_anomaly_std": 2.4,
+    "photo_noise_mismatch_ratio": 2.2,
+    "date_baseline_jitter": 18.0,
+    "stamp_ink_variance": 6.5,
+    "metadata_risk_threshold": 40.0
+  },
+  "weights": {
+    "photo": 0.25,
+    "text": 0.25,
+    "date": 0.20,
+    "stamp": 0.15,
+    "digital": 0.15
+  },
+  "supported_document_types": [
+    "passport",
+    "aadhaar",
+    "pan",
+    "driving_license",
+    "voter_id"
+  ]
+}

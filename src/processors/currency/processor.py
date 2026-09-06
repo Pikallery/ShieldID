@@ -628,3 +628,4 @@ class CurrencyProcessor(BaseProcessor):
         )
 
         return is_authentic, composite_score, reasons
+

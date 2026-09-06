@@ -1,0 +1,205 @@
+# deployment/k8s/deployment.yaml
+# ⚠️ OWNER: Dev 1 - Kubernetes Manifests - DO NOT MODIFY WITHOUT PERMISSION ⚠️
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shieldid
+
+---
+# ---------- CONFIGMAP ----------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shieldid-config
+  namespace: shieldid
+data:
+  MODE: "production"
+  API_V1_PREFIX: "/api/v1"
+  PROJECT_NAME: "ShieldID"
+
+---
+# ---------- SECRETS ----------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shieldid-secrets
+  namespace: shieldid
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql+asyncpg://shieldid:admin123@shieldid-db:5432/shieldid"
+  REDIS_URL: "redis://shieldid-redis:6379/0"
+  SECRET_KEY: "CHANGE-THIS-TO-A-RANDOM-256-BIT-KEY"
+
+---
+# ---------- POSTGRESQL DEPLOYMENT ----------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shieldid-db
+  namespace: shieldid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shieldid-db
+  template:
+    metadata:
+      labels:
+        app: shieldid-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "shieldid"
+            - name: POSTGRES_PASSWORD
+              value: "admin123"
+            - name: POSTGRES_DB
+              value: "shieldid"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "shieldid"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shieldid-db
+  namespace: shieldid
+spec:
+  selector:
+    app: shieldid-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# ---------- REDIS DEPLOYMENT ----------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shieldid-redis
+  namespace: shieldid
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shieldid-redis
+  template:
+    metadata:
+      labels:
+        app: shieldid-redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shieldid-redis
+  namespace: shieldid
+spec:
+  selector:
+    app: shieldid-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+
+---
+# ---------- BACKEND DEPLOYMENT ----------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shieldid-backend
+  namespace: shieldid
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shieldid-backend
+  template:
+    metadata:
+      labels:
+        app: shieldid-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/shieldid/shieldid-backend:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: shieldid-config
+            - secretRef:
+                name: shieldid-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shieldid-backend
+  namespace: shieldid
+spec:
+  selector:
+    app: shieldid-backend
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: LoadBalancer
+
+---
+# ---------- PERSISTENT VOLUME CLAIM ----------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: shieldid
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
