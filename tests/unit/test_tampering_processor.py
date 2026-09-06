@@ -4,20 +4,19 @@ Tests ELA, Metadata extraction, specialized tamper detectors, and TamperingResul
 """
 
 import io
-import os
-import pytest
+
 import numpy as np
+import pytest
 from PIL import Image
 
 from src.processors.base_processor import BaseProcessor
-from src.processors.tampering.processor import TamperingProcessor
 from src.processors.tampering.ela import compute_ela, detect_ela_tampering
 from src.processors.tampering.metadata import (
-    extract_raw_metadata,
-    check_editing_software,
-    check_date_consistency,
     analyze_metadata,
+    check_date_consistency,
+    check_editing_software,
 )
+from src.processors.tampering.processor import TamperingProcessor
 from src.schemas.verification import TamperingResult
 
 

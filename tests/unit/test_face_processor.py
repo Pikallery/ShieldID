@@ -4,19 +4,17 @@ Tests face detection, embedding similarity, active/passive liveness, deepfakes,
 and strict FaceVerificationResult schema conformity.
 """
 
-import io
-import pytest
 import numpy as np
-from PIL import Image
+import pytest
 
 from src.processors.base_processor import BaseProcessor
-from src.processors.face.processor import FaceProcessor
 from src.processors.face.liveness import (
     check_active_liveness,
     check_passive_liveness,
     detect_deepfake,
     evaluate_liveness,
 )
+from src.processors.face.processor import FaceProcessor
 from src.schemas.verification import FaceVerificationResult
 
 
@@ -97,7 +95,7 @@ def test_face_detection_non_face():
     """Verify face detection returns False for blank or non-face background."""
     processor = FaceProcessor()
     blank = np.zeros((200, 200, 3), dtype=np.uint8)
-    detected, conf, crop, bbox = processor.detect_face(blank)
+    detected, conf, crop, _bbox = processor.detect_face(blank)
     assert detected is False
     assert conf == 0.0
     assert crop is None

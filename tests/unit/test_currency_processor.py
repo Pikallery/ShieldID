@@ -2,7 +2,6 @@
 
 import cv2
 import numpy as np
-import pytest
 
 from src.processors.base_processor import BaseProcessor
 from src.processors.currency.processor import (

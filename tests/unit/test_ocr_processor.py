@@ -1,13 +1,12 @@
 """Unit tests for OCR Preprocessing and OCR Processor."""
 
 from datetime import date
+
 import numpy as np
-import pytest
 
 from src.processors.base_processor import BaseProcessor
 from src.processors.ocr.preprocess import (
     binarize,
-    calculate_skew_angle,
     denoise,
     deskew,
     enhance_contrast,
@@ -17,7 +16,6 @@ from src.processors.ocr.preprocess import (
 from src.processors.ocr.processor import OCRProcessor
 from src.schemas.document import DocumentType
 from src.schemas.verification import OCRResult
-
 
 # ─── Preprocessing Tests ───────────────────────────────────────────────────────
 

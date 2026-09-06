@@ -1,33 +1,25 @@
-"""Unit tests for document and verification schemas."""
+from datetime import date
 
 import pytest
-from datetime import date
 from pydantic import ValidationError
 
-from src.schemas.document import (
 from src.schemas import (
-    DocumentType,
-    PassportData,
     AadhaarData,
-    PANData,
+    DocumentType,
     DrivingLicenseData,
+    KYCResponse,
+    KYCToken,
+    PANData,
+    PassportData,
     VoterIDData,
 )
 from src.schemas.verification import (
-    OCRResult,
-    TamperingResult,
+    CurrencyVerificationResult,
     FaceVerificationResult,
+    OCRResult,
     RiskScoreResult,
     SecurityFeatureCheck,
-    CurrencyVerificationResult,
-)
-
-
-def test_document_types():
-    assert DocumentType.PASSPORT == "passport"
-    KYCRequest,
-    KYCResponse,
-    KYCToken,
+    TamperingResult,
 )
 
 
@@ -206,7 +198,7 @@ def test_pan_data_valid(sample_pan_data):
     assert sample_pan_data.date_of_birth == date(1988, 12, 10)
 
 
-def test_ocr_result_schema(sample_passport_data):
+def test_ocr_result_schema_with_passport(sample_passport_data):
     """Test OCRResult schema initialization."""
     ocr = OCRResult(
         document_type=DocumentType.PASSPORT,
