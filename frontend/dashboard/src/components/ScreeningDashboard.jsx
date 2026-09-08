@@ -109,6 +109,24 @@ function ScreeningDashboard() {
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
           ))}
+          <a
+            className="nav-item"
+            href="/docs.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <span className="nav-icon">▤</span>Live documentation ↗
+          </a>
+          <a
+            className="nav-item"
+            href="/kiosk.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <span className="nav-icon">⌁</span>Verification kiosk ↗
+          </a>
         </nav>
         <div className="sidebar-footer"><span className="status-pulse" />All systems operational</div>
       </aside>

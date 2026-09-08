@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShieldID API | Live Interactive Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b1f3a;
+      --card-bg: #102b4d;
+      --accent: #82b1ff;
+      --primary: #0d47a1;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #1e3a5f;
+      --badge-get: #10b981;
+      --badge-post: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #071527;
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+    }
+    header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-size: 18px;
+    }
+    .brand span span { color: var(--accent); }
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .header-links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .header-links a:hover {
+      background: rgba(130, 177, 255, 0.1);
+      border-color: var(--accent);
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+    .hero {
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -1px;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 750px;
+    }
+    .meta-pills {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+    }
+    .pill.green { color: #55d995; border-color: rgba(85,217,149,0.3); }
+
+    .doc-section {
+      margin-bottom: 40px;
+    }
+    .doc-section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .endpoint-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .endpoint-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 31, 58, 0.6);
+    }
+    .method-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    .method-badge.get { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .method-badge.post { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .endpoint-path {
+      font-family: 'DM Mono', monospace;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .endpoint-desc {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .endpoint-body {
+      padding: 20px;
+    }
+    .code-box {
+      background: #071527;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: #93c5fd;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    .code-title {
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    td { color: var(--text); }
+    td code {
+      font-family: 'DM Mono', monospace;
+      color: var(--accent);
+      background: rgba(130, 177, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">◇</div>
+      <span>Shield<span>ID</span> Live API Documentation</span>
+    </div>
+    <div class="header-links">
+      <a href="/" target="_self">← Return to Dashboard</a>
+      <a href="/kiosk.html" target="_self">Verification Kiosk ↗</a>
+      <a href="http://localhost:8080/api/docs" target="_blank" rel="noopener">Open in Swagger UI ↗</a>
+      <a href="http://localhost:8080/api/redoc" target="_blank" rel="noopener">Open in ReDoc ↗</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="hero">
+      <h1>🛡️ ShieldID REST API Specification</h1>
+      <p>Enterprise-grade automated identity verification, AI forensic tampering detection, biometric face matching, and instant DigiLocker KYC for Indian identity documents (Passport, Aadhaar, PAN, Driving License, Voter ID).</p>
+      <div class="meta-pills">
+        <span class="pill green">● OpenAPI 3.1.0</span>
+        <span class="pill">Base URL: /api/v1</span>
+        <span class="pill">Local Dev: http://localhost:8080</span>
+        <span class="pill">Dashboard: http://127.0.0.1:5173</span>
+      </div>
+    </div>
+
+    <!-- Health Checks -->
+    <section class="doc-section">
+      <h2>1. System & Health Check Endpoints</h2>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge get">GET</span>
+          <span class="endpoint-path">/</span>
+          <span class="endpoint-desc">Service status and root info</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Returns high-level service status, platform version, and links to interactive documentation.</p>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "service": "ShieldID",
+  "version": "1.0.0",
+  "status": "operational",
+  "docs": "/api/docs"
+}</pre>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge get">GET</span>
+          <span class="endpoint-path">/health</span>
+          <span class="endpoint-desc">Liveness & readiness probe</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Health check probe used by Docker, Kubernetes, and load balancers.</p>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "status": "healthy"
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Verification Module -->
+    <section class="doc-section">
+      <h2>2. Document Verification Module</h2>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge post">POST</span>
+          <span class="endpoint-path">/api/v1/verify/document</span>
+          <span class="endpoint-desc">Submit document & optional selfie</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Upload an identity document for OCR text extraction, tampering analysis, and facial matching.</p>
+          <div class="code-title">Request Form Data</div>
+          <table>
+            <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>document</code></td><td>File (Binary)</td><td><strong>Yes</strong></td><td>Identity document image/PDF (JPEG, PNG, PDF up to 10MB)</td></tr>
+              <tr><td><code>selfie</code></td><td>File (Binary)</td><td>No</td><td>Live selfie photo for facial biometric match</td></tr>
+            </tbody>
+          </table>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "status": "verified",
+  "risk_score": 15,
+  "document_type": "passport",
+  "name": "Rahul Sharma",
+  "recommendation": "APPROVE"
+}</pre>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge get">GET</span>
+          <span class="endpoint-path">/api/v1/verify/status/{verification_id}</span>
+          <span class="endpoint-desc">Poll verification status</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Poll processing progress for asynchronous verification workflows.</p>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "status": "completed",
+  "verification_id": "SHIELD-VER-2026-009871"
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- KYC Module -->
+    <section class="doc-section">
+      <h2>3. Instant KYC & Fraud Reporting Module</h2>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge post">POST</span>
+          <span class="endpoint-path">/api/v1/kyc/instant</span>
+          <span class="endpoint-desc">Initiate DigiLocker KYC flow</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Generates an instant KYC verification session with QR code and DigiLocker redirect.</p>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "status": "pending",
+  "kyc_token": "SHIELD-KYC-2026-001234",
+  "qr_code": "https://api.qrserver.com/v1/create-qr-code/?data=SHIELD-KYC-2026-001234",
+  "digilocker_redirect": "https://digilocker.gov.in/"
+}</pre>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method-badge post">POST</span>
+          <span class="endpoint-path">/api/v1/report/fake</span>
+          <span class="endpoint-desc">Submit fraud report</span>
+        </div>
+        <div class="endpoint-body">
+          <p>Submit fraudulent document details for automated cyber crime routing and police FIR dispatch.</p>
+          <div class="code-title">Response (200 OK)</div>
+          <pre class="code-box">{
+  "report_id": "REP-2026-0089",
+  "status": "dispatched",
+  "fir_number": "FIR-DL-2026-4402"
+}</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
+
