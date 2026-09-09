@@ -88,7 +88,8 @@ class _RiskGaugeState extends State<RiskGauge>
                   ),
                   const SizedBox(height: 2),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
                       color: widget.status.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
@@ -153,7 +154,7 @@ class _RadialGaugePainter extends CustomPainter {
       ..shader = SweepGradient(
         colors: [color.withOpacity(0.4), color],
         stops: const [0.0, 1.0],
-        transform: GradientRotation(startAngle),
+        transform: const GradientRotation(startAngle),
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth

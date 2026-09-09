@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ShieldID">
+  <defs>
+    <linearGradient id="circuit" x1="120" y1="64" x2="392" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2163A4"/>
+      <stop offset=".52" stop-color="#80527F"/>
+      <stop offset="1" stop-color="#F02F3E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#fff"/>
+  <g fill="none" stroke="url(#circuit)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 154v-42M256 358v48M177 198h-34M335 198h34M178 314h-38M334 314h38" stroke-width="7"/>
+    <path d="M256 104V72M178 177h-31v-34M334 177h31V126l30-30M178 335h-31v34l-25 25M334 335h31v43" stroke-width="6"/>
+    <path d="M142 72v44M370 72v48M105 225h-25M407 295h-27M110 386H80M432 386h-26M213 416v-32M299 416v-32" stroke-width="6"/>
+    <path d="M178 177h-34M334 177h34M178 335h-34M334 335h34" stroke-width="5"/>
+    <circle cx="147" cy="143" r="7" stroke-width="5"/><circle cx="365" cy="126" r="7" stroke-width="5"/>
+    <circle cx="122" cy="394" r="7" stroke-width="5"/><circle cx="365" cy="378" r="7" stroke-width="5"/>
+  </g>
+  <path d="M256 145c54 14 91 35 91 35v79c0 68-37 107-91 132-54-25-91-64-91-132v-79s37-21 91-35Z" fill="#fff" stroke="url(#circuit)" stroke-width="9"/>
+  <g fill="none" stroke="url(#circuit)" stroke-linecap="round">
+    <ellipse cx="256" cy="261" rx="55" ry="65" stroke-width="8"/>
+    <path d="M201 261h110M207 232h98M207 290h98M256 196v130M230 199c-12 39-12 85 0 124M282 199c12 39 12 85 0 124" stroke-width="7"/>
+  </g>
+</svg>

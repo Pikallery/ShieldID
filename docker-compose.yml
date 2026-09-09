@@ -1,17 +1,4 @@
-version: "3.9"
-
 services:
-
-  # ── PostgreSQL 16 ────────────────────────────────────────────────────────
-  db:
-    image: postgres:16-alpine
-    container_name: shieldid_db
-    restart: unless-stopped
-# docker-compose.yml
-# ⚠️ OWNER: Dev 1 - DO NOT MODIFY WITHOUT PERMISSION ⚠️
-
-services:
-  # ---------- BACKEND API ----------
   backend:
     build:
       context: .
@@ -20,11 +7,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://shieldid:admin123@db:5432/shieldid
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
-      - MODE=${MODE:-development}
-      - ALLOWED_ORIGINS=["*"]
+      DATABASE_URL: postgresql+asyncpg://shieldid:admin123@db:5432/shieldid
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      MODE: ${MODE:-development}
+      ALLOWED_ORIGINS: '["*"]'
     depends_on:
       db:
         condition: service_healthy
@@ -39,7 +26,6 @@ services:
     networks:
       - shieldid-network
 
-  # ---------- POSTGRESQL ----------
   db:
     image: postgres:15-alpine
     container_name: shieldid-db
@@ -57,17 +43,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ── Redis 7 ──────────────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: shieldid_redis
-    restart: unless-stopped
     restart: unless-stopped
     networks:
       - shieldid-network
 
-  # ---------- REDIS (Cache & Rate Limiting) ----------
   redis:
     image: redis:7-alpine
     container_name: shieldid-redis
@@ -80,41 +59,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ── ShieldID Backend API ─────────────────────────────────────────────────
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: shieldid_api
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      DATABASE_URL: postgresql+asyncpg://shieldid:admin123@db:5432/shieldid
-      REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: change-me-in-production
-      MODE: development
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./uploads:/app/uploads
-
-volumes:
-  postgres_data:
-  redis_data:
     restart: unless-stopped
     networks:
       - shieldid-network
 
 volumes:
   postgres_data:
-    driver: local
   redis_data:
-    driver: local
 
 networks:
   shieldid-network:

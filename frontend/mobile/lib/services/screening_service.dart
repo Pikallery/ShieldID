@@ -7,7 +7,7 @@ import 'mock_data.dart';
 
 class ScreeningService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
-  ScreeningSession _session = ScreeningSession();
+  final ScreeningSession _session = ScreeningSession();
   List<VerificationReport> _history = [];
 
   // App Settings
@@ -103,7 +103,8 @@ class ScreeningService extends ChangeNotifier {
 
   Future<void> _triggerAiAnalysis() async {
     _session.processingProgress = 0.05;
-    _session.currentAiTask = 'Submitting artifacts to ShieldID Neural Engine...';
+    _session.currentAiTask =
+        'Submitting artifacts to ShieldID Neural Engine...';
     notifyListeners();
 
     try {

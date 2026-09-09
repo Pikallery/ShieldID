@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 
@@ -85,7 +84,8 @@ class _FaceMeshOverlayState extends State<FaceMeshOverlay>
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: widget.isFaceDetected
                           ? AppTheme.primaryCyan.withOpacity(0.15)

@@ -13,6 +13,16 @@ export default function Dashboard() {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [authStatus, setAuthStatus] = useState("idle"); // idle | ready
 
+  // Auto-transition to dashboard after showing loading animation, or on click
+  React.useEffect(() => {
+    if (!showLoading) return;
+    const timer = setTimeout(() => {
+      triggerTransition();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [showLoading]);
+
   const triggerTransition = () => {
     if (isFadingOut) return;
     setAuthStatus("ready");
@@ -20,7 +30,7 @@ export default function Dashboard() {
     setTimeout(() => {
       setShowLoading(false);
       setIsFadingOut(false);
-    }, 700); // Match the blur and circular reveal handoff duration
+    }, 320); // Keep the handoff smooth without holding the dashboard back
   };
 
   return (

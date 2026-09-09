@@ -76,7 +76,8 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                 children: [
                   // Status & Instruction Pill
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: _hologramVerified
                           ? AppTheme.passGreen.withOpacity(0.15)
@@ -150,20 +151,20 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                       child: Stack(
                         children: [
                           // Base Card Graphics
-                          Positioned(
+                          const Positioned(
                             top: 20,
                             left: 20,
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.badge_rounded,
                                   color: AppTheme.textMuted,
                                   size: 28,
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
+                                  children: [
                                     Text(
                                       'IDENTITY CREDENTIAL',
                                       style: TextStyle(
@@ -193,7 +194,8 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 gradient: LinearGradient(
-                                  begin: Alignment(-1.0 + (_tiltAngle * 5), -1.0),
+                                  begin:
+                                      Alignment(-1.0 + (_tiltAngle * 5), -1.0),
                                   end: Alignment(1.0 + (_tiltAngle * 5), 1.0),
                                   colors: [
                                     Colors.transparent,
@@ -324,7 +326,8 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
               children: [
                 IconButton(
                   onPressed: _restartVerification,
-                  icon: const Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
+                  icon: const Icon(Icons.refresh_rounded,
+                      color: AppTheme.textSecondary),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -380,7 +383,9 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
             shape: BoxShape.circle,
           ),
           child: Icon(
-            isPassed ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+            isPassed
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
             size: 18,
             color: isPassed ? AppTheme.passGreen : AppTheme.textMuted,
           ),

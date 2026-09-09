@@ -1,185 +1,208 @@
-# 🛡️ ShieldID
+<p align="center">
+	<img src="frontend/mobile/web/shieldid-logo.png" alt="ShieldID logo" width="220">
+</p>
 
-**AI-Powered Identity Verification Platform for India**
+<h1 align="center">ShieldID</h1>
 
-*Scan. Verify. Protect.*
+<p align="center"><strong>AI-powered identity verification and document fraud screening</strong></p>
 
----
+<p align="center">Scan documents, validate identity, detect tampering, and make safer KYC decisions from one connected platform.</p>
 
-## Overview
+<p align="center">
+	<a href="https://github.com/Pikallery/ShieldID/actions">CI</a> ·
+	<a href="docs/API_SPEC.md">API specification</a> ·
+	<a href="docs/DEPLOYMENT_GUIDE.md">Deployment guide</a>
+</p>
 
-**ShieldID** is an enterprise-grade identity verification and fraud prevention platform built to detect forged identity documents, execute real-time KYC, and mitigate document tampering across Indian identity systems (Aadhaar, Passport, PAN, Driving License, Voter ID).
+## What ShieldID Does
 
----
+ShieldID combines document intelligence, face verification, liveness checks, tamper analysis, risk scoring, and KYC workflows for identity screening across Indian identity documents such as Aadhaar, passport, PAN, driving licence, and voter ID.
 
-## Key Features
+The system is designed for three real-world surfaces:
 
--  **Instant Document Verification**: Authenticates Passport, Aadhaar, PAN, Driving License, and Voter ID with OCR extraction and confidence scoring.
--  **AI Tampering Detection**: Heuristic and neural analysis for copy-move tampering, photo swapping, text alteration, and stamp forgery.
--  **Biometric Face Matching**: Face detection, liveness verification, and similarity scoring between document photos and selfies.
--  **Instant KYC**: Seamless DigiLocker-style user consent and QR code verification tokens.
--  **Automated Fraud Reporting**: Auto-dispatch FIR generation with geo-location tagging and cyber crime station routing.
--  **Counterfeit Currency Detection**: AI inspection for banknote security features.
--  **Extensible Architecture**: Modular `BaseProcessor` pipeline allowing modular AI/ML inference plugins.
+| Surface | Purpose | Entry point |
+| --- | --- | --- |
+| Desktop dashboard | Review screening activity, risk signals, and verification results | `/` |
+| Verification kiosk | Guided self-service capture flow for a counter or reception device | `/kiosk.html` |
+| Mobile app | Capture documents and biometrics from a phone | `/mobile/` or the installed Flutter app |
 
----
+## Demo Routing
 
-## Tech Stack
+When the hosted root URL is opened, the web entry point selects the experience automatically:
 
-| Layer | Technologies |
-| :--- | :--- |
-| **API & Backend** | FastAPI, Uvicorn, Pydantic v2 |
-| **Database & Cache** | PostgreSQL (asyncpg / SQLAlchemy), Redis |
-| **AI / ML Modules** | OpenCV, NumPy, Pillow, model artifacts in `models/` |
-| **Security** | OAuth2, JWT, Cryptographic Password Hashing |
-| **Infrastructure** | Docker, Docker Compose, GitHub Actions |
+- Phones and tablets are redirected from `/` to `/mobile/`.
+- Desktop browsers stay on the React dashboard at `/`.
+- The dashboard opens the kiosk flow at `/kiosk.html`.
+- `/?mobile=1` forces the mobile route for testing.
+- `/?desktop=1` forces the desktop dashboard for testing.
 
----
+All three experiences can use the same domain. The Flutter web build must be deployed under `/mobile/` for phone routing to work.
 
-## Project Structure
+## Core Capabilities
+
+- **Document verification:** OCR extraction, document classification, confidence scoring, and structured identity data.
+- **Tamper analysis:** Detection signals for copy-move edits, photo swaps, altered text, forged stamps, and suspicious document structure.
+- **Face verification:** Face matching, liveness challenges, facial landmark overlays, and similarity scoring.
+- **Risk decisions:** Pass, review, or reject outcomes with explainable signals and a visual risk gauge.
+- **KYC workflows:** Consent-driven verification, QR tokens, status polling, and audit-ready results.
+- **Currency screening:** A processor path for checking banknote authenticity features.
+- **Fraud reporting:** Structured fraud reports and downstream case information.
+- **Modular processing:** Shared processor abstractions make OCR, face, tampering, currency, and predictive modules extensible.
+
+## Architecture
+
+```text
+										+-----------------------------+
+										|        ShieldID API         |
+										| FastAPI + verification flow |
+										+-------------+---------------+
+																	|
+			 +--------------------------+--------------------------+
+			 |                          |                          |
+	React dashboard            Kiosk web flow             Flutter mobile
+			 |                          |                          |
+			 +--------------------------+--------------------------+
+																	|
+							OCR | face | liveness | tampering | risk
+																	|
+								 PostgreSQL + Redis + model artifacts
+```
+
+## Technology Stack
+
+| Area | Technologies |
+| --- | --- |
+| API | FastAPI, Uvicorn, Pydantic v2 |
+| Data | PostgreSQL, SQLAlchemy, asyncpg, Redis |
+| AI processing | OpenCV, NumPy, Pillow, model artifacts in `models/` |
+| Desktop and kiosk web | React, Vite, HTML, CSS, JavaScript |
+| Mobile | Flutter and Dart |
+| Delivery | Docker, Docker Compose, Kubernetes manifests, GitHub Actions |
+
+## Repository Layout
 
 ```text
 ShieldID/
-├── alembic.ini                   # Alembic configuration
-├── deployment/
-│   ├── docker/                   # Backend container definition
-│   ├── k8s/                      # Kubernetes manifests
-│   ├── scripts/                  # Database initialization scripts
-│   ├── docker-compose.yml        # Deployment Compose configuration
-│   └── Dockerfile.backend        # Deployment backend image
-├── docs/                         # API, database, and deployment guides
-├── migrations/
-│   ├── env.py                    # Alembic runtime configuration
-│   ├── script.py.mako            # Migration template
-│   └── versions/                 # Versioned schema migrations
-├── src/
-│   ├── api/
-│   │   ├── v1/
-│   │       ├── router.py          # API v1 route aggregator
-│   │       ├── verify.py          # Document verification & status endpoints
-│   │       ├── kyc.py             # Instant KYC & token endpoints
-│   │       └── report.py          # Fraud report & FIR dispatch endpoints
-│   │   └── v2/                    # Reserved for API v2 routes
-│   ├── core/
-│   │   ├── config.py              # Central application settings (Pydantic v2)
-│   │   └── database.py            # SQLAlchemy models and async database session
-│   ├── processors/
-│   │   ├── base_processor.py      # Abstract base processor for AI modules
-│   │   ├── currency/              # Currency authenticity processor
-│   │   ├── face/                  # Face matching processor
-│   │   ├── ocr/                   # Document text extraction processor
-│   │   ├── predictive/             # Risk prediction processor
-│   │   └── tampering/              # Document tampering processor
-│   ├── schemas/
-│   │   ├── document.py            # Document schemas (Passport, Aadhaar, PAN, etc.)
-│   │   ├── verification.py        # OCR, tampering, and risk score schemas
-│   │   └── kyc.py                 # KYC request and response schemas
-│   ├── services/
-│   │   ├── database_services.py   # Shared database operations
-│   │   ├── verification_service.py # Verification workflow service
-│   │   ├── kyc_service.py         # KYC workflow service
-│   │   └── report_service.py      # Fraud reporting service
-│   └── main.py                    # FastAPI application entry point
+├── src/                         FastAPI application, processors, schemas, services
+├── tests/                       Unit and integration tests
+├── models/                      AI model artifacts and processor configuration
+├── migrations/                  Alembic database migrations
 ├── frontend/
-│   ├── dashboard/src/             # Dashboard components, pages, and utilities
-│   ├── kiosk/                     # Kiosk web client
-│   └── mobile/lib/                # Mobile models, screens, services, and widgets
-├── models/                        # Local model files
-├── scripts/                       # Project utility scripts
-├── tests/
-│   ├── unit/                      # Processor, schema, config, and API tests
-│   └── integration/               # API and database integration tests
-├── docker-compose.yml              # API, PostgreSQL, and Redis services
-├── Dockerfile                      # Root container definition
-├── requirements.txt               # Application dependencies
+│   ├── dashboard/               React dashboard, kiosk page, and API docs page
+│   └── mobile/                  Flutter app, web shell, icons, and widget tests
+├── docs/                        API, database, and deployment documentation
+├── deployment/                  Docker and Kubernetes deployment files
+├── docker-compose.yml           API, PostgreSQL, and Redis development stack
+├── requirements.txt             Python dependencies
 └── README.md
 ```
 
----
-
-## API Endpoints (v1)
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | Service root and operational status |
-| `GET` | `/health` | Application health check |
-| `POST` | `/api/v1/verify/document` | Upload document & optional selfie for verification |
-| `GET` | `/api/v1/verify/status/{id}` | Poll verification processing status |
-| `POST` | `/api/v1/kyc/instant` | Initiate instant KYC with QR code and DigiLocker URL |
-| `POST` | `/api/v1/report/fake` | Submit fraudulent document report and receive FIR number |
-
-Interactive OpenAPI documentation is available at `/api/docs` and `/api/redoc`.
-
----
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- Git
 
-### 1. Clone the Repository
+- Python 3.10 or newer
+- Git
+- Node.js 18 or newer for the dashboard
+- Flutter 3.x for the mobile app
+- Docker Desktop for PostgreSQL and Redis
+
+### Backend
+
 ```bash
 git clone https://github.com/Pikallery/ShieldID.git
 cd ShieldID
-```
 
-### 2. Set Up Virtual Environment
-```bash
 python -m venv venv
 
-# Windows:
+# Windows
 venv\Scripts\activate
 
-# Linux / macOS:
+# Linux/macOS
 source venv/bin/activate
-```
 
-### 3. Install Dependencies
-```bash
 pip install -r requirements.txt
-```
-
-### 4. Configure the Environment
-```bash
-# Windows
-copy .env.example .env
-
-# Linux / macOS
-cp .env.example .env
-```
-
-Update `DATABASE_URL`, `REDIS_URL`, and `SECRET_KEY` in `.env` for your environment.
-
-### 5. Run Development Server
-```bash
+docker compose up -d db redis
 uvicorn src.main:app --reload --port 8080
 ```
 
-Access the API documentation at: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+API documentation: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
 
-### Docker Compose
-
-Docker Compose starts the API, PostgreSQL, and Redis services:
+To run the complete backend stack in containers:
 
 ```bash
 docker compose up --build
 ```
 
-The containerized API is available at [http://localhost:8000/api/docs](http://localhost:8000/api/docs).
+### React dashboard and kiosk
 
-## Development Checks
+```bash
+cd frontend/dashboard
+npm install
+npm run dev
+```
 
-Run the same checks used by CI from the repository root:
+Open the Vite URL shown in the terminal. The dashboard is at `/`, the kiosk is at `/kiosk.html`, and API documentation is at `/docs.html`.
+
+### Flutter mobile app
+
+```bash
+cd frontend/mobile
+flutter pub get
+flutter run
+```
+
+For a hosted mobile web build:
+
+```bash
+flutter build web --release --base-href /mobile/
+```
+
+Deploy the contents of `frontend/mobile/build/web` under the `/mobile/` path of the same host as the dashboard.
+
+## API Surface
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Service status |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/v1/verify/document` | Verify a document and optional selfie |
+| `GET` | `/api/v1/verify/status/{id}` | Poll verification status |
+| `POST` | `/api/v1/kyc/instant` | Start an instant KYC flow |
+| `POST` | `/api/v1/report/fake` | Submit a fraudulent-document report |
+
+Interactive API references are available at `/api/docs` and `/api/redoc` when the backend is running.
+
+## Verification and Tests
+
+Run backend checks from the repository root:
 
 ```bash
 ruff check src/
 pytest tests/ -v --cov=src
 ```
 
-The test suite includes unit and integration coverage. PostgreSQL and Redis are not required for the local unit tests, but are started by Docker Compose for service-level development.
+Run dashboard checks:
 
----
+```bash
+cd frontend/dashboard
+npm run build
+```
+
+Run Flutter checks:
+
+```bash
+cd frontend/mobile
+flutter test
+flutter analyze
+```
+
+## Documentation
+
+- [API specification](docs/API_SPEC.md)
+- [Database schema](docs/DATABASE_SCHEMA.md)
+- [Deployment guide](docs/DEPLOYMENT_GUIDE.md)
+- [Mobile app guide](frontend/mobile/README.md)
 
 ## License
 

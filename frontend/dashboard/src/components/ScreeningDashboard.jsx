@@ -127,12 +127,24 @@ function ScreeningDashboard() {
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
           ))}
-          <button className={`nav-item ${activeNav === "Live documentation" ? "is-active" : ""}`} title="Live documentation" onClick={() => setActiveNav("Live documentation")}>
-            <span className="nav-icon">▤</span>Live documentation
-          </button>
-          <button className={`nav-item ${activeNav === "Verification kiosk" ? "is-active" : ""}`} title="Verification kiosk" onClick={() => setActiveNav("Verification kiosk")}>
-            <span className="nav-icon">⌁</span>Verification kiosk
-          </button>
+          <a
+            className="nav-item"
+            href="/docs.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <span className="nav-icon">▤</span>Live documentation ↗
+          </a>
+          <a
+            className="nav-item"
+            href="/kiosk.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <span className="nav-icon">⌁</span>Verification kiosk ↗
+          </a>
         </nav>
         <div className="sidebar-footer"><span className="status-pulse" />All systems operational</div>
       </aside>

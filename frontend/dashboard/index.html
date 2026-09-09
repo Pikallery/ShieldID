@@ -6,6 +6,18 @@
     <meta name="theme-color" content="#182421" />
     <meta name="description" content="ShieldID AI identity and document screening dashboard" />
     <title>ShieldID | Screening dashboard</title>
+    <script>
+      (() => {
+        const params = new URLSearchParams(window.location.search);
+        const isPhone = /Android|iPhone|iPad|iPod|Windows Phone|Opera Mini|Mobile/i.test(navigator.userAgent)
+          || window.matchMedia("(max-width: 767px)").matches;
+        const target = params.has("mobile") || (!params.has("desktop") && isPhone) ? "/mobile/" : null;
+
+        if (target && window.location.pathname === "/") {
+          window.location.replace(`${target}${window.location.search}${window.location.hash}`);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

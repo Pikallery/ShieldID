@@ -282,7 +282,7 @@ class _HomeDashboardTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
+            const Row(
               children: [
                 Expanded(
                   child: _MetricTile(
@@ -292,7 +292,7 @@ class _HomeDashboardTab extends StatelessWidget {
                     accentColor: AppTheme.passGreen,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: _MetricTile(
                     title: 'Fraud Blocked',
@@ -306,7 +306,7 @@ class _HomeDashboardTab extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
+                const Expanded(
                   child: _MetricTile(
                     title: 'Avg Latency',
                     value: '1.2s',
@@ -367,7 +367,8 @@ class _HomeDashboardTab extends StatelessWidget {
                   child: Text(
                     'No screenings recorded yet. Tap Start New Screening above.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    style:
+                        TextStyle(color: AppTheme.textSecondary, fontSize: 13),
                   ),
                 ),
               )
