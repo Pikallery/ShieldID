@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   recentScreenings,
   riskSignals,
@@ -7,12 +7,16 @@ import {
 } from "../utils/screeningData";
 import { verifyDocument } from "../utils/verificationApi";
 import "./ScreeningDashboard.css";
+import LoginPage from "./LoginPage";
+import RegisterPage from "./RegisterPage";
+import ProfileAuthPanel from "./ProfileAuthPanel";
+import ForgotPasswordPage from "./ForgotPasswordPage";
 
 const icon = (name) => {
   const icons = {
     grid: "▦",
     scan: "⌁",
-    report: "▤",
+    report: "▥",
     settings: "⚙",
     help: "?",
     search: "⌕",
@@ -25,6 +29,11 @@ const icon = (name) => {
   return icons[name] || "•";
 };
 
+const displayNameFromEmail = (email) => email
+  .split("@")[0]
+  .replace(/[._-]+/g, " ")
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 function RiskBadge({ status, risk }) {
   const labels = { approved: "Approved", review: "Review", blocked: "Blocked" };
   return (
@@ -36,18 +45,18 @@ function RiskBadge({ status, risk }) {
 }
 
 function ScreeningDashboard() {
-  const [isLoading, setIsLoading] = useState(true);
   const [activeNav, setActiveNav] = useState("Overview");
   const [selectedFile, setSelectedFile] = useState(null);
   const [isScreening, setIsScreening] = useState(false);
   const [toast, setToast] = useState("");
   const [latestResult, setLatestResult] = useState(screeningResult);
-
-  useEffect(() => {
-    const loadingTimer = window.setTimeout(() => setIsLoading(false), 900);
-
-    return () => window.clearTimeout(loadingTimer);
-  }, []);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authView, setAuthView] = useState("login");
+  const [profileName, setProfileName] = useState("Guest workspace");
+  const [profileEmail, setProfileEmail] = useState("Not signed in");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNightMode, setIsNightMode] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const handleFile = (event) => {
     const file = event.target.files?.[0];
@@ -71,21 +80,30 @@ function ScreeningDashboard() {
     }
   };
 
-  if (isLoading) {
+  if (!isAuthenticated) {
+    if (authView === "forgot") {
+      return <ForgotPasswordPage onGoToLogin={() => setAuthView("login")} />;
+    }
+
+    if (authView === "register") {
+      return <RegisterPage onGoToLogin={() => setAuthView("login")} />;
+    }
+
     return (
-      <main className="loading-screen" aria-label="Loading ShieldID" aria-live="polite">
-        <div className="loading-brand">
-          <span className="loading-icon">{icon("shield")}</span>
-          <span>Shield<span className="brand-accent">ID</span></span>
-        </div>
-        <div className="loading-indicator" aria-hidden="true"><span /></div>
-        <p>Preparing secure screening workspace</p>
-      </main>
+      <LoginPage
+        onLogin={({ email }) => {
+          setProfileName(displayNameFromEmail(email));
+          setProfileEmail(email);
+          setIsAuthenticated(true);
+        }}
+        onGoToRegister={() => setAuthView("register")}
+        onForgotPassword={() => setAuthView("forgot")}
+      />
     );
   }
 
   return (
-    <div className="shield-app">
+    <div className={`shield-app ${isNightMode ? "is-night-mode" : ""}`}>
       <aside className="sidebar">
         <div className="brand-mark">
           <span className="brand-icon">{icon("shield")}</span>
@@ -98,35 +116,23 @@ function ScreeningDashboard() {
         </div>
         <nav className="main-nav" aria-label="Main navigation">
           <p className="nav-label">Workspace</p>
-          {[{ label: "Overview", icon: "grid" }, { label: "Screen a document", icon: "scan" }, { label: "Reports", icon: "report" }].map((item) => (
-            <button className={`nav-item ${activeNav === item.label ? "is-active" : ""}`} key={item.label} onClick={() => setActiveNav(item.label)}>
+          {[{ label: "Overview", icon: "grid" }, { label: "Reports", icon: "report" }].map((item) => (
+            <button className={`nav-item ${activeNav === item.label ? "is-active" : ""}`} key={item.label} title={item.label} onClick={() => setActiveNav(item.label)}>
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
           ))}
           <p className="nav-label nav-label--spaced">Manage</p>
           {[{ label: "Settings", icon: "settings" }, { label: "Help center", icon: "help" }].map((item) => (
-            <button className={`nav-item ${activeNav === item.label ? "is-active" : ""}`} key={item.label} onClick={() => setActiveNav(item.label)}>
+            <button className={`nav-item ${activeNav === item.label ? "is-active" : ""}`} key={item.label} title={item.label} onClick={() => setActiveNav(item.label)}>
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
           ))}
-          <a
-            className="nav-item"
-            href="/docs.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: "none" }}
-          >
-            <span className="nav-icon">▤</span>Live documentation ↗
-          </a>
-          <a
-            className="nav-item"
-            href="/kiosk.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: "none" }}
-          >
-            <span className="nav-icon">⌁</span>Verification kiosk ↗
-          </a>
+          <button className={`nav-item ${activeNav === "Live documentation" ? "is-active" : ""}`} title="Live documentation" onClick={() => setActiveNav("Live documentation")}>
+            <span className="nav-icon">▤</span>Live documentation
+          </button>
+          <button className={`nav-item ${activeNav === "Verification kiosk" ? "is-active" : ""}`} title="Verification kiosk" onClick={() => setActiveNav("Verification kiosk")}>
+            <span className="nav-icon">⌁</span>Verification kiosk
+          </button>
         </nav>
         <div className="sidebar-footer"><span className="status-pulse" />All systems operational</div>
       </aside>
@@ -136,13 +142,41 @@ function ScreeningDashboard() {
           <div className="mobile-brand"><span className="brand-icon">{icon("shield")}</span><span>Shield<span className="brand-accent">ID</span></span></div>
           <div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{activeNav}</strong></div>
           <div className="topbar-actions">
-            <button className="icon-button" aria-label="Search">{icon("search")}</button>
-            <button className="icon-button notification" aria-label="Notifications">{icon("bell")}<span /></button>
-            <div className="profile-chip"><span className="profile-avatar">AK</span><span className="profile-name">Aarav Kapoor</span><span className="chevron">⌄</span></div>
+            <button className={`mode-toggle ${isNightMode ? "is-night" : ""}`} type="button" onClick={() => setIsNightMode((night) => !night)} aria-label={isNightMode ? "Switch to day mode" : "Switch to night mode"} aria-pressed={isNightMode} title={isNightMode ? "Switch to day mode" : "Switch to night mode"}>
+              <span className="mode-toggle-track"><span className="mode-toggle-thumb">{isNightMode ? "☾" : "☀"}</span></span>
+            </button>
+            <div className="notification-wrap">
+              <button className={`icon-button notification ${isNotificationsOpen ? "is-open" : ""}`} type="button" onClick={() => setIsNotificationsOpen((open) => !open)} aria-label="Notifications" aria-expanded={isNotificationsOpen} title="Notifications">{icon("bell")}<span /></button>
+              {isNotificationsOpen && <section className="notification-panel" aria-label="Notifications panel"><div className="notification-heading"><strong>Notifications</strong><button type="button" onClick={() => setIsNotificationsOpen(false)} aria-label="Close notifications">×</button></div><article><span className="notification-dot" /><div><strong>Review queue updated</strong><small>3 documents need attention</small></div><time>2m</time></article><article><span className="notification-dot notification-dot--blue" /><div><strong>Weekly report ready</strong><small>Your screening digest is available</small></div><time>1h</time></article><button className="notification-footer" type="button" onClick={() => setIsNotificationsOpen(false)}>Mark all as read</button></section>}
+            </div>
+            <button className={`profile-chip ${isProfileOpen ? "is-open" : ""}`} type="button" onClick={() => setIsProfileOpen((open) => !open)} aria-expanded={isProfileOpen} aria-label={profileName === "Guest workspace" ? "Open profile login" : "Open profile details"}>
+              <span className="profile-avatar">{profileName === "Guest workspace" ? "G" : profileName.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</span>
+              <span className="profile-name">{profileName}</span>
+              <span className="chevron">⌄</span>
+            </button>
+            {isProfileOpen && (
+              <ProfileAuthPanel
+                isAuthenticated={profileName !== "Guest workspace"}
+                profileName={profileName}
+                profileEmail={profileEmail}
+                onClose={() => setIsProfileOpen(false)}
+                onLogin={() => {
+                  setAuthView("login");
+                  setIsAuthenticated(false);
+                  setIsProfileOpen(false);
+                }}
+                onRegister={() => {
+                  setAuthView("register");
+                  setIsAuthenticated(false);
+                  setIsProfileOpen(false);
+                }}
+              />
+            )}
           </div>
         </header>
 
         <div className="content-wrap">
+          {activeNav === "Overview" && <>
           <section className="page-intro">
             <div><p className="eyebrow">MONDAY, 06 SEPTEMBER 2026</p><h1>Identity screening overview</h1><p className="intro-copy">Monitor verification activity and review identity documents from one workspace.</p></div>
             <button className="primary-button" onClick={() => document.getElementById("document-upload")?.click()}><span>{icon("upload")}</span>Screen a document</button>
@@ -169,6 +203,49 @@ function ScreeningDashboard() {
           </section>
 
           <section className="recent-section"><div className="section-heading"><div><p className="eyebrow">ACTIVITY LOG</p><h2>Recent screenings</h2></div><button className="filter-button">Last 7 days <span>⌄</span></button></div><div className="table-wrap"><table><thead><tr><th>Applicant</th><th>Document</th><th>Location</th><th>Time</th><th>Risk status</th><th /></tr></thead><tbody>{recentScreenings.map((item) => <tr key={item.id}><td><div className="applicant-cell"><span className="initials">{item.initials}</span><span><strong>{item.name}</strong><small>{item.id}</small></span></div></td><td>{item.document}</td><td>{item.location}</td><td>{item.time}</td><td><RiskBadge status={item.status} risk={item.risk} /></td><td><button className="row-arrow" aria-label={`Open ${item.name}`}>{icon("chevron")}</button></td></tr>)}</tbody></table></div><button className="mobile-view-all">View all screenings <span>{icon("arrow")}</span></button></section>
+          </>}
+
+          {activeNav === "Reports" && (
+            <section className="feature-view">
+              <div className="page-intro">
+                <div><p className="eyebrow">ANALYTICS CENTER</p><h1>Screening reports</h1><p className="intro-copy">Review verification volume, risk trends, and outcomes across your workspace.</p></div>
+                <button className="primary-button" type="button" onClick={() => setToast("Report export is ready in demo mode.")}><span>↓</span>Export report</button>
+              </div>
+              <div className="feature-grid">
+                <article className="feature-card feature-card--wide"><div className="panel-heading"><div><p className="eyebrow">WEEKLY VOLUME</p><h2>Screening activity</h2></div><span className="report-period">Last 7 days</span></div><div className="report-bars">{[58, 72, 46, 84, 68, 91, 76].map((height, index) => <div className="report-bar-group" key={index}><span className="report-bar" style={{ height: `${height}%` }} /><small>{["M", "T", "W", "T", "F", "S", "S"][index]}</small></div>)}</div></article>
+                <article className="feature-card"><p className="eyebrow">OUTCOME MIX</p><h2>Verification outcomes</h2><div className="outcome-list"><div><span className="outcome-dot outcome-dot--approved" />Approved <strong>78%</strong></div><div><span className="outcome-dot outcome-dot--review" />Needs review <strong>14%</strong></div><div><span className="outcome-dot outcome-dot--blocked" />Blocked <strong>8%</strong></div></div></article>
+              </div>
+              <div className="table-wrap report-table"><table><thead><tr><th>Report</th><th>Period</th><th>Screenings</th><th>Risk alerts</th><th>Status</th></tr></thead><tbody><tr><td><strong>Weekly screening digest</strong></td><td>02–08 Sep 2026</td><td>1,284</td><td>60</td><td><span className="report-status">Ready</span></td></tr><tr><td><strong>Fraud risk summary</strong></td><td>August 2026</td><td>5,842</td><td>214</td><td><span className="report-status">Ready</span></td></tr></tbody></table></div>
+            </section>
+          )}
+
+          {activeNav === "Settings" && (
+            <section className="feature-view">
+              <div className="page-intro"><div><p className="eyebrow">WORKSPACE CONTROL</p><h1>Workspace settings</h1><p className="intro-copy">Manage the preferences used by your screening operations team.</p></div></div>
+              <div className="settings-list"><article className="settings-row"><div><h2>Workspace notifications</h2><p>Receive alerts when a document needs manual review.</p></div><button className="toggle is-on" type="button" aria-label="Workspace notifications enabled"><span /></button></article><article className="settings-row"><div><h2>Automatic risk summaries</h2><p>Include a risk summary with every completed screening.</p></div><button className="toggle is-on" type="button" aria-label="Automatic risk summaries enabled"><span /></button></article><article className="settings-row"><div><h2>Review threshold</h2><p>Flag screenings with a risk score above this value.</p></div><select defaultValue="50" aria-label="Review threshold"><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option></select></article></div>
+            </section>
+          )}
+
+          {activeNav === "Help center" && (
+            <section className="feature-view">
+              <div className="page-intro"><div><p className="eyebrow">SUPPORT HUB</p><h1>How can we help?</h1><p className="intro-copy">Find guidance for document screening, reports, and workspace administration.</p></div><button className="primary-button" type="button" onClick={() => setToast("Support request started in demo mode.")}><span>↗</span>Contact support</button></div>
+              <div className="help-grid"><button className="help-card" type="button"><span className="help-card-icon">▤</span><span><strong>Screening guides</strong><small>Learn how ShieldID evaluates identity documents.</small></span><span>↗</span></button><button className="help-card" type="button"><span className="help-card-icon">?</span><span><strong>Common questions</strong><small>Get quick answers about review statuses and alerts.</small></span><span>↗</span></button><button className="help-card" type="button"><span className="help-card-icon">◇</span><span><strong>System status</strong><small>All verification services are operational.</small></span><span>↗</span></button></div>
+            </section>
+          )}
+
+          {activeNav === "Live documentation" && (
+            <section className="embedded-view">
+              <div className="page-intro"><div><p className="eyebrow">DEVELOPER RESOURCES</p><h1>Live API documentation</h1><p className="intro-copy">Explore ShieldID endpoints and integration details without leaving the workspace.</p></div></div>
+              <iframe className="embedded-frame" src="/docs.html" title="ShieldID live API documentation" />
+            </section>
+          )}
+
+          {activeNav === "Verification kiosk" && (
+            <section className="embedded-view">
+              <div className="page-intro"><div><p className="eyebrow">VERIFICATION TOOLS</p><h1>Verification kiosk</h1><p className="intro-copy">Run a document verification workflow inside the ShieldID workspace.</p></div></div>
+              <iframe className="embedded-frame embedded-frame--kiosk" src="/kiosk.html" title="ShieldID verification kiosk" />
+            </section>
+          )}
         </div>
       </main>
       {toast && <div className="toast"><span>✓</span>{toast}</div>}
