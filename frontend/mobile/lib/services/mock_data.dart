@@ -25,7 +25,8 @@ class MockData {
             nationality: 'USA',
             issuingCountry: 'United States of America',
             gender: 'F',
-            mrzCode: 'P<USAJENKINS<<SARAH<ELIZABETH<<<<<<<<<<<<<<<\nP892304914USA9204185F3108221<<<<<<<<<<<<<<06',
+            mrzCode:
+                'P<USAJENKINS<<SARAH<ELIZABETH<<<<<<<<<<<<<<<\nP892304914USA9204185F3108221<<<<<<<<<<<<<<06',
             fieldConfidences: {
               'Document Number': 0.99,
               'Full Name': 0.98,
@@ -40,7 +41,8 @@ class MockData {
             livenessPassed: true,
             livenessScore: 0.994,
             antiSpoofPassed: true,
-            notes: 'High biometric match confidence. Live micro-expressions detected with 0.994 liveness probability.',
+            notes:
+                'High biometric match confidence. Live micro-expressions detected with 0.994 liveness probability.',
           ),
           tampering: TamperingResult.sampleClean(),
           predictiveRisk: const PredictiveRiskResult(
@@ -51,7 +53,8 @@ class MockData {
               'Zero suspicious metadata or photo splicing flags',
               'Biometric facial landmark distance matches document photo',
             ],
-            recommendation: 'Auto-Approved: Identity authenticated with high assurance.',
+            recommendation:
+                'Auto-Approved: Identity authenticated with high assurance.',
           ),
           securityFeatures: SecurityFeatures.sample(),
         );
@@ -74,7 +77,8 @@ class MockData {
             nationality: 'FRA',
             issuingCountry: 'France',
             gender: 'M',
-            mrzCode: 'IDFRADUBOIS<<ALEXANDRE<<<<<<<<<<<<<<<<<<<<<<\n77410928<4FRA8711036M2703152<<<<<<<<<<<<<<02',
+            mrzCode:
+                'IDFRADUBOIS<<ALEXANDRE<<<<<<<<<<<<<<<<<<<<<<\n77410928<4FRA8711036M2703152<<<<<<<<<<<<<<02',
             fieldConfidences: {
               'Document Number': 0.91,
               'Full Name': 0.84,
@@ -88,7 +92,8 @@ class MockData {
             livenessPassed: true,
             livenessScore: 0.89,
             antiSpoofPassed: true,
-            notes: 'Moderate biometric similarity score. Possible slight age discrepancy between document photo and live selfie.',
+            notes:
+                'Moderate biometric similarity score. Possible slight age discrepancy between document photo and live selfie.',
           ),
           tampering: const TamperingResult(
             isTampered: false,
@@ -108,7 +113,8 @@ class MockData {
               'Hologram reflectivity slightly obscured by environmental glare',
               'Secondary visual manual inspection advised',
             ],
-            recommendation: 'Routed to Compliance Officer for secondary review.',
+            recommendation:
+                'Routed to Compliance Officer for secondary review.',
           ),
           securityFeatures: const SecurityFeatures(
             hologramDetected: true,
@@ -138,7 +144,8 @@ class MockData {
             nationality: 'GBR',
             issuingCountry: 'United Kingdom',
             gender: 'M',
-            mrzCode: 'DLGBRVANCE<<MARCUS<<<<<<<<<<<<<<<<<<<<<<<<<<\n99301944<1GBR9901014M2901011<<<<<<<<<<<<<<99',
+            mrzCode:
+                'DLGBRVANCE<<MARCUS<<<<<<<<<<<<<<<<<<<<<<<<<<\n99301944<1GBR9901014M2901011<<<<<<<<<<<<<<99',
             fieldConfidences: {
               'Document Number': 0.45,
               'Full Name': 0.62,
@@ -151,7 +158,8 @@ class MockData {
             livenessPassed: false,
             livenessScore: 0.41,
             antiSpoofPassed: false,
-            notes: 'Biometric mismatch. Potential presentation attack detected: digital screen replay frequency detected.',
+            notes:
+                'Biometric mismatch. Potential presentation attack detected: digital screen replay frequency detected.',
           ),
           tampering: TamperingResult.sampleTampered(),
           predictiveRisk: const PredictiveRiskResult(
@@ -162,7 +170,8 @@ class MockData {
               'Biometric face does not match embedded portrait',
               'MRZ checksum failed verification equation',
             ],
-            recommendation: 'Reject and log security incident. High fraud probability.',
+            recommendation:
+                'Reject and log security incident. High fraud probability.',
           ),
           securityFeatures: const SecurityFeatures(
             hologramDetected: false,

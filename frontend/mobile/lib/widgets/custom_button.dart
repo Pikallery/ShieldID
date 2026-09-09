@@ -30,7 +30,7 @@ class PrimaryButton extends StatelessWidget {
             ? []
             : [
                 BoxShadow(
-                  color: AppTheme.primaryCyan.withOpacity(0.3),
+                  color: AppTheme.primaryCyan.withValues(alpha: 0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -95,7 +95,7 @@ class SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated.withOpacity(0.6),
+        color: AppTheme.surfaceElevated.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.border),
       ),

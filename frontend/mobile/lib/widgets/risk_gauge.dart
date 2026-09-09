@@ -88,12 +88,13 @@ class _RiskGaugeState extends State<RiskGauge>
                   ),
                   const SizedBox(height: 2),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
-                      color: widget.status.color.withOpacity(0.15),
+                      color: widget.status.color.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: widget.status.color.withOpacity(0.5),
+                        color: widget.status.color.withValues(alpha: 0.5),
                         width: 1,
                       ),
                     ),
@@ -151,9 +152,9 @@ class _RadialGaugePainter extends CustomPainter {
     // Active Value Arc with Shader Gradient
     final activePaint = Paint()
       ..shader = SweepGradient(
-        colors: [color.withOpacity(0.4), color],
+        colors: [color.withValues(alpha: 0.4), color],
         stops: const [0.0, 1.0],
-        transform: GradientRotation(startAngle),
+        transform: const GradientRotation(startAngle),
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
@@ -170,7 +171,7 @@ class _RadialGaugePainter extends CustomPainter {
 
     // Outer subtle tick ring
     final tickPaint = Paint()
-      ..color = AppTheme.border.withOpacity(0.4)
+      ..color = AppTheme.border.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

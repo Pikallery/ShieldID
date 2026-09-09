@@ -30,13 +30,16 @@ class ApiService {
       onProgressUpdate(0.35, 'Extracting OCR fields & parsing ICAO MRZ...');
       await Future.delayed(const Duration(milliseconds: 800));
 
-      onProgressUpdate(0.55, 'Running Error Level Analysis (ELA) for tampering...');
+      onProgressUpdate(
+          0.55, 'Running Error Level Analysis (ELA) for tampering...');
       await Future.delayed(const Duration(milliseconds: 750));
 
-      onProgressUpdate(0.75, 'Analyzing facial embeddings & 3D liveness landmarks...');
+      onProgressUpdate(
+          0.75, 'Analyzing facial embeddings & 3D liveness landmarks...');
       await Future.delayed(const Duration(milliseconds: 850));
 
-      onProgressUpdate(0.92, 'Calculating predictive risk score & cross-referencing...');
+      onProgressUpdate(
+          0.92, 'Calculating predictive risk score & cross-referencing...');
       await Future.delayed(const Duration(milliseconds: 650));
 
       onProgressUpdate(1.0, 'Generating ShieldID verification dossier...');
@@ -56,17 +59,21 @@ class ApiService {
         ..fields['document_type'] = docType.name;
 
       if (frontImagePath != null && frontImagePath.isNotEmpty) {
-        request.files.add(await http.MultipartFile.fromPath('front_image', frontImagePath));
+        request.files.add(
+            await http.MultipartFile.fromPath('front_image', frontImagePath));
       }
       if (backImagePath != null && backImagePath.isNotEmpty) {
-        request.files.add(await http.MultipartFile.fromPath('back_image', backImagePath));
+        request.files.add(
+            await http.MultipartFile.fromPath('back_image', backImagePath));
       }
       if (selfieImagePath != null && selfieImagePath.isNotEmpty) {
-        request.files.add(await http.MultipartFile.fromPath('selfie_image', selfieImagePath));
+        request.files.add(
+            await http.MultipartFile.fromPath('selfie_image', selfieImagePath));
       }
 
       onProgressUpdate(0.6, 'Processing via AI backend engines...');
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 45));
+      final streamedResponse =
+          await request.send().timeout(const Duration(seconds: 45));
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -74,11 +81,13 @@ class ApiService {
         final Map<String, dynamic> json = jsonDecode(response.body);
         return _parseBackendResponse(json, docType);
       } else {
-        throw Exception('Backend returned ${response.statusCode}: ${response.body}');
+        throw Exception(
+            'Backend returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       // Fallback gracefully to simulated data with warning
-      onProgressUpdate(1.0, 'Network fallback: generating verification dossier');
+      onProgressUpdate(
+          1.0, 'Network fallback: generating verification dossier');
       return MockData.generateMockReport(
         docType: docType,
         status: targetSimulationStatus,
@@ -86,20 +95,26 @@ class ApiService {
     }
   }
 
-  VerificationReport _parseBackendResponse(Map<String, dynamic> json, DocumentType docType) {
+  VerificationReport _parseBackendResponse(
+      Map<String, dynamic> json, DocumentType docType) {
     // Map backend JSON to VerificationReport
     final statusStr = (json['status'] ?? 'pass').toString().toLowerCase();
     final status = statusStr.contains('reject')
         ? VerificationStatus.reject
-        : (statusStr.contains('review') ? VerificationStatus.review : VerificationStatus.pass);
+        : (statusStr.contains('review')
+            ? VerificationStatus.review
+            : VerificationStatus.pass);
 
     return VerificationReport(
-      id: json['verification_id'] ?? 'SHIELD-${DateTime.now().millisecondsSinceEpoch % 10000}',
+      id: json['verification_id'] ??
+          'SHIELD-${DateTime.now().millisecondsSinceEpoch % 10000}',
       timestamp: DateTime.now(),
       documentType: docType,
       status: status,
-      overallConfidence: (json['overall_confidence'] as num?)?.toDouble() ?? 0.95,
-      documentData: ExtractedDocumentData.fromJson(json['extracted_data'] ?? {}),
+      overallConfidence:
+          (json['overall_confidence'] as num?)?.toDouble() ?? 0.95,
+      documentData:
+          ExtractedDocumentData.fromJson(json['extracted_data'] ?? {}),
       faceMatch: FaceMatchResult(
         similarityScore: (json['face_match_score'] as num?)?.toDouble() ?? 0.96,
         isMatch: (json['face_match'] as bool?) ?? true,
@@ -119,9 +134,12 @@ class ApiService {
         riskScore: (json['risk_score'] as num?)?.toDouble() ?? 5.0,
         riskTier: status == VerificationStatus.reject
             ? RiskTier.high
-            : (status == VerificationStatus.review ? RiskTier.medium : RiskTier.low),
+            : (status == VerificationStatus.review
+                ? RiskTier.medium
+                : RiskTier.low),
         riskFactors: List<String>.from(json['risk_factors'] ?? []),
-        recommendation: json['recommendation'] ?? 'Standard verification completed.',
+        recommendation:
+            json['recommendation'] ?? 'Standard verification completed.',
       ),
       securityFeatures: SecurityFeatures.sample(),
     );

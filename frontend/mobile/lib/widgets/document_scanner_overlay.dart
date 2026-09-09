@@ -86,7 +86,8 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryCyan.withOpacity(0.8),
+                                color:
+                                    AppTheme.primaryCyan.withValues(alpha: 0.8),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               ),
@@ -107,11 +108,13 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.surface.withOpacity(0.9),
+                      color: AppTheme.surface.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppTheme.primaryCyan.withOpacity(0.5)),
+                      border: Border.all(
+                          color: AppTheme.primaryCyan.withValues(alpha: 0.5)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -138,7 +141,7 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
                     widget.subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppTheme.textSecondary.withOpacity(0.9),
+                      color: AppTheme.textSecondary.withValues(alpha: 0.9),
                       fontSize: 13,
                     ),
                   ),
@@ -164,7 +167,7 @@ class _ScannerCutoutPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final backgroundPaint = Paint()
-      ..color = Colors.black.withOpacity(0.7)
+      ..color = Colors.black.withValues(alpha: 0.7)
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()

@@ -25,9 +25,9 @@ class StepProgressBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surface.withOpacity(0.9),
+        color: AppTheme.surface.withValues(alpha: 0.9),
         border: Border(
-          bottom: BorderSide(color: AppTheme.border.withOpacity(0.5)),
+          bottom: BorderSide(color: AppTheme.border.withValues(alpha: 0.5)),
         ),
       ),
       child: Row(
@@ -40,7 +40,7 @@ class StepProgressBar extends StatelessWidget {
                 height: 2,
                 color: isCompleted
                     ? AppTheme.primaryCyan
-                    : AppTheme.border.withOpacity(0.5),
+                    : AppTheme.border.withValues(alpha: 0.5),
               ),
             );
           }
@@ -61,7 +61,7 @@ class StepProgressBar extends StatelessWidget {
                   color: isCompleted
                       ? AppTheme.primaryCyan
                       : (isActive
-                          ? AppTheme.primaryCyan.withOpacity(0.2)
+                          ? AppTheme.primaryCyan.withValues(alpha: 0.2)
                           : AppTheme.surfaceElevated),
                   border: Border.all(
                     color: (isCompleted || isActive)
@@ -72,7 +72,7 @@ class StepProgressBar extends StatelessWidget {
                   boxShadow: isActive
                       ? [
                           BoxShadow(
-                            color: AppTheme.primaryCyan.withOpacity(0.4),
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.4),
                             blurRadius: 8,
                           ),
                         ]

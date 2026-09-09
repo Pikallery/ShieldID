@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
+import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -30,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
+    final settingsService = context.watch<SettingsService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +42,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Appearance & Preferences Section
+            const Text(
+              'Appearance & Preferences',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryCyan,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: AppTheme.glassCardDecoration(),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      settingsService.isDarkMode
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
+                      semanticLabel: 'Theme mode',
+                      color: AppTheme.primaryCyan,
+                    ),
+                    title: const Text(
+                      'Dark Theme',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      settingsService.isDarkMode
+                          ? 'Sleek dark interface active'
+                          : 'High-contrast light interface active',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                    value: settingsService.isDarkMode,
+                    activeThumbColor: AppTheme.primaryCyan,
+                    onChanged: (val) => settingsService.toggleTheme(val),
+                  ),
+                  const Divider(color: AppTheme.border, height: 20),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.language_rounded,
+                        semanticLabel: 'Language settings',
+                        color: AppTheme.primaryCyan,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Interface Language',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Choose your preferred locale',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: settingsService.language,
+                        dropdownColor: AppTheme.surfaceElevated,
+                        underline: const SizedBox.shrink(),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                            semanticLabel: 'Open language list',
+                            color: AppTheme.primaryCyan),
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onChanged: (newLang) {
+                          if (newLang != null) {
+                            settingsService.setLanguage(newLang);
+                          }
+                        },
+                        items: SettingsService.supportedLanguages.entries
+                            .map((entry) => DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Backend Connectivity Section
             const Text(
               'Backend AI Service',
@@ -68,27 +176,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: const Text(
                       'Simulate realistic neural inference pipelines offline without external servers',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      style: TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     value: screeningService.apiService.useMockSimulation,
-                    activeColor: AppTheme.primaryCyan,
-                    onChanged: (val) => screeningService.setUseMockSimulation(val),
+                    activeThumbColor: AppTheme.primaryCyan,
+                    onChanged: (val) =>
+                        screeningService.setUseMockSimulation(val),
                   ),
                   const Divider(color: AppTheme.border, height: 20),
                   TextField(
                     controller: _urlController,
                     enabled: !screeningService.apiService.useMockSimulation,
-                    style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+                    style: const TextStyle(
+                        color: AppTheme.textPrimary, fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'ShieldID REST Server URL',
-                      labelStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                      labelStyle: const TextStyle(
+                          color: AppTheme.textSecondary, fontSize: 12),
                       hintText: 'http://10.0.2.2:8000 or http://localhost:8000',
-                      hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-                      prefixIcon: const Icon(Icons.dns_rounded, color: AppTheme.primaryCyan, size: 18),
+                      hintStyle: const TextStyle(
+                          color: AppTheme.textMuted, fontSize: 12),
+                      prefixIcon: const Icon(Icons.dns_rounded,
+                          semanticLabel: 'Server address',
+                          color: AppTheme.primaryCyan,
+                          size: 18),
                       suffixIcon: IconButton(
-                        icon: const Icon(Icons.check_rounded, color: AppTheme.passGreen),
+                        tooltip: 'Save server address',
+                        icon: const Icon(Icons.check_rounded,
+                            semanticLabel: 'Save server address',
+                            color: AppTheme.passGreen),
                         onPressed: () {
-                          screeningService.setBaseUrl(_urlController.text.trim());
+                          screeningService
+                              .setBaseUrl(_urlController.text.trim());
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Endpoint updated'),
@@ -129,7 +249,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   const Text(
                     'Select next screening simulation outcome:',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                    style:
+                        TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -187,11 +308,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: const Text(
                       'Mandatory optical variable ink and diffraction grating check',
-                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      style: TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
                     ),
                     value: screeningService.requireHologramCheck,
-                    activeColor: AppTheme.primaryCyan,
-                    onChanged: (val) => screeningService.setRequireHologramCheck(val),
+                    activeThumbColor: AppTheme.primaryCyan,
+                    onChanged: (val) =>
+                        screeningService.setRequireHologramCheck(val),
                   ),
                   const Divider(color: AppTheme.border, height: 20),
                   Row(
@@ -208,7 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Text(
                         screeningService.riskSensitivity < 0.35
                             ? 'Permissive'
-                            : (screeningService.riskSensitivity > 0.65 ? 'High Security' : 'Balanced'),
+                            : (screeningService.riskSensitivity > 0.65
+                                ? 'High Security'
+                                : 'Balanced'),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -219,7 +344,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   Slider(
                     value: screeningService.riskSensitivity,
-                    onChanged: (val) => screeningService.setRiskSensitivity(val),
+                    onChanged: (val) =>
+                        screeningService.setRiskSensitivity(val),
                     activeColor: AppTheme.primaryCyan,
                     inactiveColor: AppTheme.surfaceElevated,
                     divisions: 4,
@@ -233,16 +359,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceElevated.withOpacity(0.5),
+                color: AppTheme.surfaceElevated.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border.withOpacity(0.5)),
+                border:
+                    Border.all(color: AppTheme.border.withValues(alpha: 0.5)),
               ),
-              child: Column(
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: const [
-                      Icon(Icons.verified_user_outlined, size: 16, color: AppTheme.passGreen),
+                    children: [
+                      Icon(Icons.verified_user_outlined,
+                          size: 16, color: AppTheme.passGreen),
                       SizedBox(width: 8),
                       Text(
                         'ShieldID Identity Screening v2.4.0',
@@ -254,8 +382,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
+                  SizedBox(height: 6),
+                  Text(
                     'Compliant with ICAO 9303, ISO/IEC 30107-3 PAD Level 2, and NIST FRS biometric standards.',
                     style: TextStyle(
                       fontSize: 11,
@@ -285,7 +413,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onSelected: (val) {
         if (val) service.setTargetSimulationStatus(status);
       },
-      selectedColor: status.color.withOpacity(0.25),
+      selectedColor: status.color.withValues(alpha: 0.25),
       backgroundColor: AppTheme.surfaceElevated,
       labelStyle: TextStyle(
         fontSize: 12,

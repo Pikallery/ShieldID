@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/document_model.dart';
@@ -8,6 +9,7 @@ import '../widgets/document_scanner_overlay.dart';
 import '../widgets/step_progress_bar.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class DocumentCaptureScreen extends StatefulWidget {
   final bool isBackSide;
@@ -22,8 +24,52 @@ class DocumentCaptureScreen extends StatefulWidget {
 }
 
 class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
+  CameraController? _cameraController;
+  String? _cameraError;
   bool _isTorchOn = false;
   bool _isCapturing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        throw CameraException(
+            'NoCamera', 'No camera is available on this device.');
+      }
+      final controller = CameraController(
+        cameras.first,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _cameraController = controller;
+        _cameraError = null;
+      });
+    } on CameraException catch (error) {
+      if (!mounted) return;
+      setState(() => _cameraError = error.description ?? error.code);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _cameraError = error.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
 
   void _handleCapture() async {
     setState(() => _isCapturing = true);
@@ -71,18 +117,21 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.passGreen.withOpacity(0.15),
+                      color: AppTheme.passGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.check_circle_rounded,
+                      semanticLabel: 'Capture confirmed',
                       color: AppTheme.passGreen,
                       size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    widget.isBackSide ? 'Back Scan Captured' : 'Front Scan Captured',
+                    widget.isBackSide
+                        ? 'Back Scan Captured'
+                        : 'Front Scan Captured',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -100,10 +149,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.primaryCyan.withOpacity(0.5)),
+                  border: Border.all(
+                      color: AppTheme.primaryCyan.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 10,
                     ),
                   ],
@@ -112,29 +162,39 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                   alignment: Alignment.center,
                   children: [
                     Icon(
-                      widget.isBackSide ? Icons.subtitles_rounded : Icons.account_box_rounded,
+                      widget.isBackSide
+                          ? Icons.subtitles_rounded
+                          : Icons.account_box_rounded,
+                      semanticLabel: widget.isBackSide
+                          ? 'Back of document'
+                          : 'Front of document',
                       size: 64,
-                      color: AppTheme.textMuted.withOpacity(0.5),
+                      color: AppTheme.textMuted.withValues(alpha: 0.5),
                     ),
                     Positioned(
                       bottom: 12,
                       left: 14,
                       right: 14,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.auto_awesome, size: 14, color: AppTheme.passGreen),
+                            const Icon(Icons.auto_awesome,
+                                semanticLabel: 'Automatic quality check',
+                                size: 14,
+                                color: AppTheme.passGreen),
                             const SizedBox(width: 8),
                             Text(
                               'Auto-Quality: 98% • No glare • All 4 corners detected',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: AppTheme.textPrimary.withOpacity(0.9),
+                                color:
+                                    AppTheme.textPrimary.withValues(alpha: 0.9),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -150,9 +210,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
               // Quality Checklist
               _buildQualityItem('Text & numbers are razor sharp', true),
               const SizedBox(height: 8),
-              _buildQualityItem('No holographic flash glare obstructing data', true),
+              _buildQualityItem(
+                  'No holographic flash glare obstructing data', true),
               const SizedBox(height: 8),
-              _buildQualityItem('Document edges match security perspective', true),
+              _buildQualityItem(
+                  'Document edges match security perspective', true),
               const SizedBox(height: 24),
 
               Row(
@@ -190,7 +252,9 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       child: Text(
                         widget.isBackSide
                             ? 'CONFIRM BACK'
-                            : (docType.requiresBackSide ? 'PROCEED TO BACK' : 'CONFIRM & NEXT'),
+                            : (docType.requiresBackSide
+                                ? 'PROCEED TO BACK'
+                                : 'CONFIRM & NEXT'),
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
@@ -204,7 +268,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     );
   }
 
-  void _proceedAfterCapture(ScreeningService screeningService, DocumentType docType) {
+  void _proceedAfterCapture(
+      ScreeningService screeningService, DocumentType docType) {
     if (!widget.isBackSide) {
       screeningService.setFrontImage('simulated_front_path.jpg');
       if (docType.requiresBackSide) {
@@ -246,6 +311,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
       children: [
         Icon(
           isOk ? Icons.check_circle_rounded : Icons.cancel_rounded,
+          semanticLabel: isOk ? 'Check passed' : 'Check failed',
           size: 16,
           color: isOk ? AppTheme.passGreen : AppTheme.rejectRed,
         ),
@@ -261,6 +327,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
+    final l10n = AppLocalizations.of(context);
     final docType = screeningService.session.selectedDocType;
 
     return Scaffold(
@@ -280,13 +347,24 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                    tooltip: 'Go back',
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        semanticLabel: 'Go back',
+                        color: Colors.white,
+                        size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
                   IconButton(
+                    tooltip: _isTorchOn
+                        ? 'Turn off flashlight'
+                        : 'Turn on flashlight',
                     icon: Icon(
-                      _isTorchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                      _isTorchOn
+                          ? Icons.flash_on_rounded
+                          : Icons.flash_off_rounded,
+                      semanticLabel:
+                          _isTorchOn ? 'Flashlight on' : 'Flashlight off',
                       color: _isTorchOn ? AppTheme.primaryCyan : Colors.white70,
                       size: 24,
                     ),
@@ -300,27 +378,68 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
             Expanded(
               child: Stack(
                 children: [
-                  // Simulated Camera Feed Background
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [Color(0xFF1E293B), Color(0xFF0A0F1D)],
-                        radius: 1.2,
+                  if (_cameraError != null)
+                    Center(
+                      child: Card(
+                        margin: const EdgeInsets.all(24),
+                        color: AppTheme.surface,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.camera_alt_outlined,
+                                  semanticLabel: 'Camera unavailable',
+                                  color: AppTheme.rejectRed,
+                                  size: 40),
+                              const SizedBox(height: 12),
+                              Text(l10n.cameraInitializationFailed,
+                                  style: const TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 8),
+                              Text(_cameraError!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: AppTheme.textSecondary)),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: _initializeCamera,
+                                icon: const Icon(Icons.refresh,
+                                    semanticLabel:
+                                        'Retry camera initialization'),
+                                label: Text(l10n.retry),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
+                    )
+                  else ...[
+                    Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: const BoxDecoration(
+                        gradient: RadialGradient(
+                          colors: [Color(0xFF1E293B), Color(0xFF0A0F1D)],
+                          radius: 1.2,
+                        ),
+                      ),
+                      child: _cameraController?.value.isInitialized == true
+                          ? CameraPreview(_cameraController!)
+                          : const Center(child: CircularProgressIndicator()),
                     ),
-                  ),
 
-                  // Scanner Frame with Animated Laser Beam
-                  DocumentScannerOverlay(
-                    title: widget.isBackSide
-                        ? 'Scan Document Back'
-                        : 'Scan Document Front',
-                    subtitle: widget.isBackSide
-                        ? 'Align barcode/magnetic strip inside frame'
-                        : 'Align ${docType.shortName} inside brackets',
-                  ),
+                    // Scanner Frame with Animated Laser Beam
+                    DocumentScannerOverlay(
+                      title: widget.isBackSide
+                          ? 'Scan Document Back'
+                          : 'Scan Document Front',
+                      subtitle: widget.isBackSide
+                          ? 'Align barcode/magnetic strip inside frame'
+                          : 'Align ${docType.shortName} inside brackets',
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -328,15 +447,17 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
             // Bottom Shutter Controls
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 30),
-              color: Colors.black.withOpacity(0.85),
+              color: Colors.black.withValues(alpha: 0.85),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // Gallery picker button
                   IconButton(
+                    tooltip: 'Choose a photo',
                     onPressed: _handleCapture,
                     icon: const Icon(
                       Icons.photo_library_outlined,
+                      semanticLabel: 'Choose a photo',
                       color: Colors.white70,
                       size: 28,
                     ),
@@ -350,10 +471,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       height: 76,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.primaryCyan, width: 4),
+                        border:
+                            Border.all(color: AppTheme.primaryCyan, width: 4),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryCyan.withOpacity(0.4),
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.4),
                             blurRadius: 16,
                             spreadRadius: 2,
                           ),
@@ -371,7 +493,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                           child: _isCapturing
                               ? const CircularProgressIndicator(
                                   strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black),
                                 )
                               : null,
                         ),
@@ -381,16 +504,19 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
 
                   // Info button
                   IconButton(
+                    tooltip: 'Capture guidance',
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Position document within frame. Camera auto-focuses.'),
+                          content: Text(
+                              'Position document within frame. Camera auto-focuses.'),
                           duration: Duration(seconds: 2),
                         ),
                       );
                     },
                     icon: const Icon(
                       Icons.help_outline_rounded,
+                      semanticLabel: 'Capture guidance',
                       color: Colors.white70,
                       size: 28,
                     ),

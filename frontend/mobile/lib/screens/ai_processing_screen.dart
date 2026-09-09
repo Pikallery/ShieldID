@@ -38,7 +38,8 @@ class _AiProcessingScreenState extends State<AiProcessingScreen>
     final session = screeningService.session;
 
     // Check if processing completed
-    if (session.stage == ScreeningStage.completedResult && session.report != null) {
+    if (session.stage == ScreeningStage.completedResult &&
+        session.report != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
@@ -50,10 +51,26 @@ class _AiProcessingScreenState extends State<AiProcessingScreen>
     }
 
     final tasks = [
-      {'title': 'OCR & MRZ Extraction', 'threshold': 0.25, 'icon': Icons.text_snippet_outlined},
-      {'title': 'Anti-Tampering & ELA Check', 'threshold': 0.50, 'icon': Icons.fingerprint_rounded},
-      {'title': 'Biometric Face Match (512-d)', 'threshold': 0.75, 'icon': Icons.face_rounded},
-      {'title': 'Predictive Risk Scoring Engine', 'threshold': 0.95, 'icon': Icons.analytics_outlined},
+      {
+        'title': 'OCR & MRZ Extraction',
+        'threshold': 0.25,
+        'icon': Icons.text_snippet_outlined
+      },
+      {
+        'title': 'Anti-Tampering & ELA Check',
+        'threshold': 0.50,
+        'icon': Icons.fingerprint_rounded
+      },
+      {
+        'title': 'Biometric Face Match (512-d)',
+        'threshold': 0.75,
+        'icon': Icons.face_rounded
+      },
+      {
+        'title': 'Predictive Risk Scoring Engine',
+        'threshold': 0.95,
+        'icon': Icons.analytics_outlined
+      },
     ];
 
     return Scaffold(
@@ -114,12 +131,26 @@ class _AiProcessingScreenState extends State<AiProcessingScreen>
                 ),
               ),
               const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: session.processingProgress,
+                  minHeight: 6,
+                  backgroundColor: AppTheme.surfaceElevated,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppTheme.primaryCyan,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceElevated,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.primaryCyan.withOpacity(0.4)),
+                  border: Border.all(
+                      color: AppTheme.primaryCyan.withValues(alpha: 0.4)),
                 ),
                 child: Text(
                   session.currentAiTask,
@@ -141,7 +172,8 @@ class _AiProcessingScreenState extends State<AiProcessingScreen>
                   children: tasks.map((task) {
                     final threshold = task['threshold'] as double;
                     final isComplete = session.processingProgress >= threshold;
-                    final isCurrent = !isComplete && (session.processingProgress >= threshold - 0.25);
+                    final isCurrent = !isComplete &&
+                        (session.processingProgress >= threshold - 0.25);
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -151,20 +183,26 @@ class _AiProcessingScreenState extends State<AiProcessingScreen>
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: isComplete
-                                  ? AppTheme.passGreen.withOpacity(0.15)
+                                  ? AppTheme.passGreen.withValues(alpha: 0.15)
                                   : (isCurrent
-                                      ? AppTheme.primaryCyan.withOpacity(0.15)
+                                      ? AppTheme.primaryCyan
+                                          .withValues(alpha: 0.15)
                                       : AppTheme.surfaceElevated),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
+                              semanticLabel: isComplete
+                                  ? 'Stage complete'
+                                  : 'Processing stage',
                               isComplete
                                   ? Icons.check
                                   : (task['icon'] as IconData),
                               size: 16,
                               color: isComplete
                                   ? AppTheme.passGreen
-                                  : (isCurrent ? AppTheme.primaryCyan : AppTheme.textMuted),
+                                  : (isCurrent
+                                      ? AppTheme.primaryCyan
+                                      : AppTheme.textMuted),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -232,7 +270,7 @@ class _NeuralRadarPainter extends CustomPainter {
 
     // Concentric rings
     final ringPaint = Paint()
-      ..color = AppTheme.primaryCyan.withOpacity(0.15)
+      ..color = AppTheme.primaryCyan.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 
@@ -242,7 +280,7 @@ class _NeuralRadarPainter extends CustomPainter {
 
     // Crosshairs
     final crosshairPaint = Paint()
-      ..color = AppTheme.primaryCyan.withOpacity(0.2)
+      ..color = AppTheme.primaryCyan.withValues(alpha: 0.2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -256,8 +294,8 @@ class _NeuralRadarPainter extends CustomPainter {
       ..shader = SweepGradient(
         colors: [
           Colors.transparent,
-          AppTheme.primaryCyan.withOpacity(0.0),
-          AppTheme.primaryCyan.withOpacity(0.4),
+          AppTheme.primaryCyan.withValues(alpha: 0.0),
+          AppTheme.primaryCyan.withValues(alpha: 0.4),
         ],
         stops: const [0.0, 0.7, 1.0],
         transform: GradientRotation(rotation),
@@ -273,7 +311,7 @@ class _NeuralRadarPainter extends CustomPainter {
     canvas.drawCircle(center, 6, corePaint);
 
     final glowPaint = Paint()
-      ..color = AppTheme.primaryCyan.withOpacity(0.35)
+      ..color = AppTheme.primaryCyan.withValues(alpha: 0.35)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, 14, glowPaint);
   }

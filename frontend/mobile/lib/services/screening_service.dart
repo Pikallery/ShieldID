@@ -4,10 +4,12 @@ import '../models/screening_session.dart';
 import '../models/verification_result.dart';
 import 'api_service.dart';
 import 'mock_data.dart';
+import 'screening_database.dart';
 
 class ScreeningService extends ChangeNotifier {
   final ApiService _apiService = ApiService();
-  ScreeningSession _session = ScreeningSession();
+  final ScreeningDatabase _database = ScreeningDatabase.instance;
+  final ScreeningSession _session = ScreeningSession();
   List<VerificationReport> _history = [];
 
   // App Settings
@@ -17,6 +19,14 @@ class ScreeningService extends ChangeNotifier {
 
   ScreeningService() {
     _history = MockData.getInitialHistory();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final storedReports = await _database.loadReports();
+    if (storedReports.isEmpty) return;
+    _history = [...storedReports, ..._history];
+    notifyListeners();
   }
 
   // Getters
@@ -103,7 +113,8 @@ class ScreeningService extends ChangeNotifier {
 
   Future<void> _triggerAiAnalysis() async {
     _session.processingProgress = 0.05;
-    _session.currentAiTask = 'Submitting artifacts to ShieldID Neural Engine...';
+    _session.currentAiTask =
+        'Submitting artifacts to ShieldID Neural Engine...';
     notifyListeners();
 
     try {
@@ -123,6 +134,7 @@ class ScreeningService extends ChangeNotifier {
       _session.report = report;
       _session.stage = ScreeningStage.completedResult;
       _history.insert(0, report);
+      await _database.saveSession(_session);
       notifyListeners();
     } catch (e) {
       _session.currentAiTask = 'Error: $e';

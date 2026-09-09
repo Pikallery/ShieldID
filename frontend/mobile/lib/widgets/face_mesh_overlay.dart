@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 
@@ -85,11 +84,12 @@ class _FaceMeshOverlayState extends State<FaceMeshOverlay>
                 children: [
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: widget.isFaceDetected
-                          ? AppTheme.primaryCyan.withOpacity(0.15)
-                          : AppTheme.reviewAmber.withOpacity(0.15),
+                          ? AppTheme.primaryCyan.withValues(alpha: 0.15)
+                          : AppTheme.reviewAmber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(
                         color: widget.isFaceDetected
@@ -102,7 +102,7 @@ class _FaceMeshOverlayState extends State<FaceMeshOverlay>
                           color: (widget.isFaceDetected
                                   ? AppTheme.primaryCyan
                                   : AppTheme.reviewAmber)
-                              .withOpacity(0.25),
+                              .withValues(alpha: 0.25),
                           blurRadius: 16,
                         ),
                       ],
@@ -201,7 +201,7 @@ class _FaceCutoutPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final backgroundPaint = Paint()
-      ..color = Colors.black.withOpacity(0.75)
+      ..color = Colors.black.withValues(alpha: 0.75)
       ..style = PaintingStyle.fill;
 
     final ovalRect = Rect.fromCenter(
@@ -245,11 +245,11 @@ class _BiometricMeshPainter extends CustomPainter {
     if (!isDetected) return;
 
     final pointPaint = Paint()
-      ..color = AppTheme.primaryCyan.withOpacity(0.4 + (pulse * 0.4))
+      ..color = AppTheme.primaryCyan.withValues(alpha: 0.4 + (pulse * 0.4))
       ..style = PaintingStyle.fill;
 
     final linePaint = Paint()
-      ..color = AppTheme.primaryCyan.withOpacity(0.15 + (pulse * 0.2))
+      ..color = AppTheme.primaryCyan.withValues(alpha: 0.15 + (pulse * 0.2))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 

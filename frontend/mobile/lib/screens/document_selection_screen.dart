@@ -11,7 +11,8 @@ class DocumentSelectionScreen extends StatefulWidget {
   const DocumentSelectionScreen({super.key});
 
   @override
-  State<DocumentSelectionScreen> createState() => _DocumentSelectionScreenState();
+  State<DocumentSelectionScreen> createState() =>
+      _DocumentSelectionScreenState();
 }
 
 class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
@@ -36,7 +37,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
       appBar: AppBar(
         title: const Text('Select Document'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          tooltip: 'Go back',
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              semanticLabel: 'Go back', size: 18),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -70,6 +73,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                         dropdownColor: AppTheme.surfaceElevated,
                         icon: const Icon(
                           Icons.keyboard_arrow_down_rounded,
+                          semanticLabel: 'Open country list',
                           color: AppTheme.primaryCyan,
                         ),
                         items: _countries.map((country) {
@@ -79,6 +83,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                               children: [
                                 const Icon(
                                   Icons.public_rounded,
+                                  semanticLabel: 'Issuing country',
                                   size: 18,
                                   color: AppTheme.primaryCyan,
                                 ),
@@ -116,111 +121,129 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                   const SizedBox(height: 12),
 
                   // Document Type Cards
-                  ...DocumentType.values.map((type) {
-                    final isSelected = _selectedType == type;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: InkWell(
-                        onTap: () => setState(() => _selectedType = type),
-                        borderRadius: BorderRadius.circular(16),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppTheme.primaryCyan.withOpacity(0.08)
-                                : AppTheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppTheme.primaryCyan
-                                  : AppTheme.border,
-                              width: isSelected ? 2 : 1,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: AppTheme.primaryCyan.withOpacity(0.18),
-                                      blurRadius: 16,
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
+                  RadioGroup<DocumentType>(
+                    groupValue: _selectedType,
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() => _selectedType = val);
+                      }
+                    },
+                    child: Column(
+                      children: [
+                        ...DocumentType.values.map((type) {
+                          final isSelected = _selectedType == type;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: InkWell(
+                              onTap: () => setState(() => _selectedType = type),
+                              borderRadius: BorderRadius.circular(16),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: isSelected
                                       ? AppTheme.primaryCyan
-                                      : AppTheme.surfaceElevated,
-                                  borderRadius: BorderRadius.circular(12),
+                                          .withValues(alpha: 0.08)
+                                      : AppTheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.primaryCyan
+                                        : AppTheme.border,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: AppTheme.primaryCyan
+                                                .withValues(alpha: 0.18),
+                                            blurRadius: 16,
+                                          ),
+                                        ]
+                                      : [],
                                 ),
-                                child: Icon(
-                                  type.icon,
-                                  color: isSelected ? Colors.black : AppTheme.textPrimary,
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
                                   children: [
-                                    Text(
-                                      type.displayName,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
                                         color: isSelected
                                             ? AppTheme.primaryCyan
+                                            : AppTheme.surfaceElevated,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        type.icon,
+                                        semanticLabel:
+                                            '${type.displayName} document',
+                                        color: isSelected
+                                            ? Colors.black
                                             : AppTheme.textPrimary,
+                                        size: 24,
                                       ),
                                     ),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      type.requiresBackSide
-                                          ? 'Front & back capture required'
-                                          : 'Photo page with MRZ code',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.textSecondary,
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            type.displayName,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: isSelected
+                                                  ? AppTheme.primaryCyan
+                                                  : AppTheme.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            type.requiresBackSide
+                                                ? 'Front & back capture required'
+                                                : 'Photo page with MRZ code',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Semantics(
+                                      label: 'Select ${type.displayName}',
+                                      child: Radio<DocumentType>(
+                                        value: type,
+                                        activeColor: AppTheme.primaryCyan,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Radio<DocumentType>(
-                                value: type,
-                                groupValue: _selectedType,
-                                activeColor: AppTheme.primaryCyan,
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() => _selectedType = val);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
 
                   // Guidance Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceElevated.withOpacity(0.6),
+                      color: AppTheme.surfaceElevated.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppTheme.border.withOpacity(0.6)),
+                      border: Border.all(
+                          color: AppTheme.border.withValues(alpha: 0.6)),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Icon(
                           Icons.info_outline_rounded,
+                          semanticLabel: 'Preparation information',
                           size: 20,
                           color: AppTheme.infoBlue,
                         ),
@@ -261,9 +284,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: AppTheme.surface.withOpacity(0.95),
+              color: AppTheme.surface.withValues(alpha: 0.95),
               border: Border(
-                top: BorderSide(color: AppTheme.border.withOpacity(0.6)),
+                top: BorderSide(color: AppTheme.border.withValues(alpha: 0.6)),
               ),
             ),
             child: SizedBox(
@@ -271,11 +294,13 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   final service = context.read<ScreeningService>();
-                  service.setDocumentType(_selectedType, country: _selectedCountry);
+                  service.setDocumentType(_selectedType,
+                      country: _selectedCountry);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const DocumentCaptureScreen(isBackSide: false),
+                      builder: (_) =>
+                          const DocumentCaptureScreen(isBackSide: false),
                     ),
                   );
                 },
@@ -287,7 +312,8 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                icon: const Icon(Icons.camera_alt_outlined,
+                    semanticLabel: 'Open document camera', size: 20),
                 label: const Text(
                   'CONTINUE TO DOCUMENT SCAN',
                   style: TextStyle(
