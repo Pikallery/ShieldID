@@ -12,7 +12,8 @@ class LivenessDetectionScreen extends StatefulWidget {
   const LivenessDetectionScreen({super.key});
 
   @override
-  State<LivenessDetectionScreen> createState() => _LivenessDetectionScreenState();
+  State<LivenessDetectionScreen> createState() =>
+      _LivenessDetectionScreenState();
 }
 
 class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
@@ -79,7 +80,8 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStage: ScreeningStage.livenessFaceMatch),
+            const StepProgressBar(
+                currentStage: ScreeningStage.livenessFaceMatch),
 
             // Top Bar
             Padding(
@@ -87,20 +89,24 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                        color: Colors.white, size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceElevated.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.primaryCyan.withOpacity(0.4)),
+                      border: Border.all(
+                          color: AppTheme.primaryCyan.withOpacity(0.4)),
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.lock_outline_rounded, size: 14, color: AppTheme.primaryCyan),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.lock_outline_rounded,
+                            size: 14, color: AppTheme.primaryCyan),
                         SizedBox(width: 6),
                         Text(
                           'ISO 30107-3 Compliant',
@@ -133,9 +139,11 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildSecurityBadge(Icons.phonelink_erase_rounded, 'No Replay Attack'),
+                  _buildSecurityBadge(
+                      Icons.phonelink_erase_rounded, 'No Replay Attack'),
                   _buildSecurityBadge(Icons.masks_rounded, '3D Mask Guard'),
-                  _buildSecurityBadge(Icons.burst_mode_rounded, 'Micro-Texture Scan'),
+                  _buildSecurityBadge(
+                      Icons.burst_mode_rounded, 'Micro-Texture Scan'),
                 ],
               ),
             ),

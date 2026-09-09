@@ -32,7 +32,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         final name = report.documentData.fullName.toLowerCase();
         final id = report.id.toLowerCase();
         final docNum = report.documentData.documentNumber.toLowerCase();
-        return name.contains(query) || id.contains(query) || docNum.contains(query);
+        return name.contains(query) ||
+            id.contains(query) ||
+            docNum.contains(query);
       }
       return true;
     }).toList();
@@ -51,8 +53,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search by applicant name, ID, or doc #...',
-                hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryCyan, size: 20),
+                hintStyle:
+                    const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                prefixIcon: const Icon(Icons.search_rounded,
+                    color: AppTheme.primaryCyan, size: 20),
                 filled: true,
                 fillColor: AppTheme.surfaceElevated,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -93,21 +97,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
           // Records List
           Expanded(
             child: filtered.isEmpty
-                ? Center(
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.search_off_rounded, size: 48, color: AppTheme.textMuted),
+                      children: [
+                        Icon(Icons.search_off_rounded,
+                            size: 48, color: AppTheme.textMuted),
                         SizedBox(height: 12),
                         Text(
                           'No screening records match your query',
-                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                          style: TextStyle(
+                              color: AppTheme.textSecondary, fontSize: 14),
                         ),
                       ],
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     itemCount: filtered.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
@@ -117,7 +124,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => VerificationResultScreen(report: item),
+                              builder: (_) =>
+                                  VerificationResultScreen(report: item),
                             ),
                           );
                         },
@@ -135,7 +143,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: item.status.color.withOpacity(0.12),
+                                      color:
+                                          item.status.color.withOpacity(0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
@@ -147,7 +156,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.documentData.fullName.isNotEmpty
@@ -181,10 +191,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: item.status.color.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: item.status.color
+                                              .withOpacity(0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                         ),
                                         child: Text(
                                           item.status.label,
@@ -201,7 +214,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               ),
                               const SizedBox(height: 10),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     'ID: ${item.id}',

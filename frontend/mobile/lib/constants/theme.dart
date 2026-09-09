@@ -106,12 +106,10 @@ class AppTheme {
         primary: primaryCyan,
         secondary: primaryBlue,
         surface: surface,
-        background: background,
         error: rejectRed,
         onPrimary: Colors.black,
         onSecondary: Colors.white,
         onSurface: textPrimary,
-        onBackground: textPrimary,
       ),
       textTheme: GoogleFonts.interTextTheme(
         ThemeData.dark().textTheme.copyWith(
@@ -161,7 +159,7 @@ class AppTheme {
         ),
         iconTheme: const IconThemeData(color: textPrimary),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surface,
         elevation: 4,
         shape: RoundedRectangleBorder(
