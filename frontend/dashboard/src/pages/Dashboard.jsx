@@ -34,7 +34,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ position: "relative", minHeight: "100vh" }}>
+    <div className="app-transition-root" style={{ position: "relative", minHeight: "100vh" }}>
       {/* Pre-mounted dashboard eliminates any waiting time or second loading screen */}
       <div className="shield-dashboard-content">
         {!showLoading && (
@@ -101,9 +101,48 @@ export default function Dashboard() {
             }
 
             .shield-loading-viewport.is-fading-out {
-              opacity: 0;
-              transform: scale(1.035);
+              animation: app-loading-exit 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+              transition: none;
               pointer-events: none;
+            }
+
+            .app-reveal-in {
+              animation: app-reveal-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+            }
+
+            @keyframes app-loading-exit {
+              0% { opacity: 1; filter: blur(0); transform: scale(1); }
+              100% { opacity: 0; filter: blur(10px); transform: scale(1.06); }
+            }
+
+            @keyframes app-reveal-in {
+              0% { clip-path: circle(0% at 50% 50%); opacity: 0.6; }
+              100% { clip-path: circle(75% at 50% 50%); opacity: 1; }
+            }
+
+            .app-scan-sweep {
+              position: fixed;
+              inset: 0;
+              z-index: 100000;
+              pointer-events: none;
+              background: linear-gradient(100deg, transparent 45%, rgba(255, 255, 255, 0.55) 50%, transparent 55%);
+              transform: translateX(-120%);
+              animation: app-scan-sweep 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+
+            @keyframes app-scan-sweep {
+              0% { transform: translateX(-120%); }
+              100% { transform: translateX(120%); }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .shield-loading-viewport.is-fading-out,
+              .app-reveal-in,
+              .app-scan-sweep,
+              .center-floating-wrapper,
+              .loading-bar-fill {
+                animation: none !important;
+              }
             }
 
             /* Prevent inner duplicate loading screen from flashing */
@@ -617,9 +656,9 @@ export default function Dashboard() {
                 aria-label="Authenticate and open dashboard"
               >
                 <span className="auth-pill-text">
-                  {authStatus === "idle" && "AUTHENTICATING"}
-                  {authStatus === "authenticating" && "VERIFYING..."}
-                  {authStatus === "ready" && "AUTHORIZED ✓"}
+                  {authStatus === "idle" && "GET STARTED"}
+                  {authStatus === "authenticating" && "OPENING..."}
+                  {authStatus === "ready" && "READY ✓"}
                 </span>
                 <span className="auth-pill-arrow">
                   <svg
@@ -646,7 +685,7 @@ export default function Dashboard() {
           </div>
         </div>
       ) : (
-        <div style={{ position: "relative" }}>
+        <div className="app-reveal-in" style={{ position: "relative" }}>
           {/* Subtle floating replay button in dashboard */}
           <button
             onClick={() => {
@@ -682,6 +721,7 @@ export default function Dashboard() {
           <ScreeningDashboard />
         </div>
       )}
+      {isFadingOut && <div className="app-scan-sweep" aria-hidden="true" />}
     </div>
   );
 }
