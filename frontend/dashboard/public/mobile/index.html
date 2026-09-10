@@ -4,6 +4,9 @@
   <base href="/mobile/">
 
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="ShieldID identity and document screening">
 
@@ -285,9 +288,7 @@
         preprocessCanvasForBlur(eCtx, width, height);
 
         if (window.Tesseract) {
-          ocrText = await runOCR(enhancedCanvas);
-
-          // Card Viewport Crop (contains the full card width, removes background clutter above/below)
+          // 1. Prioritize clean Card Viewport Crop (native resolution, zero bedsheet noise)
           if (height > 250) {
             const cardCanvas = document.createElement('canvas');
             const cy = Math.floor(height * 0.20);
@@ -300,8 +301,13 @@
 
             if (!qrText) qrText = scanCanvasForQR(cardCanvas);
 
-            const extra = await runOCR(cardCanvas);
-            if (extra) ocrText = (ocrText ? ocrText + '\n' : '') + extra;
+            ocrText = await runOCR(cardCanvas);
+          }
+
+          // 2. If card crop did not detect sufficient text, fall back to full frame
+          if (!ocrText || ocrText.trim().length < 8) {
+            const fullText = await runOCR(enhancedCanvas);
+            if (fullText) ocrText = fullText;
           }
         }
       } catch (err) {

@@ -22,24 +22,27 @@ class ApiService {
   Future<VerificationReport> runVerificationPipeline({
     required DocumentType docType,
     required String? frontImagePath,
+    Uint8List? frontImageBytes,
     required String? backImagePath,
     required String? selfieImagePath,
     required Function(double progress, String task) onProgressUpdate,
     VerificationStatus targetSimulationStatus = VerificationStatus.pass,
   }) async {
-    Uint8List? frontBytes;
-    if (frontImagePath != null && frontImagePath.isNotEmpty) {
-      try {
-        if (kIsWeb) {
-          final xfile = XFile(frontImagePath);
-          frontBytes = await xfile.readAsBytes();
-        } else {
-          final file = File(frontImagePath);
-          if (await file.exists()) {
-            frontBytes = await file.readAsBytes();
+    Uint8List? frontBytes = frontImageBytes;
+    if (frontBytes == null || frontBytes.isEmpty) {
+      if (frontImagePath != null && frontImagePath.isNotEmpty) {
+        try {
+          if (kIsWeb) {
+            final xfile = XFile(frontImagePath);
+            frontBytes = await xfile.readAsBytes();
+          } else {
+            final file = File(frontImagePath);
+            if (await file.exists()) {
+              frontBytes = await file.readAsBytes();
+            }
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
     }
 
     // 1. DeepSeek AI Multimodal Vision Extraction

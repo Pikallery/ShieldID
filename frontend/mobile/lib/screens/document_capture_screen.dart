@@ -199,11 +199,15 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     });
 
     String imagePath = '';
+    Uint8List? capturedBytes;
 
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final XFile file = await _cameraController!.takePicture();
         imagePath = file.path;
+        try {
+          capturedBytes = await file.readAsBytes();
+        } catch (_) {}
       } catch (e) {
         imagePath = 'captured_doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
@@ -221,6 +225,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
       final report = await screeningService.apiService.runVerificationPipeline(
         docType: docType,
         frontImagePath: imagePath,
+        frontImageBytes: capturedBytes,
         backImagePath: null,
         selfieImagePath: null,
         onProgressUpdate: (progress, task) {},
