@@ -44,6 +44,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.auditHistory),
+        actions: [
+          if (allHistory.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined, color: AppTheme.textSecondary),
+              tooltip: 'Clear Audit Log',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: AppTheme.surface,
+                    title: const Text('Clear Audit History', style: TextStyle(color: AppTheme.textPrimary, fontSize: 16)),
+                    content: const Text(
+                      'Are you sure you want to clear all stored scan audit records?',
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('CANCEL', style: TextStyle(color: AppTheme.textSecondary)),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          screeningService.clearAuditHistory();
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.rejectRed),
+                        child: const Text('CLEAR ALL', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: Column(
         children: [

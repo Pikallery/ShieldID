@@ -18,14 +18,19 @@ class ScreeningService extends ChangeNotifier {
   VerificationStatus _targetSimulationStatus = VerificationStatus.pass;
 
   ScreeningService() {
-    _history = MockData.getInitialHistory();
     _loadHistory();
   }
 
   Future<void> _loadHistory() async {
     final storedReports = await _database.loadReports();
-    if (storedReports.isEmpty) return;
-    _history = [...storedReports, ..._history];
+    if (storedReports.isNotEmpty) {
+      _history = storedReports;
+    } else {
+      _history = MockData.getInitialHistory();
+      for (final r in _history) {
+        await _database.saveReport(r);
+      }
+    }
     notifyListeners();
   }
 
@@ -60,6 +65,20 @@ class ScreeningService extends ChangeNotifier {
 
   void setTargetSimulationStatus(VerificationStatus status) {
     _targetSimulationStatus = status;
+    notifyListeners();
+  }
+
+  // Record an audit log entry for every scanned person
+  Future<void> recordScanAudit(VerificationReport report) async {
+    _history.removeWhere((r) => r.id == report.id);
+    _history.insert(0, report);
+    await _database.saveReport(report);
+    notifyListeners();
+  }
+
+  Future<void> clearAuditHistory() async {
+    _history.clear();
+    await _database.clearHistory();
     notifyListeners();
   }
 
@@ -133,7 +152,7 @@ class ScreeningService extends ChangeNotifier {
 
       _session.report = report;
       _session.stage = ScreeningStage.completedResult;
-      _history.insert(0, report);
+      await recordScanAudit(report);
       await _database.saveSession(_session);
       notifyListeners();
     } catch (e) {
