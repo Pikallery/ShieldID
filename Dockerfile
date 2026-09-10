@@ -21,11 +21,13 @@ COPY src/ ./src/
 COPY migrations/ ./migrations/
 COPY models/ ./models/
 
+# Copy entrypoint script and set executable permissions.
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# Railway supplies PORT at runtime; local Docker uses 8000 by default.
-# Migrations run before startup.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+CMD ["/app/start.sh"]
