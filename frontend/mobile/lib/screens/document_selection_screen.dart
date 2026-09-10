@@ -4,6 +4,7 @@ import '../constants/theme.dart';
 import '../models/document_model.dart';
 import '../services/screening_service.dart';
 import 'document_capture_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class DocumentSelectionScreen extends StatefulWidget {
   const DocumentSelectionScreen({super.key});
@@ -19,6 +20,8 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -43,7 +46,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            const Text('Select Document'),
+            Text(l10n.selectDocument),
           ],
         ),
         leading: IconButton(
@@ -61,9 +64,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Issuing Country / Jurisdiction',
-                    style: TextStyle(
+                  Text(
+                    l10n.issuingCountry,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textSecondary,
@@ -90,22 +93,22 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                           ),
                         ),
                         const SizedBox(width: 14),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Republic of India (भारत)',
-                                style: TextStyle(
+                                l10n.republicOfIndia,
+                                style: const TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              const SizedBox(height: 2),
                               Text(
-                                'UIDAI • ICAO IND • MoRTH • Income Tax Dept',
-                                style: TextStyle(
+                                l10n.registryDetails,
+                                style: const TextStyle(
                                   color: AppTheme.textSecondary,
                                   fontSize: 11,
                                 ),
@@ -120,9 +123,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                             color: AppTheme.passGreen.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'ACTIVE',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.activeRegistry,
+                            style: const TextStyle(
                               color: AppTheme.passGreen,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
@@ -134,9 +137,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  const Text(
-                    'Supported Identity Documents',
-                    style: TextStyle(
+                  Text(
+                    l10n.supportedIdentityDocuments,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary,
@@ -199,7 +202,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                                       child: Icon(
                                         type.icon,
                                         semanticLabel:
-                                            '${type.displayName} document',
+                                            '${type.localizedName(l10n)} document',
                                         color: isSelected
                                             ? Colors.black
                                             : AppTheme.textPrimary,
@@ -213,7 +216,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            type.displayName,
+                                            type.localizedName(l10n),
                                             style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
@@ -224,9 +227,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                                           ),
                                           const SizedBox(height: 3),
                                           Text(
-                                            type.requiresBackSide
-                                                ? 'Front & back capture required'
-                                                : 'Photo page with MRZ code',
+                                            type.localizedDesc(l10n),
                                             style: const TextStyle(
                                               fontSize: 12,
                                               color: AppTheme.textSecondary,
@@ -236,7 +237,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                                       ),
                                     ),
                                     Semantics(
-                                      label: 'Select ${type.displayName}',
+                                      label: 'Select ${type.localizedName(l10n)}',
                                       child: Radio<DocumentType>(
                                         value: type,
                                         activeColor: AppTheme.primaryCyan,
@@ -338,9 +339,9 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                 ),
                 icon: const Icon(Icons.camera_alt_outlined,
                     semanticLabel: 'Open document camera', size: 20),
-                label: const Text(
-                  'CONTINUE TO DOCUMENT SCAN',
-                  style: TextStyle(
+                label: Text(
+                  l10n.continueToScan,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.3,

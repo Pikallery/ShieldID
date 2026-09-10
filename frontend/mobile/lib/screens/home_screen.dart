@@ -82,6 +82,7 @@ class _HomeDashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
     final history = screeningService.history;
+    final l10n = AppLocalizations.of(context);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -156,9 +157,9 @@ class _HomeDashboardTab extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        const Text(
-                          'Identity & Screening OS • Active',
-                          style: TextStyle(
+                        Text(
+                          l10n.identityScreeningOs,
+                          style: const TextStyle(
                             fontSize: 10.5,
                             color: AppTheme.passGreen,
                             fontWeight: FontWeight.w600,
@@ -171,7 +172,7 @@ class _HomeDashboardTab extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Open settings',
+                  tooltip: l10n.settingsTab,
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -228,9 +229,9 @@ class _HomeDashboardTab extends StatelessWidget {
                             color: AppTheme.primaryCyan.withValues(alpha: 0.4),
                           ),
                         ),
-                        child: const Text(
-                          'REAL-TIME SCREENING',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.realTimeScreening,
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: AppTheme.primaryCyan,
@@ -247,9 +248,9 @@ class _HomeDashboardTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text(
-                    'AI-Powered Identity & Document Screening',
-                    style: TextStyle(
+                  Text(
+                    l10n.heroTitle,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: AppTheme.textPrimary,
@@ -257,9 +258,9 @@ class _HomeDashboardTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Instant multi-layer neural scan: OCR extraction, anti-tampering analysis, biometric facial matching, and predictive fraud prevention.',
-                    style: TextStyle(
+                  Text(
+                    l10n.heroSubtitle,
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppTheme.textSecondary,
                       height: 1.4,
@@ -288,9 +289,9 @@ class _HomeDashboardTab extends StatelessWidget {
                         elevation: 6,
                       ),
                       icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                      label: const Text(
-                        'START NEW SCREENING',
-                        style: TextStyle(
+                      label: Text(
+                        l10n.startNewScreening,
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.5,
@@ -304,9 +305,9 @@ class _HomeDashboardTab extends StatelessWidget {
             const SizedBox(height: 24),
 
             // AI Metrics Overview Grid
-            const Text(
-              'Security Engine Metrics',
-              style: TextStyle(
+            Text(
+              l10n.systemEngine,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary,
@@ -362,9 +363,9 @@ class _HomeDashboardTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Recent Verifications',
-                  style: TextStyle(
+                Text(
+                  l10n.recentVerifications,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
@@ -377,9 +378,9 @@ class _HomeDashboardTab extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const HistoryScreen()),
                     );
                   },
-                  child: const Text(
-                    'View All',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.viewAll,
+                    style: const TextStyle(
                       color: AppTheme.primaryCyan,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -394,12 +395,12 @@ class _HomeDashboardTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: AppTheme.glassCardDecoration(),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'No screenings recorded yet. Tap Start New Screening above.',
+                    l10n.noScreeningsRecorded,
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 13),
                   ),
                 ),
               )

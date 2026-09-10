@@ -9,6 +9,7 @@ import '../services/digilocker_service.dart';
 import '../services/screening_service.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class DocumentInfoDossierScreen extends StatefulWidget {
   final DigiLockerVerificationResult initialResult;
@@ -250,6 +251,8 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
   }
 
   Widget _buildValidityHeader(bool isValid, Color primaryColor) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -301,8 +304,9 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           const SizedBox(height: 12),
           Text(
             isValid
-                ? 'GENUINE & VERIFIED DOCUMENT'
-                : 'DOCUMENT UNVERIFIED / UNREADABLE',
+                ? l10n.genuineVerifiedDoc
+                : l10n.unverifiedDoc,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w900,
@@ -313,8 +317,8 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           const SizedBox(height: 6),
           Text(
             isValid
-                ? 'Structure & Checksums Verified • DigiLocker Issuer API v1.13 Authenticated'
-                : 'Document details could not be authenticated against Central Registry standards',
+                ? l10n.genuineSubtitle
+                : l10n.unverifiedSubtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -837,6 +841,8 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
   }
 
   Widget _buildActionButtons(bool isValid) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         SizedBox(
@@ -857,9 +863,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  isValid
-                      ? 'PROCEED TO BIOMETRIC VERIFICATION'
-                      : 'PROCEED TO MANUAL INSPECTION',
+                  l10n.proceedToBiometric,
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -880,9 +884,9 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
             onPressed: _showManualEntryModal,
             icon: const Icon(Icons.edit_note_rounded,
                 color: AppTheme.primaryCyan, size: 18),
-            label: const Text(
-              'CONFIRM / EDIT DETAILS MANUALLY',
-              style: TextStyle(
+            label: Text(
+              l10n.confirmEditManually,
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
                 color: AppTheme.primaryCyan,
@@ -909,9 +913,9 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: const Text(
-              'RE-SCAN DOCUMENT',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            child: Text(
+              l10n.retry,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
         ),

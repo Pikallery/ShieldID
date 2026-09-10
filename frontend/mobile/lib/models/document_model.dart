@@ -1,10 +1,37 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 enum DocumentType {
   passport,
   nationalId,
   driversLicense,
   residencePermit;
+
+  String localizedName(AppLocalizations l10n) {
+    switch (this) {
+      case DocumentType.passport:
+        return l10n.indianPassport;
+      case DocumentType.nationalId:
+        return l10n.aadhaarCard;
+      case DocumentType.driversLicense:
+        return l10n.drivingLicense;
+      case DocumentType.residencePermit:
+        return l10n.panCard;
+    }
+  }
+
+  String localizedDesc(AppLocalizations l10n) {
+    switch (this) {
+      case DocumentType.passport:
+        return l10n.indianPassportDesc;
+      case DocumentType.nationalId:
+        return l10n.aadhaarCardDesc;
+      case DocumentType.driversLicense:
+        return l10n.drivingLicenseDesc;
+      case DocumentType.residencePermit:
+        return l10n.panCardDesc;
+    }
+  }
 
   String get displayName {
     switch (this) {
