@@ -26,44 +26,129 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <script>
-    // Browser Flashlight / Torch Toggle for Chrome on Android / iOS
+    // 1. Intercept getUserMedia to store the exact active Camera MediaStream
+    window.__activeCameraStreams = [];
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      const origGUM = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      navigator.mediaDevices.getUserMedia = async function(constraints) {
+        const stream = await origGUM(constraints);
+        if (stream) {
+          window.__activeCameraStreams.push(stream);
+        }
+        return stream;
+      };
+    }
+
+    // 2. High-Reliability Flashlight / Torch Toggle for Chrome on Android / iOS
     window.toggleWebTorch = async function(enable) {
-      try {
-        const videos = document.querySelectorAll('video');
-        for (let v of videos) {
-          if (v && v.srcObject) {
-            const tracks = v.srcObject.getVideoTracks();
+      const boolEnable = !!enable;
+      let applied = false;
+
+      // A. Try stored active media streams
+      if (window.__activeCameraStreams && window.__activeCameraStreams.length > 0) {
+        for (let stream of window.__activeCameraStreams) {
+          try {
+            const tracks = stream.getVideoTracks();
             for (let t of tracks) {
-              try {
+              if (t.readyState === 'live') {
                 await t.applyConstraints({
-                  advanced: [{ torch: !!enable }]
+                  advanced: [{ torch: boolEnable }]
                 });
-                return true;
-              } catch (err) {
-                console.warn('Torch constraint error on track:', err);
+                applied = true;
               }
+            }
+          } catch (e) {
+            console.warn('Torch error on active stream:', e);
+          }
+        }
+      }
+
+      // B. Recursive Shadow DOM video elements crawler
+      function findVideoElements(root = document) {
+        let results = Array.from(root.querySelectorAll('video'));
+        const allEls = root.querySelectorAll('*');
+        for (let el of allEls) {
+          if (el.shadowRoot) {
+            results = results.concat(findVideoElements(el.shadowRoot));
+          }
+        }
+        return results;
+      }
+
+      const videos = findVideoElements();
+      for (let v of videos) {
+        if (v && v.srcObject && typeof v.srcObject.getVideoTracks === 'function') {
+          const tracks = v.srcObject.getVideoTracks();
+          for (let t of tracks) {
+            try {
+              await t.applyConstraints({
+                advanced: [{ torch: boolEnable }]
+              });
+              applied = true;
+            } catch (err) {
+              console.warn('Torch error on video element:', err);
             }
           }
         }
-      } catch (e) {
-        console.warn('Web Torch error:', e);
       }
-      return false;
+
+      return applied;
     };
 
-    // Fast helper to scan QR code on a canvas region
+    // Fast multi-pass QR helper with contrast inversion
     function scanCanvasForQR(canvas) {
-      if (window.jsQR) {
-        try {
-          const ctx = canvas.getContext('2d');
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const res = jsQR(imgData.data, imgData.width, imgData.height, {
-            inversionAttempts: 'attemptBoth'
-          });
-          if (res && res.data) return res.data;
-        } catch (e) {}
-      }
+      if (!window.jsQR || !canvas) return '';
+      try {
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Pass A: Normal
+        let res = jsQR(imgData.data, imgData.width, imgData.height, {
+          inversionAttempts: 'attemptBoth'
+        });
+        if (res && res.data) return res.data;
+
+        // Pass B: Inverted
+        const d = imgData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = 255 - d[i];
+          d[i+1] = 255 - d[i+1];
+          d[i+2] = 255 - d[i+2];
+        }
+        res = jsQR(d, imgData.width, imgData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+        if (res && res.data) return res.data;
+      } catch (e) {}
       return '';
+    }
+
+    // Shake & Motion-Blur Resilient Preprocessing
+    function preprocessCanvasForBlur(ctx, width, height) {
+      try {
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const d = imgData.data;
+        let min = 255, max = 0;
+
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+          if (lum < min) min = lum;
+          if (lum > max) max = lum;
+        }
+
+        const range = Math.max(1, max - min);
+        const threshold = min + range * 0.48;
+
+        for (let i = 0; i < d.length; i += 4) {
+          const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+          // Binarize to eliminate motion blur and color gradients
+          const val = lum < threshold ? 0 : 255;
+          d[i] = val;
+          d[i+1] = val;
+          d[i+2] = val;
+        }
+        ctx.putImageData(imgData, 0, 0);
+      } catch (e) {}
     }
 
     // Client-side Browser QR & OCR Scanner on captured document photo
@@ -72,7 +157,6 @@
       let ocrText = '';
 
       try {
-        // 1. Load captured image onto canvas
         const img = new Image();
         const loadPromise = new Promise((resolve, reject) => {
           img.onload = () => resolve();
@@ -90,7 +174,7 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // A. BarcodeDetector check (Hardware accelerated in Chrome Android)
+        // 1. Hardware-accelerated BarcodeDetector (Chrome Android)
         if ('BarcodeDetector' in window) {
           try {
             const detector = new BarcodeDetector({
@@ -103,38 +187,49 @@
           } catch (err) {}
         }
 
-        // B. Multi-region jsQR scanning (Full frame, center box, right side)
+        // 2. Multi-Zone jsQR Scanning (Full frame, center box, right crop, bottom crop)
         if (!qrText) {
           qrText = scanCanvasForQR(canvas);
         }
 
-        if (!qrText && width > 300 && height > 300) {
-          // Check center crop (inside guideline box)
-          const centerCanvas = document.createElement('canvas');
-          centerCanvas.width = Math.floor(width * 0.7);
-          centerCanvas.height = Math.floor(height * 0.7);
-          const cCtx = centerCanvas.getContext('2d');
-          cCtx.drawImage(img, Math.floor(width * 0.15), Math.floor(height * 0.15), centerCanvas.width, centerCanvas.height, 0, 0, centerCanvas.width, centerCanvas.height);
-          qrText = scanCanvasForQR(centerCanvas);
-        }
-
-        if (!qrText && width > 300 && height > 300) {
-          // Check right-half crop (where Indian PAN QR codes are located)
+        if (!qrText && width > 250 && height > 250) {
+          // Right half crop (NSDL PAN QR position)
           const rightCanvas = document.createElement('canvas');
-          rightCanvas.width = Math.floor(width * 0.5);
+          rightCanvas.width = Math.floor(width * 0.55);
           rightCanvas.height = height;
           const rCtx = rightCanvas.getContext('2d');
-          rCtx.drawImage(img, Math.floor(width * 0.5), 0, rightCanvas.width, height, 0, 0, rightCanvas.width, height);
+          rCtx.drawImage(img, Math.floor(width * 0.45), 0, rightCanvas.width, height, 0, 0, rightCanvas.width, height);
           qrText = scanCanvasForQR(rightCanvas);
         }
 
-        // C. Tesseract.js High-Performance OCR
+        if (!qrText && width > 250 && height > 250) {
+          // Center guideline box crop
+          const centerCanvas = document.createElement('canvas');
+          centerCanvas.width = Math.floor(width * 0.75);
+          centerCanvas.height = Math.floor(height * 0.75);
+          const cCtx = centerCanvas.getContext('2d');
+          cCtx.drawImage(img, Math.floor(width * 0.12), Math.floor(height * 0.12), centerCanvas.width, centerCanvas.height, 0, 0, centerCanvas.width, centerCanvas.height);
+          qrText = scanCanvasForQR(centerCanvas);
+        }
+
+        // 3. Motion-Blur Resilient Preprocessing & OCR
+        const enhancedCanvas = document.createElement('canvas');
+        enhancedCanvas.width = width;
+        enhancedCanvas.height = height;
+        const eCtx = enhancedCanvas.getContext('2d');
+        eCtx.drawImage(img, 0, 0, width, height);
+        preprocessCanvasForBlur(eCtx, width, height);
+
         if (window.Tesseract) {
           try {
-            const ret = await Tesseract.recognize(canvas, 'eng');
+            const ret = await Tesseract.recognize(enhancedCanvas, 'eng');
             ocrText = ret?.data?.text || '';
           } catch (e) {
-            console.warn('Tesseract OCR recognize error:', e);
+            // Fallback to raw canvas if enhanced fails
+            try {
+              const retRaw = await Tesseract.recognize(canvas, 'eng');
+              ocrText = retRaw?.data?.text || '';
+            } catch (err2) {}
           }
         }
       } catch (err) {

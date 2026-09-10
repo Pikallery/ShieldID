@@ -338,25 +338,55 @@ class DocumentParserService {
           }
         }
 
+  /// Cleans and repairs optical motion-blur character distortions in names
+  String cleanCandidateName(String raw) {
+    String s = raw.trim();
+    s = s.replaceAll('1', 'I')
+         .replaceAll('0', 'O')
+         .replaceAll('5', 'S')
+         .replaceAll('8', 'B')
+         .replaceAll('|', 'I')
+         .replaceAll('/', '')
+         .replaceAll('\\', '')
+         .replaceAll('~', '')
+         .replaceAll('_', '')
+         .replaceAll(RegExp(r'\s+'), ' ')
+         .trim();
+    return s.toUpperCase();
+  }
+
         // Full Name Extraction (Cardholder Name)
         if (fullName.isEmpty) {
-          final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(ocrText);
+          final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z0-9\s]+)', caseSensitive: false).firstMatch(ocrText);
           if (panNameMatch != null && !isHeaderOrNoiseLine(panNameMatch.group(1)!)) {
-            fullName = panNameMatch.group(1)!.split('\n').first.trim();
+            fullName = cleanCandidateName(panNameMatch.group(1)!.split('\n').first);
           } else {
             // Find all uppercase alphabetic lines that are strictly not header noise
             final candidateNames = <String>[];
             for (final line in lines) {
-              final trimmed = line.trim();
-              if (trimmed.length >= 3 &&
-                  RegExp(r'^[A-Za-z\s\.]+$').hasMatch(trimmed) &&
-                  !isHeaderOrNoiseLine(trimmed) &&
-                  !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(trimmed.toUpperCase())) {
-                candidateNames.add(trimmed);
+              final cleaned = cleanCandidateName(line);
+              if (cleaned.length >= 4 &&
+                  cleaned.length <= 40 &&
+                  RegExp(r'^[A-Z\s\.]+$').hasMatch(cleaned) &&
+                  !isHeaderOrNoiseLine(cleaned) &&
+                  !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(cleaned) &&
+                  cleaned.contains(' ')) {
+                candidateNames.add(cleaned);
               }
             }
             if (candidateNames.isNotEmpty) {
               fullName = candidateNames.first;
+            } else {
+              for (final line in lines) {
+                final cleaned = cleanCandidateName(line);
+                if (cleaned.length >= 3 &&
+                    RegExp(r'^[A-Z\s\.]+$').hasMatch(cleaned) &&
+                    !isHeaderOrNoiseLine(cleaned) &&
+                    !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(cleaned)) {
+                  fullName = cleaned;
+                  break;
+                }
+              }
             }
           }
         }

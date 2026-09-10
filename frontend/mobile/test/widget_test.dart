@@ -25,7 +25,7 @@ void main() {
     await tester.pumpWidget(ShieldIdApp(settingsService: settingsService));
 
     expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.text('ShieldID'), findsOneWidget);
-    expect(find.text('AI Screening Engine v2.4 • Active'), findsOneWidget);
+    expect(find.text('Shield'), findsWidgets);
+    expect(find.text('ID'), findsWidgets);
   });
 }

@@ -89,39 +89,61 @@ class _HomeDashboardTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top App Bar / Identity Shield Header
+            // Top App Bar / Identity Shield Header (Prominent Top Left Logo)
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    gradient: AppTheme.shieldGradient,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryCyan.withValues(alpha: 0.35),
-                        blurRadius: 12,
+                        color: AppTheme.primaryCyan.withValues(alpha: 0.45),
+                        blurRadius: 16,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.security_rounded,
-                    color: Colors.black,
-                    size: 22,
+                  child: const Center(
+                    child: Icon(
+                      Icons.shield_rounded,
+                      color: Colors.black87,
+                      size: 26,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'ShieldID',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -0.3,
-                      ),
+                    const Row(
+                      children: [
+                        Text(
+                          'Shield',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        Text(
+                          'ID',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.primaryCyan,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
                     Row(
                       children: [
@@ -135,11 +157,12 @@ class _HomeDashboardTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         const Text(
-                          'AI Screening Engine v2.4 • Active',
+                          'Identity & Screening OS • Active',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             color: AppTheme.passGreen,
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
