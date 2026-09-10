@@ -199,6 +199,11 @@ class DocumentParserService {
   /// Cleans and repairs optical motion-blur character distortions in names
   String cleanCandidateName(String raw) {
     String s = raw.trim();
+    // Strip leading field labels like "Name:", "Name ", "Father's Name:", etc.
+    s = s.replaceFirst(
+      RegExp(r'^(?:NAME|FATHER(?:\x27?S)?(?:\s+NAME)?|CARDHOLDER(?:\x27?S)?(?:\s+NAME)?)\s*[:.\-]?\s*', caseSensitive: false),
+      '',
+    );
     s = s.replaceAll('1', 'I')
          .replaceAll('0', 'O')
          .replaceAll('5', 'S')
@@ -261,7 +266,8 @@ class DocumentParserService {
       'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
       'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ',
       'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
-      'LOSRAM', 'ATT', 'LOS', 'SHAD', 'PAS', 'PSS', 'PAD', 'SEC', 'DOC', 'REG', 'DIV'
+      'LOSRAM', 'ATT', 'LOS', 'SHAD', 'PAS', 'PSS', 'PAD', 'SEC', 'DOC', 'REG', 'DIV',
+      'NAME', 'FATHER', 'FATHERS', 'HOLDER', 'HOLDERS'
     };
 
     final genuineWords = <String>[];
@@ -522,29 +528,29 @@ class DocumentParserService {
 
         // Cardholder Name Extraction for PAN Card
         if (fullName.isEmpty) {
-          // Step 1: look immediately after "Name" / "NAME :" label
+          final candidateNames = <String>[];
+
+          // Priority candidate: look immediately after "Name" / "NAME :" label (without "Father")
           final panNameMatch = RegExp(
-            r'(?:^|\n)\s*(?:Name|NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s\.]{2,40})',
+            r'(?:^|\n)\s*(?<!Father[\x27s\s]*)(?:Name|NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s\.]{2,40})',
             caseSensitive: false, multiLine: true,
           ).firstMatch(ocrText);
           if (panNameMatch != null) {
             final raw = panNameMatch.group(1)!.split('\n').first.trim();
             if (!_looksLikePanNumber(raw)) {
               final sanitized = sanitizeExtractedName(raw, docNumber);
-              if (isValidHumanName(sanitized)) fullName = sanitized;
+              if (isValidHumanName(sanitized)) candidateNames.add(sanitized);
             }
           }
 
-          // Step 2: scan all lines, skipping lines that look like PAN numbers
-          if (fullName.isEmpty) {
-            final candidateNames = <String>[];
-            for (int i = 0; i < lines.length; i++) {
-              final line = lines[i];
-              if (_looksLikePanNumber(line)) continue;
-              final sanitized = sanitizeExtractedName(line, docNumber);
-              if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
-                candidateNames.add(sanitized);
-              }
+          // Scan all lines, skipping lines that look like PAN numbers
+          for (int i = 0; i < lines.length; i++) {
+            final line = lines[i];
+            if (_looksLikePanNumber(line)) continue;
+            final sanitized = sanitizeExtractedName(line, docNumber);
+            if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
+              candidateNames.add(sanitized);
+            }
 
               // Combine 2 consecutive lines (e.g. "SAI PRADYUMNA" + "SAMAL" or "SAI" + "PRADYUMNA")
               if (i < lines.length - 1) {
@@ -659,7 +665,6 @@ class DocumentParserService {
               }
             }
           }
-        }
         break;
 
       case DocumentType.driversLicense: // Driver's License

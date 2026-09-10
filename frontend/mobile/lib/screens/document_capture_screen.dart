@@ -34,6 +34,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   bool _isTorchOn = false;
   bool _isCapturing = false;
   bool _isDetected = false;
+  Uint8List? _capturedImageBytes;
+  String _scanningStatus = '';
   Offset? _focusPoint;
   Timer? _autoDetectTimer;
 
@@ -196,6 +198,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     setState(() {
       _isCapturing = true;
       _isDetected = true;
+      _scanningStatus = 'Capturing document photo...';
     });
 
     String imagePath = '';
@@ -207,6 +210,12 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
         imagePath = file.path;
         try {
           capturedBytes = await file.readAsBytes();
+          if (mounted) {
+            setState(() {
+              _capturedImageBytes = capturedBytes;
+              _scanningStatus = 'Scanning document & extracting details...';
+            });
+          }
         } catch (_) {}
       } catch (e) {
         imagePath = 'captured_doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -228,7 +237,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
         frontImageBytes: capturedBytes,
         backImagePath: null,
         selfieImagePath: null,
-        onProgressUpdate: (progress, task) {},
+        onProgressUpdate: (progress, task) {
+          if (mounted) {
+            setState(() => _scanningStatus = task);
+          }
+        },
       );
       extractedData = report.documentData;
     } catch (_) {
@@ -282,7 +295,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     await screeningService.recordScanAudit(auditReport);
 
     if (!mounted) return;
-    setState(() => _isCapturing = false);
+    setState(() {
+      _isCapturing = false;
+      _capturedImageBytes = null;
+      _scanningStatus = '';
+    });
 
     // Direct transition to Document Info & DigiLocker Dossier Page with real extracted data
     final shouldProceedBack = await Navigator.push<bool>(
@@ -327,7 +344,12 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        if (_cameraController != null &&
+                        if (_isCapturing && _capturedImageBytes != null)
+                          Image.memory(
+                            _capturedImageBytes!,
+                            fit: BoxFit.cover,
+                          )
+                        else if (_cameraController != null &&
                             _cameraController!.value.isInitialized)
                           CameraPreview(_cameraController!)
                         else if (_cameraError != null)
@@ -339,9 +361,9 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                             ),
                           ),
 
-                        // Document & QR Overlay with real-time detection feedback
+                        // Document & QR Overlay with scanning laser active ONLY after clicking photo
                         DocumentScannerOverlay(
-                          isScanning: true,
+                          isScanning: _isCapturing,
                           isDetected: _isDetected,
                         ),
 
@@ -477,6 +499,50 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (_isCapturing) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceElevated.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(20),
+                          border:
+                              Border.all(color: AppTheme.primaryCyan, width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryCyan.withValues(alpha: 0.35),
+                              blurRadius: 14,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.primaryCyan,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _scanningStatus.isNotEmpty
+                                  ? _scanningStatus.toUpperCase()
+                                  : 'SCANNING DOCUMENT...',
+                              style: const TextStyle(
+                                color: AppTheme.primaryCyan,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     // Main Optical Scan Shutter Button
                     GestureDetector(
                       onTap: _handleCapture,
@@ -523,9 +589,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      'TAP TO SCAN DOCUMENT',
-                      style: TextStyle(
+                    Text(
+                      _isCapturing
+                          ? 'PROCESSING DOCUMENT...'
+                          : 'TAP TO CAPTURE DOCUMENT',
+                      style: const TextStyle(
                         fontSize: 11,
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.w700,
