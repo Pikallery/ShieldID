@@ -10,8 +10,8 @@ class ApiService {
   bool useMockSimulation;
 
   ApiService({
-    this.baseUrl = 'http://localhost:8000',
-    this.useMockSimulation = true,
+    this.baseUrl = 'https://shieldid-api.onrender.com',
+    this.useMockSimulation = false,
   });
 
   Future<VerificationReport> runVerificationPipeline({

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ShieldID">
+  <defs>
+    <linearGradient id="circuit" x1="120" y1="64" x2="392" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2163A4"/>
+      <stop offset=".52" stop-color="#80527F"/>
+      <stop offset="1" stop-color="#F02F3E"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#fff"/>
+  <path d="M256 134c54 14 91 35 91 35v84c0 69-37 108-91 133-54-25-91-64-91-133v-84s37-21 91-35Z" fill="#fff" stroke="url(#circuit)" stroke-width="10"/>
+  <g fill="none" stroke="url(#circuit)" stroke-linecap="round">
+    <ellipse cx="256" cy="253" rx="56" ry="65" stroke-width="8"/>
+    <path d="M200 253h112M207 224h98M207 282h98M256 188v130M230 191c-12 39-12 85 0 124M282 191c12 39 12 85 0 124" stroke-width="7"/>
+  </g>
+</svg>
