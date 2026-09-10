@@ -146,18 +146,29 @@ def test_currency_verification_result_schema():
         confidence_score=0.42,
         boundary_detected=True,
         watermark_check=SecurityFeatureCheck(
-            feature_name="watermark", is_valid=False, confidence=0.2, details="Watermark missing"
+            feature_name="watermark",
+            is_valid=False,
+            confidence=0.2,
+            details="Watermark missing",
         ),
         security_thread_check=SecurityFeatureCheck(
-            feature_name="security_thread", is_valid=False, confidence=0.3, details="Thread discontinuous"
+            feature_name="security_thread",
+            is_valid=False,
+            confidence=0.3,
+            details="Thread discontinuous",
         ),
         microprinting_check=SecurityFeatureCheck(
-            feature_name="microprinting", is_valid=False, confidence=0.35, details="Microprinting blurred"
+            feature_name="microprinting",
+            is_valid=False,
+            confidence=0.35,
+            details="Microprinting blurred",
         ),
         reasons=["Watermark missing", "Security thread broken"],
     )
     assert fake_result.is_authentic is False
     assert len(fake_result.reasons) == 2
+
+
 def test_passport_data_valid(sample_passport_data):
     """Test PassportData schema validation with valid input."""
     assert sample_passport_data.name == "Rahul Sharma"

@@ -84,11 +84,11 @@ def _create_synthetic_note(
         img[0:70, 0:160, 0] = 250  # Blue channel high
         img[0:70, 0:160, 2] = 140  # Red channel lower
 
-
     return img
 
 
 # ─── Tests ─────────────────────────────────────────────────────────────────────
+
 
 def test_currency_processor_inheritance():
     processor = CurrencyProcessor()
@@ -146,7 +146,9 @@ def test_watermark_inspection_blank_fake():
 
 def test_security_thread_inspection_valid():
     processor = CurrencyProcessor()
-    note_with_thread = _create_synthetic_note(denomination=500, has_security_thread=True)
+    note_with_thread = _create_synthetic_note(
+        denomination=500, has_security_thread=True
+    )
     check = processor.check_security_thread(note_with_thread, denomination=500)
     assert isinstance(check, SecurityFeatureCheck)
     assert check.is_valid is True
@@ -155,7 +157,9 @@ def test_security_thread_inspection_valid():
 
 def test_security_thread_inspection_missing_fake():
     processor = CurrencyProcessor()
-    note_without_thread = _create_synthetic_note(denomination=500, has_security_thread=False)
+    note_without_thread = _create_synthetic_note(
+        denomination=500, has_security_thread=False
+    )
     check = processor.check_security_thread(note_without_thread, denomination=500)
     assert check.is_valid is False
     assert "missing" in check.details.lower() or "lacks" in check.details.lower()
@@ -252,4 +256,6 @@ def test_template_matching_identical_images():
 
 def test_template_matching_rejects_empty_images():
     with np.testing.assert_raises(ValueError):
-        compare_templates(np.empty((0, 0), dtype=np.uint8), np.zeros((8, 8), dtype=np.uint8))
+        compare_templates(
+            np.empty((0, 0), dtype=np.uint8), np.zeros((8, 8), dtype=np.uint8)
+        )

@@ -57,12 +57,8 @@ class FraudReport(UUIDMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Geo-location ──────────────────────────────────────────────────────
-    latitude: Mapped[Decimal | None] = mapped_column(
-        Numeric(9, 6), nullable=True
-    )
-    longitude: Mapped[Decimal | None] = mapped_column(
-        Numeric(9, 6), nullable=True
-    )
+    latitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
+    longitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     assigned_station: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # ── Status ────────────────────────────────────────────────────────────

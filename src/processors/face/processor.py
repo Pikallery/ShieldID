@@ -26,6 +26,7 @@ from .liveness import evaluate_liveness
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -84,7 +85,11 @@ class FaceProcessor(BaseProcessor):
         Load deep facial recognition weights or initialize neural feature projection engine.
         """
         default_model_dir = Path(__file__).resolve().parents[3] / "models" / "face"
-        model_file = Path(self.model_path) if self.model_path else (default_model_dir / "facenet_weights.json")
+        model_file = (
+            Path(self.model_path)
+            if self.model_path
+            else (default_model_dir / "facenet_weights.json")
+        )
 
         self.model = {
             "name": "FaceNet-ShieldID-Embedding-v1",
@@ -118,7 +123,9 @@ class FaceProcessor(BaseProcessor):
                 if k in input_data and input_data[k] is not None:
                     selfie_raw = input_data[k]
                     break
-            self._cached_frames = input_data.get("sequence") or input_data.get("selfie_sequence")
+            self._cached_frames = input_data.get("sequence") or input_data.get(
+                "selfie_sequence"
+            )
             if doc_raw is None and selfie_raw is None and len(input_data) > 0:
                 doc_raw = next(iter(input_data.values()))
         elif isinstance(input_data, (list, tuple)):
@@ -137,7 +144,9 @@ class FaceProcessor(BaseProcessor):
         def _prepare_canvas(raw_item: Any) -> np.ndarray:
             rgb = _to_rgb_image(raw_item)
             if HAS_PIL:
-                pil_img = Image.fromarray(rgb).resize(target_size, Image.Resampling.BILINEAR)
+                pil_img = Image.fromarray(rgb).resize(
+                    target_size, Image.Resampling.BILINEAR
+                )
                 return np.array(pil_img, dtype=np.uint8)
             else:
                 # Pure numpy nearest neighbor resize
@@ -149,14 +158,18 @@ class FaceProcessor(BaseProcessor):
         if doc_raw is not None and selfie_raw is not None:
             canvas_doc = _prepare_canvas(doc_raw)
             canvas_selfie = _prepare_canvas(selfie_raw)
-            return np.stack([canvas_doc, canvas_selfie], axis=0)  # Shape (2, 256, 256, 3)
+            return np.stack(
+                [canvas_doc, canvas_selfie], axis=0
+            )  # Shape (2, 256, 256, 3)
         elif doc_raw is not None:
             canvas_doc = _prepare_canvas(doc_raw)
             return np.expand_dims(canvas_doc, axis=0)  # Shape (1, 256, 256, 3)
         else:
             raise ValueError("No valid image input provided to preprocess.")
 
-    def detect_face(self, image: np.ndarray) -> tuple[bool, float, np.ndarray | None, tuple[int, int, int, int]]:
+    def detect_face(
+        self, image: np.ndarray
+    ) -> tuple[bool, float, np.ndarray | None, tuple[int, int, int, int]]:
         """
         Detect face in an image.
         Returns:
@@ -194,11 +207,15 @@ class FaceProcessor(BaseProcessor):
 
         # Upper face (eye band) should have localized contrast dips (pupils/eyebrows)
         fh, fw = gray_face.shape
-        eye_band = gray_face[int(0.2 * fh):int(0.45 * fh), int(0.15 * fw):int(0.85 * fw)]
+        eye_band = gray_face[
+            int(0.2 * fh) : int(0.45 * fh), int(0.15 * fw) : int(0.85 * fw)
+        ]
         eye_contrast = float(np.std(eye_band)) if eye_band.size > 0 else 0.0
 
         # Mouth band contrast
-        mouth_band = gray_face[int(0.65 * fh):int(0.9 * fh), int(0.25 * fw):int(0.75 * fw)]
+        mouth_band = gray_face[
+            int(0.65 * fh) : int(0.9 * fh), int(0.25 * fw) : int(0.75 * fw)
+        ]
         mouth_contrast = float(np.std(mouth_band)) if mouth_band.size > 0 else 0.0
 
         confidence = 0.50
@@ -216,14 +233,21 @@ class FaceProcessor(BaseProcessor):
         standard_crop: np.ndarray | None = None
         if detected:
             if HAS_PIL:
-                pil_crop = Image.fromarray(face_crop).resize((128, 128), Image.Resampling.BILINEAR)
+                pil_crop = Image.fromarray(face_crop).resize(
+                    (128, 128), Image.Resampling.BILINEAR
+                )
                 standard_crop = np.array(pil_crop, dtype=np.uint8)
             else:
                 y_c = (np.linspace(0, fh - 1, 128)).astype(int)
                 x_c = (np.linspace(0, fw - 1, 128)).astype(int)
                 standard_crop = face_crop[np.ix_(y_c, x_c)]
 
-        return detected, round(confidence, 3), standard_crop, (min_x, min_y, box_w, box_h)
+        return (
+            detected,
+            round(confidence, 3),
+            standard_crop,
+            (min_x, min_y, box_w, box_h),
+        )
 
     def extract_embedding(self, face_crop: np.ndarray) -> np.ndarray:
         """
@@ -244,7 +268,9 @@ class FaceProcessor(BaseProcessor):
         block_w = w // 8
         for by in range(8):
             for bx in range(8):
-                b_crop = gray[by * block_h:(by + 1) * block_h, bx * block_w:(bx + 1) * block_w]
+                b_crop = gray[
+                    by * block_h : (by + 1) * block_h, bx * block_w : (bx + 1) * block_w
+                ]
                 features.append(float(np.mean(b_crop)))
 
         # 2. Horizontal and Vertical Gradient Energy Profiles (32 dimensions)
@@ -266,7 +292,14 @@ class FaceProcessor(BaseProcessor):
         # Log spectral power sampled along concentric rings
         center_y, center_x = h // 2, w // 2
         for r in range(2, 34):
-            val = float(np.mean(fshift[max(0, center_y - r):min(h, center_y + r), max(0, center_x - r):min(w, center_x + r)]))
+            val = float(
+                np.mean(
+                    fshift[
+                        max(0, center_y - r) : min(h, center_y + r),
+                        max(0, center_x - r) : min(w, center_x + r),
+                    ]
+                )
+            )
             features.append(np.log(val + 1.0))
 
         embedding = np.array(features[:128], dtype=np.float32)
@@ -329,7 +362,9 @@ class FaceProcessor(BaseProcessor):
                 self._last_liveness_result = liveness
 
                 # Verification requires matching similarity AND authentic liveness
-                is_same = bool((similarity >= self.similarity_threshold) and liveness["is_live"])
+                is_same = bool(
+                    (similarity >= self.similarity_threshold) and liveness["is_live"]
+                )
             else:
                 similarity = 0.0
                 is_same = False

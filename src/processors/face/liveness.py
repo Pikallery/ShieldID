@@ -25,6 +25,7 @@ import numpy as np
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -188,7 +189,9 @@ def check_passive_liveness(image_input: Any) -> dict[str, Any]:
     r_outer = min(h, w) // 3
 
     y_indices, x_indices = np.ogrid[:h, :w]
-    dist_from_center = np.sqrt((y_indices - center_y) ** 2 + (x_indices - center_x) ** 2)
+    dist_from_center = np.sqrt(
+        (y_indices - center_y) ** 2 + (x_indices - center_x) ** 2
+    )
 
     low_freq_mask = dist_from_center <= r_inner
     high_freq_mask = (dist_from_center > r_inner) & (dist_from_center <= r_outer)
@@ -273,7 +276,7 @@ def detect_deepfake(image_input: Any) -> dict[str, Any]:
     corner_size_y, corner_size_x = max(8, h // 8), max(8, w // 8)
     tl_corner = np.mean(psd[:corner_size_y, :corner_size_x])
     br_corner = np.mean(psd[-corner_size_y:, -corner_size_x:])
-    center = np.mean(psd[h // 2 - 4: h // 2 + 4, w // 2 - 4: w // 2 + 4])
+    center = np.mean(psd[h // 2 - 4 : h // 2 + 4, w // 2 - 4 : w // 2 + 4])
 
     corner_ratio = float((tl_corner + br_corner) / max(center, 1e-5))
     spectral_anomaly = corner_ratio > 0.15
@@ -295,8 +298,8 @@ def detect_deepfake(image_input: Any) -> dict[str, Any]:
 
     # 3. Bilateral Symmetry & Corneal Reflection
     # In authentic natural photos, illumination across left and right eye zones is coherent
-    left_eye_zone = rgb[int(0.25 * h):int(0.40 * h), int(0.20 * w):int(0.45 * w)]
-    right_eye_zone = rgb[int(0.25 * h):int(0.40 * h), int(0.55 * w):int(0.80 * w)]
+    left_eye_zone = rgb[int(0.25 * h) : int(0.40 * h), int(0.20 * w) : int(0.45 * w)]
+    right_eye_zone = rgb[int(0.25 * h) : int(0.40 * h), int(0.55 * w) : int(0.80 * w)]
 
     eye_lighting_diff = 0.0
     if left_eye_zone.size > 0 and right_eye_zone.size > 0:
@@ -346,7 +349,9 @@ def evaluate_liveness(
         is_live = is_live and active_res["active_passed"]
 
     # Composite liveness confidence [0.0, 1.0]
-    liveness_score = passive_res["passive_score"] * (1.0 - deepfake_res["deepfake_score"])
+    liveness_score = passive_res["passive_score"] * (
+        1.0 - deepfake_res["deepfake_score"]
+    )
     if active_res is not None:
         liveness_score = (liveness_score * 0.5) + (active_res["confidence"] * 0.5)
 

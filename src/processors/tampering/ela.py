@@ -15,6 +15,7 @@ import numpy as np
 
 try:
     from PIL import Image, ImageChops
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -81,11 +82,16 @@ def compute_ela(
             # Simulated compression artifact gradient
             diff = np.abs(arr - np.roll(arr, 1, axis=0)) * scale
             diff = np.clip(diff, 0, 255).astype(np.uint8)
-            return diff, {"mean_error": float(np.mean(diff)), "std_error": float(np.std(diff)), "max_error": float(np.max(diff)), "p95_error": float(np.percentile(diff, 95))}
+            return diff, {
+                "mean_error": float(np.mean(diff)),
+                "std_error": float(np.std(diff)),
+                "max_error": float(np.max(diff)),
+                "p95_error": float(np.percentile(diff, 95)),
+            }
         raise RuntimeError("Pillow is required for full ELA computation.")
 
     orig_img = _to_pil_image(image_input)
-    
+
     # Save original to in-memory JPEG at target quality
     buffer = io.BytesIO()
     orig_img.save(buffer, format="JPEG", quality=quality)
@@ -185,7 +191,9 @@ def detect_ela_tampering(
         box_x1 = min_x * block_size
         box_x2 = min(w, (max_x + 1) * block_size)
 
-        tampered_regions.append(f"ela_anomaly_cluster: [{box_x1}, {box_y1}, {box_x2}, {box_y2}]")
+        tampered_regions.append(
+            f"ela_anomaly_cluster: [{box_x1}, {box_y1}, {box_x2}, {box_y2}]"
+        )
 
         # If multiple distinct clusters exist, record individual regions
         if suspicious_count >= 4:
@@ -199,9 +207,13 @@ def detect_ela_tampering(
     # Calculate calibrated tamper score (0.0 to 100.0)
     # Ratio of anomalous blocks, ratio of max block mean to global mean, and std
     anomaly_ratio = suspicious_count / max(total_blocks, 1)
-    contrast_ratio = (stats["max_error"] / max(stats["mean_error"] + 1e-5, 1.0))
+    contrast_ratio = stats["max_error"] / max(stats["mean_error"] + 1e-5, 1.0)
 
-    raw_score = (anomaly_ratio * 50.0) + min(35.0, stats["std_error"] * 2.0) + min(15.0, (contrast_ratio - 1.0) * 3.0)
+    raw_score = (
+        (anomaly_ratio * 50.0)
+        + min(35.0, stats["std_error"] * 2.0)
+        + min(15.0, (contrast_ratio - 1.0) * 3.0)
+    )
     tamper_score = float(np.clip(raw_score, 0.0, 100.0))
 
     is_tampered = tamper_score >= 30.0 and len(tampered_regions) > 0

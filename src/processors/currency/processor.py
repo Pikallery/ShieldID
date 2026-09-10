@@ -214,7 +214,9 @@ class CurrencyProcessor(BaseProcessor):
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (7, 7))
         closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
-        contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
 
         boundary_detected = False
         rectified = None
@@ -279,9 +281,7 @@ class CurrencyProcessor(BaseProcessor):
 
     # ── 2. Denomination Identification ────────────────────────────────────
 
-    def identify_denomination(
-        self, note_image: np.ndarray
-    ) -> tuple[int | None, float]:
+    def identify_denomination(self, note_image: np.ndarray) -> tuple[int | None, float]:
         """
         Identify note denomination (10, 50, 100, 200, 500) based on HSV color profile.
         """
@@ -438,7 +438,9 @@ class CurrencyProcessor(BaseProcessor):
         peak_val = float(col_energy[peak_col_idx])
 
         # 2. Check vertical continuity along the peak column
-        thread_strip = gray_roi[:, max(0, peak_col_idx - 3) : min(roi.shape[1], peak_col_idx + 4)]
+        thread_strip = gray_roi[
+            :, max(0, peak_col_idx - 3) : min(roi.shape[1], peak_col_idx + 4)
+        ]
         row_means = np.mean(thread_strip, axis=1)
 
         # Authentic thread has periodic windows (exposed dashes) producing luminance oscillations
@@ -541,9 +543,7 @@ class CurrencyProcessor(BaseProcessor):
 
     # ── 6. UV Feature Inspection ──────────────────────────────────────────
 
-    def check_uv_features(
-        self, note_image: np.ndarray
-    ) -> SecurityFeatureCheck:
+    def check_uv_features(self, note_image: np.ndarray) -> SecurityFeatureCheck:
         """
         Inspect UV fluorescent security response.
         Banknote substrate is cotton-rag paper free of optical brighteners (OBAs).
@@ -567,7 +567,6 @@ class CurrencyProcessor(BaseProcessor):
 
         # Commercial paper bleached with OBAs has disproportionately high blue emission
         is_oba_fluorescing = mean_b > 220 and (mean_b - mean_r > 30)
-
 
         if is_oba_fluorescing:
             return SecurityFeatureCheck(
@@ -619,13 +618,19 @@ class CurrencyProcessor(BaseProcessor):
         if not watermark_check.is_valid:
             reasons.append(watermark_check.details or "Watermark verification failed")
         if not thread_check.is_valid:
-            reasons.append(thread_check.details or "Security thread verification failed")
+            reasons.append(
+                thread_check.details or "Security thread verification failed"
+            )
         if not micro_check.is_valid:
-            reasons.append(micro_check.details or "Micro-printing sharpness check failed")
+            reasons.append(
+                micro_check.details or "Micro-printing sharpness check failed"
+            )
         if uv_check and not uv_check.is_valid:
             reasons.append(uv_check.details or "UV substrate inspection failed")
         if not boundary_detected:
-            reasons.append("Banknote boundaries could not be cleanly isolated from background")
+            reasons.append(
+                "Banknote boundaries could not be cleanly isolated from background"
+            )
 
         # Fake note decision:
         # Must have valid watermark and security thread, and composite score >= threshold
@@ -636,4 +641,3 @@ class CurrencyProcessor(BaseProcessor):
         )
 
         return is_authentic, composite_score, reasons
-

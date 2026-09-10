@@ -6,148 +6,111 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.database import (
     Base,
-    ReportRecord,
-    VerificationRecord,
     get_db,
     init_db,
 )
+from src.models.document import Document
+from src.models.fraud_report import FraudReport
 
 # ==============================================================================
 # 1. ORM Model & Schema Metadata Inspection Tests
 # ==============================================================================
 
-def test_verification_record_table_structure():
-    """Verify table name, columns, types, and primary key for VerificationRecord."""
-    table = VerificationRecord.__table__
-    assert table.name == "verifications"
+
+def test_document_table_structure():
+    """Verify table name, columns, types, and primary key for Document."""
+    table = Document.__table__
+    assert table.name == "documents"
 
     # Primary key
     assert table.c.id.primary_key is True
 
     # Required columns
     assert table.c.document_type.nullable is False
-    assert table.c.document_number.nullable is False
-    assert table.c.risk_score.nullable is False
-    assert table.c.extracted_data.nullable is False
-
-    # Optional / defaulted columns
-    assert table.c.status.default is not None or table.c.status.server_default is not None
-    assert table.c.location_lat.nullable is True
-    assert table.c.location_lng.nullable is True
-    assert table.c.tamper_result.nullable is True
+    assert table.c.original_filename.nullable is False
+    assert table.c.file_path.nullable is False
+    assert table.c.file_hash.nullable is False
+    assert table.c.mime_type.nullable is False
+    assert table.c.file_size_bytes.nullable is False
 
 
-def test_verification_record_indexes():
-    """Verify essential performance indexes exist on verifications table."""
-    table = VerificationRecord.__table__
+def test_document_indexes():
+    """Verify essential performance indexes exist on documents table."""
+    table = Document.__table__
     index_names = {idx.name for idx in table.indexes}
 
-    assert "idx_verifications_status" in index_names
-    assert "idx_verifications_risk" in index_names
-    assert "idx_verifications_timestamp" in index_names
-    assert "idx_verifications_doc_number" in index_names
+    assert any("document_type" in name for name in index_names)
+    assert any("file_hash" in name for name in index_names)
 
 
-def test_report_record_table_structure():
-    """Verify table name, columns, constraints, and types for ReportRecord."""
-    table = ReportRecord.__table__
-    assert table.name == "reports"
+def test_fraud_report_table_structure():
+    """Verify table name, columns, constraints, and types for FraudReport."""
+    table = FraudReport.__table__
+    assert table.name == "fraud_reports"
 
     # Primary key
     assert table.c.id.primary_key is True
 
     # Unique constraint on fir_number
     assert table.c.fir_number.unique is True or any(
-        table.c.fir_number in uc.columns for uc in table.constraints if hasattr(uc, "columns")
+        table.c.fir_number in uc.columns
+        for uc in table.constraints
+        if hasattr(uc, "columns")
     )
     assert table.c.fir_number.nullable is False
 
-    # Required fields
-    assert table.c.document_type.nullable is False
-    assert table.c.description.nullable is False
 
-    # Optional fields
-    assert table.c.reporter_name.nullable is True
-    assert table.c.reporter_phone.nullable is True
-    assert table.c.location_lat.nullable is True
-    assert table.c.location_lng.nullable is True
-
-
-def test_report_record_indexes():
-    """Verify required indexes exist on reports table."""
-    table = ReportRecord.__table__
+def test_fraud_report_indexes():
+    """Verify required indexes exist on fraud_reports table."""
+    table = FraudReport.__table__
     index_names = {idx.name for idx in table.indexes}
 
-    assert "idx_reports_fir" in index_names
-    assert "idx_reports_status" in index_names
-    assert "idx_reports_timestamp" in index_names
+    assert any("fir_number" in name for name in index_names)
 
 
 # ==============================================================================
 # 2. Model Instantiation & Field Assignment Tests
 # ==============================================================================
 
-def test_create_verification_record_instance():
-    """Test instantiating a VerificationRecord with complete attributes."""
-    extracted_info = {
-        "name": "Rahul Sharma",
-        "passport_number": "Z1234567",
-        "nationality": "Indian",
-        "dob": "1990-01-15",
-    }
-    tamper_info = {
-        "is_tampered": False,
-        "tamper_score": 0.05,
-        "regions": [],
-    }
 
-    record = VerificationRecord(
+def test_create_document_instance():
+    """Test instantiating a Document with complete attributes."""
+    doc = Document(
         document_type="passport",
-        document_number="Z1234567",
-        risk_score=15.5,
-        status="verified",
-        location_lat=28.6139,
-        location_lng=77.2090,
-        extracted_data=extracted_info,
-        tamper_result=tamper_info,
+        original_filename="passport.jpg",
+        file_path="/uploads/passport.jpg",
+        file_hash="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        mime_type="image/jpeg",
+        file_size_bytes=102400,
     )
 
-    assert record.document_type == "passport"
-    assert record.document_number == "Z1234567"
-    assert record.risk_score == 15.5
-    assert record.status == "verified"
-    assert record.location_lat == 28.6139
-    assert record.location_lng == 77.2090
-    assert record.extracted_data["name"] == "Rahul Sharma"
-    assert record.tamper_result["is_tampered"] is False
+    assert doc.document_type == "passport"
+    assert doc.original_filename == "passport.jpg"
+    assert doc.file_path == "/uploads/passport.jpg"
+    assert doc.file_hash.startswith("e3b0c442")
+    assert doc.mime_type == "image/jpeg"
+    assert doc.file_size_bytes == 102400
 
 
-def test_create_report_record_instance():
-    """Test instantiating a ReportRecord with FIR and incident details."""
-    report = ReportRecord(
+def test_create_fraud_report_instance():
+    """Test instantiating a FraudReport with FIR and incident details."""
+    report = FraudReport(
         fir_number="FIR-2026-AB12CD",
-        document_type="aadhaar",
         description="Tampered Aadhaar card presented for KYC at bank branch",
-        reporter_name="Inspector S. Verma",
-        reporter_phone="9876543210",
-        location_lat=19.0760,
-        location_lng=72.8777,
-        status="pending",
+        assigned_station="Central Police Station",
+        report_status="filed",
     )
 
     assert report.fir_number == "FIR-2026-AB12CD"
-    assert report.document_type == "aadhaar"
     assert report.description.startswith("Tampered Aadhaar")
-    assert report.reporter_name == "Inspector S. Verma"
-    assert report.reporter_phone == "9876543210"
-    assert report.location_lat == 19.0760
-    assert report.location_lng == 72.8777
-    assert report.status == "pending"
+    assert report.assigned_station == "Central Police Station"
+    assert report.report_status == "filed"
 
 
 # ==============================================================================
 # 3. Async Database Session & Dependency Tests
 # ==============================================================================
+
 
 @pytest.mark.asyncio
 async def test_get_db_session_yields_async_session():
@@ -184,24 +147,17 @@ async def test_init_db_executes_create_all():
 # 4. Query Construction & Filter Logic Tests
 # ==============================================================================
 
-def test_select_verifications_by_status_query():
-    """Test SQL query construction for querying verifications by status."""
-    stmt = select(VerificationRecord).where(VerificationRecord.status == "verified")
+
+def test_select_documents_by_type_query():
+    """Test SQL query construction for querying documents by type."""
+    stmt = select(Document).where(Document.document_type == "passport")
     compiled_sql = str(stmt)
-    assert "verifications.status = :status_1" in compiled_sql
+    assert "documents.document_type = :document_type_1" in compiled_sql
 
 
-def test_select_verifications_by_risk_score_query():
-    """Test SQL query construction for filtering high-risk verifications."""
-    threshold = 50.0
-    stmt = select(VerificationRecord).where(VerificationRecord.risk_score >= threshold)
-    compiled_sql = str(stmt)
-    assert "verifications.risk_score >=" in compiled_sql
-
-
-def test_select_reports_by_fir_number_query():
+def test_select_fraud_reports_by_fir_query():
     """Test SQL query construction for locating an incident report by FIR number."""
     target_fir = "FIR-2026-009988"
-    stmt = select(ReportRecord).where(ReportRecord.fir_number == target_fir)
+    stmt = select(FraudReport).where(FraudReport.fir_number == target_fir)
     compiled_sql = str(stmt)
-    assert "reports.fir_number = :fir_number_1" in compiled_sql
+    assert "fraud_reports.fir_number = :fir_number_1" in compiled_sql

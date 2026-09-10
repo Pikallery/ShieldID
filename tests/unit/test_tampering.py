@@ -44,6 +44,7 @@ class MockTamperingProcessor(BaseProcessor):
 # 1. Base Processor Lifecycle & Contract Tests
 # ==============================================================================
 
+
 def test_tampering_processor_inherits_base_processor():
     """Verify TamperingProcessor adheres to BaseProcessor inheritance."""
     processor = MockTamperingProcessor(model_path="models/tamper.pth")
@@ -83,6 +84,7 @@ def test_tampering_processor_does_not_reload():
 # 2. Tampering Detection Scenarios & Schema Tests
 # ==============================================================================
 
+
 def test_tampering_result_schema_clean_document():
     """Test TamperingResult schema validation on a verified authentic document."""
     result = TamperingResult(
@@ -103,7 +105,11 @@ def test_tampering_result_schema_forged_document():
     result = TamperingResult(
         is_tampered=True,
         tamper_score=0.92,
-        tampering_regions=["photo_box_splicing", "dob_text_alteration", "stamp_copy_move"],
+        tampering_regions=[
+            "photo_box_splicing",
+            "dob_text_alteration",
+            "stamp_copy_move",
+        ],
         detection_method="Dual-Stream ELA + ResNet50 Tamper Detector",
     )
 
@@ -130,6 +136,7 @@ def test_tampering_detection_with_tampered_payload():
 # ==============================================================================
 # 3. Detection Methods & Scoring Logic Tests
 # ==============================================================================
+
 
 @pytest.mark.parametrize(
     "score, expected_tampered",
@@ -170,6 +177,7 @@ def test_tampering_detection_methods_supported():
 # ==============================================================================
 # 4. Error Handling & Edge Cases
 # ==============================================================================
+
 
 def test_tampering_empty_bytes_raises_error():
     """Verify empty input raises ValueError."""

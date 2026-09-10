@@ -54,7 +54,9 @@ class TamperingAnalysis(UUIDMixin, Base):
     ela_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     copy_move_detected: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     photo_swap_detected: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    text_alteration_detected: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    text_alteration_detected: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True
+    )
     stamp_forgery_detected: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     # ── Full model output (for auditability) ──────────────────────────────

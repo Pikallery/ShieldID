@@ -19,6 +19,7 @@ from src.schemas.verification import OCRResult
 
 # ─── Preprocessing Tests ───────────────────────────────────────────────────────
 
+
 def test_load_image_from_numpy():
     dummy = np.zeros((100, 100, 3), dtype=np.uint8)
     loaded = load_image(dummy)
@@ -67,6 +68,7 @@ def test_preprocess_document_pipeline():
 
 
 # ─── OCR Processor Tests ───────────────────────────────────────────────────────
+
 
 def test_ocr_processor_inheritance():
     processor = OCRProcessor()

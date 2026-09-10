@@ -8,7 +8,9 @@ from src.schemas import FaceVerificationResult
 class MockFaceProcessor(BaseProcessor):
     """Reference concrete implementation of BaseProcessor for Face Verification tests."""
 
-    def __init__(self, model_path: str | None = None, similarity_threshold: float = 0.70):
+    def __init__(
+        self, model_path: str | None = None, similarity_threshold: float = 0.70
+    ):
         super().__init__(model_path)
         self.similarity_threshold = similarity_threshold
 
@@ -18,17 +20,22 @@ class MockFaceProcessor(BaseProcessor):
     def preprocess(self, input_data: tuple[bytes, bytes] | dict | np.ndarray) -> dict:
         if isinstance(input_data, tuple):
             if len(input_data) != 2:
-                raise ValueError("Face processor requires a pair of (document_bytes, selfie_bytes)")
+                raise ValueError(
+                    "Face processor requires a pair of (document_bytes, selfie_bytes)"
+                )
             doc_bytes, selfie_bytes = input_data
             if len(doc_bytes) == 0 or len(selfie_bytes) == 0:
                 raise ValueError("Document or selfie bytes cannot be empty")
             return {
                 "doc_emb": np.frombuffer(doc_bytes[:16], dtype=np.uint8),
                 "selfie_emb": np.frombuffer(selfie_bytes[:16], dtype=np.uint8),
-                "has_face": b"NO_FACE" not in doc_bytes and b"NO_FACE" not in selfie_bytes,
+                "has_face": b"NO_FACE" not in doc_bytes
+                and b"NO_FACE" not in selfie_bytes,
                 "is_match": b"DIFFERENT_PERSON" not in selfie_bytes,
             }
-        raise TypeError(f"Unsupported input type for face processing: {type(input_data)}")
+        raise TypeError(
+            f"Unsupported input type for face processing: {type(input_data)}"
+        )
 
     def predict(self, processed_input: dict) -> dict:
         if not processed_input["has_face"]:
@@ -54,6 +61,7 @@ class MockFaceProcessor(BaseProcessor):
 # ==============================================================================
 # 1. Base Processor Contract Tests for Face Biometrics
 # ==============================================================================
+
 
 def test_face_processor_inherits_base_processor():
     """Verify FaceProcessor adheres to BaseProcessor inheritance and contracts."""
@@ -96,6 +104,7 @@ def test_face_processor_does_not_reload():
 # ==============================================================================
 # 2. Biometric Matching & Verification Scenarios
 # ==============================================================================
+
 
 def test_face_verification_matching_person():
     """Test verification when document photo and selfie match the same individual."""
@@ -145,6 +154,7 @@ def test_face_verification_no_face_detected():
 # 3. Thresholds & Schema Validation
 # ==============================================================================
 
+
 @pytest.mark.parametrize(
     "score, threshold, expected_match",
     [
@@ -192,6 +202,7 @@ def test_face_risk_calculation_integration():
 # ==============================================================================
 # 4. Error Handling & Edge Cases
 # ==============================================================================
+
 
 def test_face_processor_missing_tuple_raises_error():
     """Verify passing a single item instead of a 2-element tuple raises ValueError."""

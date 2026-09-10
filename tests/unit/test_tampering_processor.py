@@ -26,8 +26,8 @@ def clean_document_image():
     img_arr = np.full((200, 300, 3), 245, dtype=np.uint8)
     # Simulate some document structure
     img_arr[20:100, 200:280] = 180  # Photo frame
-    img_arr[120:130, 20:250] = 50   # Text line 1
-    img_arr[140:150, 20:200] = 50   # Text line 2
+    img_arr[120:130, 20:250] = 50  # Text line 1
+    img_arr[140:150, 20:200] = 50  # Text line 2
     return img_arr
 
 
@@ -36,7 +36,9 @@ def tampered_document_image(clean_document_image):
     """Generates a spliced/tampered document canvas with high contrast digital artifact."""
     tampered = clean_document_image.copy()
     # Digital vector patch with sharp boundaries and noise mismatch
-    tampered[40:80, 210:270] = np.random.randint(0, 255, size=(40, 60, 3), dtype=np.uint8)
+    tampered[40:80, 210:270] = np.random.randint(
+        0, 255, size=(40, 60, 3), dtype=np.uint8
+    )
     return tampered
 
 

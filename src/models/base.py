@@ -29,6 +29,7 @@ class UUIDMixin:
     Uses PostgreSQL's gen_random_uuid() as the server default
     so that rows get a valid UUID even when inserted via raw SQL.
     """
+
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -44,6 +45,7 @@ class TimestampMixin:
     - `created_at` is set once at insert time by the DB server.
     - `updated_at` is updated on every row change via onupdate.
     """
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

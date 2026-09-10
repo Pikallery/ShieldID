@@ -62,8 +62,7 @@ def structural_similarity(reference: np.ndarray, query: np.ndarray) -> float:
     c1 = 6.5025
     c2 = 58.5225
     score = ((2 * mean_first * mean_second + c1) * (2 * covariance + c2)) / (
-        (mean_first**2 + mean_second**2 + c1)
-        * (variance_first + variance_second + c2)
+        (mean_first**2 + mean_second**2 + c1) * (variance_first + variance_second + c2)
     )
     return float(np.clip(np.mean(score), 0.0, 1.0))
 

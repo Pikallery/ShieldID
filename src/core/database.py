@@ -21,16 +21,27 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.core.config import settings
+from src.models.base import Base
+
+__all__ = [
+    "AsyncSessionLocal",
+    "Base",
+    "create_db_tables",
+    "dispose_engine",
+    "engine",
+    "get_db",
+    "init_db",
+]
 
 # ── Engine ────────────────────────────────────────────────────────────────────
 # echo=True logs all SQL statements in development. Set to False in production.
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=(settings.MODE == "development"),
-    pool_pre_ping=True,   # Verify connection before checkout
-    pool_size=10,         # Max persistent connections
-    max_overflow=20,      # Extra connections allowed under burst load
-    pool_recycle=3600,    # Recycle connections after 1 hour
+    pool_pre_ping=True,  # Verify connection before checkout
+    pool_size=10,  # Max persistent connections
+    max_overflow=20,  # Extra connections allowed under burst load
+    pool_recycle=3600,  # Recycle connections after 1 hour
 )
 
 # ── Session factory ───────────────────────────────────────────────────────────
@@ -73,13 +84,15 @@ async def create_db_tables() -> None:
     This is a convenience helper for development / testing.
     """
     import src.models  # noqa: F401 — ensures all models are registered
-    from src.models.base import Base
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 
+# Alias for backward compatibility / tests
+init_db = create_db_tables
+
+
 async def dispose_engine() -> None:
     """Cleanly dispose of the engine connection pool on shutdown."""
     await engine.dispose()
-

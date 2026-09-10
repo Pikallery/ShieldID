@@ -83,7 +83,9 @@ class OCRProcessor(BaseProcessor):
         Preprocess input image with deskewing, binarization, noise removal,
         and contrast enhancement.
         """
-        return preprocess_document(input_data, deskew_enabled=True, denoise_method="bilateral")
+        return preprocess_document(
+            input_data, deskew_enabled=True, denoise_method="bilateral"
+        )
 
     def predict(self, processed_input: np.ndarray) -> dict[str, Any]:
         """
@@ -103,9 +105,7 @@ class OCRProcessor(BaseProcessor):
 
     # ── Text Extraction Internal ──────────────────────────────────────────
 
-    def _extract_text_and_confidence(
-        self, image: np.ndarray
-    ) -> tuple[str, float]:
+    def _extract_text_and_confidence(self, image: np.ndarray) -> tuple[str, float]:
         """
         Run EasyOCR Reader if available; otherwise return placeholder / inspect image.
         """
@@ -177,7 +177,11 @@ class OCRProcessor(BaseProcessor):
         upper = text.upper()
 
         # Check Passport markers
-        if "PASSPORT" in upper or "REPUBLIC OF INDIA" in upper or re.search(r"P<IND", upper):
+        if (
+            "PASSPORT" in upper
+            or "REPUBLIC OF INDIA" in upper
+            or re.search(r"P<IND", upper)
+        ):
             return DocumentType.PASSPORT
 
         # Check Aadhaar markers
@@ -306,7 +310,6 @@ class OCRProcessor(BaseProcessor):
         if sn_match:
             surname = sn_match.group(1).split("\n")[0].strip()
 
-
         if given_name or surname:
             name = f"{given_name} {surname}".strip()
         else:
@@ -330,7 +333,6 @@ class OCRProcessor(BaseProcessor):
                     ):
                         name = line.strip()
                         break
-
 
         return PassportData(
             name=name,
@@ -489,9 +491,7 @@ class OCRProcessor(BaseProcessor):
 
         # License Number: e.g., DL-0420110012345 or MH12 20110012345
         dl_number = "DL0000000000000"
-        dl_match = re.search(
-            r"\b([A-Z]{2}[-\s]?[0-9]{2}[-\s]?[0-9]{11})\b", upper
-        )
+        dl_match = re.search(r"\b([A-Z]{2}[-\s]?[0-9]{2}[-\s]?[0-9]{11})\b", upper)
         if dl_match:
             dl_number = dl_match.group(1)
         else:
@@ -499,7 +499,9 @@ class OCRProcessor(BaseProcessor):
             if dl_match_alt:
                 dl_number = dl_match_alt.group(1)
             else:
-                num_match = re.search(r"(?:DL\s*NO|LICENCE\s*NO)[:\s]*([A-Z0-9\-\s]+)", upper)
+                num_match = re.search(
+                    r"(?:DL\s*NO|LICENCE\s*NO)[:\s]*([A-Z0-9\-\s]+)", upper
+                )
                 if num_match:
                     dl_number = num_match.group(1).split("\n")[0].strip()
 
@@ -537,7 +539,16 @@ class OCRProcessor(BaseProcessor):
         if name_match:
             name = name_match.group(1).split("\n")[0].strip()
         else:
-            ignore = {"DRIVING", "LICENCE", "LICENSE", "UNION", "INDIA", "TRANSPORT", "VALID", "FORM"}
+            ignore = {
+                "DRIVING",
+                "LICENCE",
+                "LICENSE",
+                "UNION",
+                "INDIA",
+                "TRANSPORT",
+                "VALID",
+                "FORM",
+            }
             for line in lines:
                 tokens = set(line.upper().split())
                 if (
@@ -594,7 +605,15 @@ class OCRProcessor(BaseProcessor):
         if name_match:
             name = name_match.group(1).split("\n")[0].strip()
         else:
-            ignore = {"ELECTION", "COMMISSION", "INDIA", "ELECTOR", "PHOTO", "IDENTITY", "CARD"}
+            ignore = {
+                "ELECTION",
+                "COMMISSION",
+                "INDIA",
+                "ELECTOR",
+                "PHOTO",
+                "IDENTITY",
+                "CARD",
+            }
             for line in lines:
                 tokens = set(line.upper().split())
                 if (
@@ -637,7 +656,11 @@ class OCRProcessor(BaseProcessor):
         match = re.search(r"(\d{2})[/-](\d{2})[/-](\d{4})", date_str)
         if match:
             try:
-                day, month, year = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                day, month, year = (
+                    int(match.group(1)),
+                    int(match.group(2)),
+                    int(match.group(3)),
+                )
                 return date(year, month, day)
             except ValueError:
                 pass
@@ -648,4 +671,3 @@ class OCRProcessor(BaseProcessor):
             return date(int(year_match.group(1)), 1, 1)
 
         return None
-

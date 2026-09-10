@@ -16,6 +16,7 @@ def client():
 # 1. System Liveness & Operational Endpoints
 # ==============================================================================
 
+
 def test_root_endpoint_integration(client):
     """Test GET / returns service information and active API docs route."""
     response = client.get("/")
@@ -48,6 +49,7 @@ def test_openapi_schema_generation(client):
 # ==============================================================================
 # 2. Document Verification Integration Flow
 # ==============================================================================
+
 
 def test_verify_document_pdf_upload(client):
     """Test POST /api/v1/verify/document with PDF file upload."""
@@ -101,6 +103,7 @@ def test_get_verification_status_polling(client):
 # 3. Instant KYC Integration Flow
 # ==============================================================================
 
+
 def test_instant_kyc_successful_request(client):
     """Test POST /api/v1/kyc/instant creates token, QR code, and DigiLocker redirect."""
     payload = {
@@ -140,6 +143,7 @@ def test_instant_kyc_validation_error_on_empty_payload(client):
 # 4. Fraud Document Reporting & FIR Integration Flow
 # ==============================================================================
 
+
 def test_report_fake_document_with_coordinates(client):
     """Test POST /api/v1/report/fake generates an FIR number and dispatches station."""
     fake_doc_bytes = b"FORGED_PAN_CARD_SCAN_CONTENT"
@@ -176,6 +180,7 @@ def test_report_fake_document_missing_file_returns_422(client):
 # ==============================================================================
 # 5. Routing, Methods, and CORS
 # ==============================================================================
+
 
 def test_nonexistent_route_returns_404(client):
     """Test accessing an undefined route returns 404 Not Found."""

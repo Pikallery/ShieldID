@@ -37,19 +37,27 @@ class VerificationService:
             "risk_score": risk_score,
             "ocr_data": ocr_result,
             "tamper_data": tamper_result,
-            "face_data": face_result
+            "face_data": face_result,
         }
 
-    def _calculate_risk(self, ocr: OCRResult, tamper: TamperingResult, face: FaceVerificationResult):
+    def _calculate_risk(
+        self, ocr: OCRResult, tamper: TamperingResult, face: FaceVerificationResult
+    ):
         overall_risk = (
-            (1 - ocr.confidence_score) * 30 +
-            tamper.tamper_score * 40 +
-            (1 - face.similarity_score) * 30 if face else 0
+            (1 - ocr.confidence_score) * 30
+            + tamper.tamper_score * 40
+            + (1 - face.similarity_score) * 30
+            if face
+            else 0
         )
         return RiskScoreResult(
             overall_risk=overall_risk,
             ocr_risk=(1 - ocr.confidence_score) * 100,
             tamper_risk=tamper.tamper_score * 100,
             face_risk=(1 - face.similarity_score) * 100 if face else 0,
-            recommendation="APPROVE" if overall_risk < 40 else "REVIEW_MANUALLY" if overall_risk < 70 else "REJECT"
+            recommendation="APPROVE"
+            if overall_risk < 40
+            else "REVIEW_MANUALLY"
+            if overall_risk < 70
+            else "REJECT",
         )

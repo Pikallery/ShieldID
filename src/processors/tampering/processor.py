@@ -28,6 +28,7 @@ from .metadata import analyze_metadata
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -51,7 +52,11 @@ class TamperingProcessor(BaseProcessor):
         Load neural or heuristic tampering detection model from disk or initialize default engine.
         """
         default_model_dir = Path(__file__).resolve().parents[3] / "models" / "tampering"
-        model_file = Path(self.model_path) if self.model_path else (default_model_dir / "tamper_config.json")
+        model_file = (
+            Path(self.model_path)
+            if self.model_path
+            else (default_model_dir / "tamper_config.json")
+        )
 
         if model_file.exists():
             # Load custom model weights or configuration
@@ -115,7 +120,9 @@ class TamperingProcessor(BaseProcessor):
         if HAS_PIL and isinstance(input_data, Image.Image):
             return np.array(input_data.convert("RGB"), dtype=np.uint8)
 
-        raise TypeError(f"Unsupported input type for TamperingProcessor: {type(input_data)}")
+        raise TypeError(
+            f"Unsupported input type for TamperingProcessor: {type(input_data)}"
+        )
 
     def detect_photo_replacement(self, image: np.ndarray) -> dict[str, Any]:
         """
@@ -130,13 +137,29 @@ class TamperingProcessor(BaseProcessor):
         # Candidate photo region for standard ID documents (commonly top-left or top-right or right side)
         # Scan candidate sub-regions (e.g. right 30% x top 50%, or left 35% x top 50%)
         candidate_boxes = [
-            ("photo_region_right", int(0.08 * h), int(0.55 * h), int(0.60 * w), int(0.92 * w)),
-            ("photo_region_left", int(0.12 * h), int(0.60 * h), int(0.08 * w), int(0.40 * w)),
+            (
+                "photo_region_right",
+                int(0.08 * h),
+                int(0.55 * h),
+                int(0.60 * w),
+                int(0.92 * w),
+            ),
+            (
+                "photo_region_left",
+                int(0.12 * h),
+                int(0.60 * h),
+                int(0.08 * w),
+                int(0.40 * w),
+            ),
         ]
 
         # Background reference noise (sample from middle-bottom document text background)
-        bg_sample = gray[int(0.65 * h):int(0.85 * h), int(0.20 * w):int(0.80 * w)]
-        bg_noise = float(np.std(bg_sample - np.roll(bg_sample, 1, axis=0))) if bg_sample.size > 0 else 5.0
+        bg_sample = gray[int(0.65 * h) : int(0.85 * h), int(0.20 * w) : int(0.80 * w)]
+        bg_noise = (
+            float(np.std(bg_sample - np.roll(bg_sample, 1, axis=0)))
+            if bg_sample.size > 0
+            else 5.0
+        )
 
         detected = False
         max_score = 0.0
@@ -156,15 +179,19 @@ class TamperingProcessor(BaseProcessor):
 
             # Check boundary edge discontinuity
             # Top boundary gradient
-            top_outer = gray[max(0, y1 - 4):y1, x1:x2]
-            top_inner = gray[y1:min(h, y1 + 4), x1:x2]
+            top_outer = gray[max(0, y1 - 4) : y1, x1:x2]
+            top_inner = gray[y1 : min(h, y1 + 4), x1:x2]
             boundary_diff = 0.0
             if top_outer.size > 0 and top_inner.size > 0:
-                boundary_diff = abs(float(np.mean(top_outer)) - float(np.mean(top_inner)))
+                boundary_diff = abs(
+                    float(np.mean(top_outer)) - float(np.mean(top_inner))
+                )
 
             # If noise profile diverges sharply (> 180% mismatch) or sharp boundary edge jump
             if noise_ratio > 2.2 and boundary_diff > 45.0:
-                region_score = min(95.0, 40.0 + (noise_ratio * 15.0) + (boundary_diff * 0.4))
+                region_score = min(
+                    95.0, 40.0 + (noise_ratio * 15.0) + (boundary_diff * 0.4)
+                )
                 if region_score > max_score:
                     max_score = region_score
                     detected = True
@@ -218,7 +245,9 @@ class TamperingProcessor(BaseProcessor):
             sy2 = min(h, (i + 1) * slice_h)
             # Energy spike indicative of sharp vector text overlay on noisy scanned document
             if energy > mean_energy + (2.8 * max(std_energy, 1.0)):
-                flagged_regions.append(f"text_manipulation_line_{i + 1}: [0, {sy1}, {w}, {sy2}]")
+                flagged_regions.append(
+                    f"text_manipulation_line_{i + 1}: [0, {sy1}, {w}, {sy2}]"
+                )
 
         score = min(90.0, len(flagged_regions) * 28.0)
         return {
@@ -238,7 +267,13 @@ class TamperingProcessor(BaseProcessor):
         # Date fields in Indian documents are typically in the upper-middle or lower-middle
         date_search_zones = [
             ("dob_field", int(0.30 * h), int(0.50 * h), int(0.20 * w), int(0.65 * w)),
-            ("expiry_field", int(0.48 * h), int(0.68 * h), int(0.20 * w), int(0.65 * w)),
+            (
+                "expiry_field",
+                int(0.48 * h),
+                int(0.68 * h),
+                int(0.20 * w),
+                int(0.65 * w),
+            ),
         ]
 
         flagged_regions: list[str] = []
@@ -307,11 +342,15 @@ class TamperingProcessor(BaseProcessor):
 
             # In authentic ink stamps, color varies continuously with stamp pressure.
             # In synthetic digital stamps, color is unnaturally uniform (very low variance in ink areas).
-            ink_variance = float(np.std(stamp_crop_b[stamp_mask[min_y:max_y, min_x:max_x]]))
+            ink_variance = float(
+                np.std(stamp_crop_b[stamp_mask[min_y:max_y, min_x:max_x]])
+            )
 
             if ink_variance < 6.5:  # Unnaturally uniform digital vector color
                 score = min(88.0, 50.0 + (10.0 - ink_variance) * 4.0)
-                flagged_regions.append(f"synthetic_stamp_seal: [{min_x}, {min_y}, {max_x}, {max_y}]")
+                flagged_regions.append(
+                    f"synthetic_stamp_seal: [{min_x}, {min_y}, {max_x}, {max_y}]"
+                )
 
         return {
             "detected": len(flagged_regions) > 0,
@@ -333,7 +372,9 @@ class TamperingProcessor(BaseProcessor):
 
         flagged_regions = list(ela_res.get("regions", []))
         if meta_res.get("software_detected"):
-            flagged_regions.append(f"software_signature: {', '.join(meta_res['software_detected'])}")
+            flagged_regions.append(
+                f"software_signature: {', '.join(meta_res['software_detected'])}"
+            )
 
         composite_score = max(ela_res["tamper_score"], meta_res["metadata_score"])
         if ela_res["is_tampered"] and meta_res["is_suspicious"]:
@@ -433,7 +474,9 @@ class TamperingProcessor(BaseProcessor):
             photo_res, text_res, date_res, stamp_res, digital_res
         )
 
-        is_tampered = bool(overall_score >= self.tamper_threshold or len(tampering_regions) > 0)
+        is_tampered = bool(
+            overall_score >= self.tamper_threshold or len(tampering_regions) > 0
+        )
 
         result_dict = {
             "is_tampered": is_tampered,

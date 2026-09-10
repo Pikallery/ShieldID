@@ -12,6 +12,7 @@ class DocumentType(str, Enum):
     DRIVING_LICENSE = "driving_license"
     VOTER_ID = "voter_id"
 
+
 class PassportData(BaseModel):
     name: str
     passport_number: str
@@ -20,16 +21,19 @@ class PassportData(BaseModel):
     date_of_expiry: date
     gender: str
 
+
 class AadhaarData(BaseModel):
     name: str
     aadhaar_number: str
     date_of_birth: date | None = None
     gender: str | None = None
 
+
 class PANData(BaseModel):
     name: str
     pan_number: str
     date_of_birth: date | None = None
+
 
 class DrivingLicenseData(BaseModel):
     name: str
@@ -37,6 +41,7 @@ class DrivingLicenseData(BaseModel):
     date_of_birth: date | None = None
     date_of_expiry: date | None = None
     gender: str | None = None
+
 
 class VoterIDData(BaseModel):
     name: str

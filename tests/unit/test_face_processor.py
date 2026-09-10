@@ -30,7 +30,7 @@ def synthetic_face_canvas():
     canvas[30:170, 40:160] = [190, 140, 110]
 
     # Eyes (dark pupils/irises)
-    canvas[70:85, 65:85] = [40, 30, 25]    # Left eye
+    canvas[70:85, 65:85] = [40, 30, 25]  # Left eye
     canvas[70:85, 115:135] = [40, 30, 25]  # Right eye
 
     # Eyebrows
@@ -154,7 +154,7 @@ def test_active_liveness_frames(synthetic_face_canvas):
     frame2 = synthetic_face_canvas.copy()
     # Simulate slight eye blink in frame 2
     frame2[70:85, 65:85] = [190, 140, 110]  # Close left eye
-    frame2[70:85, 115:135] = [190, 140, 110] # Close right eye
+    frame2[70:85, 115:135] = [190, 140, 110]  # Close right eye
     frame3 = synthetic_face_canvas.copy()
 
     res = check_active_liveness([frame1, frame2, frame3])

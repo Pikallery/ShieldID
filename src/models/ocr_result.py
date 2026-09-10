@@ -68,6 +68,7 @@ class OCRResult(UUIDMixin, Base):
 
     from sqlalchemy import DateTime
     from sqlalchemy import func as _func
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=_func.now()
     )

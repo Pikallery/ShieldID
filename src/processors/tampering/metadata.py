@@ -15,6 +15,7 @@ from typing import Any
 
 try:
     from PIL import ExifTags, Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -115,7 +116,9 @@ def extract_raw_metadata(image_input: Any) -> dict[str, Any]:
                             raw_info["exif"][tag_name] = val
                         elif isinstance(val, bytes):
                             try:
-                                raw_info["exif"][tag_name] = val.decode("utf-8", errors="ignore").strip()
+                                raw_info["exif"][tag_name] = val.decode(
+                                    "utf-8", errors="ignore"
+                                ).strip()
                             except (UnicodeDecodeError, AttributeError):
                                 logger.debug("Unable to decode EXIF metadata value")
 
@@ -154,7 +157,14 @@ def check_editing_software(metadata: dict[str, Any]) -> tuple[list[str], float]:
 
     candidates_to_check: list[str] = []
 
-    for key in ["Software", "ProcessingSoftware", "ImageDescription", "Artist", "HostComputer", "XMP"]:
+    for key in [
+        "Software",
+        "ProcessingSoftware",
+        "ImageDescription",
+        "Artist",
+        "HostComputer",
+        "XMP",
+    ]:
         if key in exif and isinstance(exif[key], str):
             candidates_to_check.append(exif[key])
 
@@ -177,7 +187,13 @@ def check_editing_software(metadata: dict[str, Any]) -> tuple[list[str], float]:
     if detected:
         # Software detected heavily correlates with digital manipulation
         # Professional editing tools (Photoshop, GIMP, Photopea) give very high score
-        primary_manipulators = ["adobe photoshop", "photoshop", "gimp", "photopea", "paint.net"]
+        primary_manipulators = [
+            "adobe photoshop",
+            "photoshop",
+            "gimp",
+            "photopea",
+            "paint.net",
+        ]
         if any(p in detected for p in primary_manipulators):
             risk_score = 90.0
         else:
@@ -222,7 +238,11 @@ def check_date_consistency(metadata: dict[str, Any]) -> tuple[list[str], float]:
     now = datetime.now(timezone.utc)
 
     # 1. Check for future dates
-    for label, dt in [("DateTimeOriginal", dt_orig), ("DateTimeDigitized", dt_dig), ("ModifyDate", dt_mod)]:
+    for label, dt in [
+        ("DateTimeOriginal", dt_orig),
+        ("DateTimeDigitized", dt_dig),
+        ("ModifyDate", dt_mod),
+    ]:
         if dt and dt > now:
             inconsistencies.append(f"{label} is set in the future ({dt})")
             risk_score = max(risk_score, 60.0)
@@ -230,9 +250,13 @@ def check_date_consistency(metadata: dict[str, Any]) -> tuple[list[str], float]:
     # 2. Check if modification date precedes creation date (impossible without clock tampering)
     if dt_orig and dt_mod:
         if dt_mod < dt_orig:
-            inconsistencies.append(f"ModifyDate ({dt_mod}) is earlier than DateTimeOriginal ({dt_orig})")
+            inconsistencies.append(
+                f"ModifyDate ({dt_mod}) is earlier than DateTimeOriginal ({dt_orig})"
+            )
             risk_score = max(risk_score, 75.0)
-        elif (dt_mod - dt_orig).total_seconds() > 86400 * 30:  # modified months/years later
+        elif (
+            dt_mod - dt_orig
+        ).total_seconds() > 86400 * 30:  # modified months/years later
             inconsistencies.append(
                 f"Image was modified {(dt_mod - dt_orig).days} days after original capture"
             )
@@ -240,7 +264,9 @@ def check_date_consistency(metadata: dict[str, Any]) -> tuple[list[str], float]:
 
     # 3. Check digitization preceding creation
     if dt_orig and dt_dig and dt_dig < dt_orig:
-        inconsistencies.append(f"DateTimeDigitized ({dt_dig}) is earlier than DateTimeOriginal ({dt_orig})")
+        inconsistencies.append(
+            f"DateTimeDigitized ({dt_dig}) is earlier than DateTimeOriginal ({dt_orig})"
+        )
         risk_score = max(risk_score, 50.0)
 
     return inconsistencies, risk_score
@@ -265,7 +291,9 @@ def analyze_metadata(image_input: Any) -> dict[str, Any]:
 
     flags: list[str] = []
     if software_detected:
-        flags.append(f"Editing software signature detected: {', '.join(software_detected)}")
+        flags.append(
+            f"Editing software signature detected: {', '.join(software_detected)}"
+        )
     if date_inconsistencies:
         flags.extend(date_inconsistencies)
 

@@ -145,7 +145,12 @@ def calculate_skew_angle(image: np.ndarray) -> float:
     # Check using HoughLines for confirmation if angle is large
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
     lines = cv2.HoughLinesP(
-        edges, 1, np.pi / 180, threshold=100, minLineLength=image.shape[1] // 5, maxLineGap=10
+        edges,
+        1,
+        np.pi / 180,
+        threshold=100,
+        minLineLength=image.shape[1] // 5,
+        maxLineGap=10,
     )
 
     if lines is not None and len(lines) > 0:

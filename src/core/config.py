@@ -27,13 +27,13 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             value = value.strip()
             if value.startswith("[") and value.endswith("]"):
-                try:
-                    import json
+                import contextlib
+                import json
+
+                with contextlib.suppress(json.JSONDecodeError, TypeError, ValueError):
                     parsed = json.loads(value)
                     if isinstance(parsed, list):
                         return [str(i).strip() for i in parsed if str(i).strip()]
-                except Exception:
-                    pass
             return [i.strip() for i in value.split(",") if i.strip()]
         return value
 

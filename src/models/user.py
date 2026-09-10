@@ -54,7 +54,9 @@ class User(UUIDMixin, TimestampMixin, Base):
         "KYCSession", back_populates="user", lazy="noload"
     )
     fraud_reports: Mapped[list["FraudReport"]] = relationship(  # type: ignore[name-defined]
-        "FraudReport", back_populates="reported_by_user", lazy="noload",
+        "FraudReport",
+        back_populates="reported_by_user",
+        lazy="noload",
         foreign_keys="FraudReport.reported_by_user_id",
     )
     audit_logs: Mapped[list["AuditLog"]] = relationship(  # type: ignore[name-defined]

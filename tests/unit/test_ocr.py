@@ -39,6 +39,7 @@ class MockOCRProcessor(BaseProcessor):
 # 1. Base Processor Contract Tests for OCR
 # ==============================================================================
 
+
 def test_ocr_processor_inherits_base_processor():
     """Verify OCR processor adheres to BaseProcessor inheritance and contracts."""
     processor = MockOCRProcessor()
@@ -77,6 +78,7 @@ def test_ocr_processor_does_not_reload_model():
 # 2. Document Extraction & Schema Tests
 # ==============================================================================
 
+
 def test_ocr_result_passport_schema(sample_passport_data):
     """Test OCRResult creation and validation for Indian Passport."""
     raw_ocr_text = (
@@ -104,7 +106,9 @@ def test_ocr_result_passport_schema(sample_passport_data):
 
 def test_ocr_result_aadhaar_schema(sample_aadhaar_data):
     """Test OCRResult creation and validation for Aadhaar Card."""
-    raw_ocr_text = "Government of India Priya Patel DOB: 20/05/1995 1234 5678 9012 Female"
+    raw_ocr_text = (
+        "Government of India Priya Patel DOB: 20/05/1995 1234 5678 9012 Female"
+    )
 
     result = OCRResult(
         document_type=DocumentType.AADHAAR,
@@ -125,7 +129,9 @@ def test_ocr_result_aadhaar_schema(sample_aadhaar_data):
 
 def test_ocr_result_pan_schema(sample_pan_data):
     """Test OCRResult creation and validation for Income Tax PAN Card."""
-    raw_ocr_text = "INCOME TAX DEPARTMENT GOVT. OF INDIA AMIT KUMAR ABCDE1234F 10/12/1988"
+    raw_ocr_text = (
+        "INCOME TAX DEPARTMENT GOVT. OF INDIA AMIT KUMAR ABCDE1234F 10/12/1988"
+    )
 
     result = OCRResult(
         document_type=DocumentType.PAN,
@@ -146,6 +152,7 @@ def test_ocr_result_pan_schema(sample_pan_data):
 # ==============================================================================
 # 3. Regex Pattern Matching Tests for Indian Documents
 # ==============================================================================
+
 
 def test_aadhaar_regex_pattern_extraction():
     """Verify regex patterns for Indian 12-digit Aadhaar UID extraction."""
@@ -192,6 +199,7 @@ def test_passport_regex_pattern_extraction():
 # 4. Confidence Scores and Thresholding Tests
 # ==============================================================================
 
+
 def test_ocr_confidence_score_boundaries():
     """Test confidence scores stay within valid [0.0, 1.0] interval."""
     valid_res = OCRResult(
@@ -215,6 +223,7 @@ def test_ocr_low_confidence_flagging():
 # ==============================================================================
 # 5. Error Handling & Edge Cases
 # ==============================================================================
+
 
 def test_ocr_processor_empty_bytes_raises_error():
     """Ensure processor raises ValueError on zero-byte document input."""

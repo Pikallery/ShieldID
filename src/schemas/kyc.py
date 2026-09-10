@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 
 
@@ -7,12 +6,14 @@ class KYCRequest(BaseModel):
     return_url: str | None = None
     consent: bool = True
 
+
 class KYCResponse(BaseModel):
     status: str  # pending, verified, rejected
     kyc_token: str
     qr_code: str
     digilocker_redirect: str | None = None
     message: str
+
 
 class KYCToken(BaseModel):
     token: str
