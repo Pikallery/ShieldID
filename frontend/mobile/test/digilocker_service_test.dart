@@ -85,6 +85,39 @@ void main() {
       expect(parsed.fullName, isEmpty);
     });
 
+    test('Rejects Devanagari OCR transliteration noise like LOSRAM ATT', () {
+      const noisyOcr = '''
+      LOSRAM ATT
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.fullName, isEmpty);
+    });
+
+    test('Extracts spaced PAN number SFAPS 5084D and anchors cardholder surname SAMAL', () {
+      const noisyOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      SAI PRADYUMNA SAMAL
+      31/10/2005
+      SFAPS 5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 

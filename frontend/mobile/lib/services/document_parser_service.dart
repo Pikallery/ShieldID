@@ -150,6 +150,13 @@ class DocumentParserService {
     // Reject anything that looks like a PAN number (e.g. SFAPS5084D or OCR garble of it)
     if (_looksLikePanNumber(u)) return true;
 
+    // Reject Devanagari/Hindi OCR phonetic transliteration artifacts (e.g. "LOSRAM ATT", "SRAM", "FARA")
+    if (u.contains('SRAM') || u.contains('BRAM') || u.contains('VRAM') || u.contains('NRAM') ||
+        u.contains('LOSRAM') || u.contains('FARA') || u.contains('HIVA') || u.contains('WATE') ||
+        u.contains('STAE') || u.contains('YATE') || u.contains('ATT') || u.contains('LOS')) {
+      return true;
+    }
+
     // Comprehensive blacklist of government card headers & OCR misread junk
     final blacklistedPhrases = [
       'INCOME TAX', 'INCOMETAX', 'DEPARTMENT', 'GOVT', 'GOVERNMENT', 'INDIA',
@@ -161,7 +168,7 @@ class DocumentParserService {
       'DRIVING LICENCE', 'UNION OF INDIA', 'REPUBLIC OF INDIA', 'PASSPORT',
       'DATE OF BIRTH', 'FATHER NAME', 'FATHER\'S NAME', 'TE WT', 'TE', 'WT',
       'TAX DEPT', 'ITD', 'GVT', 'INCOME', 'TAX', 'REPUBLIC', 'NATIONAL',
-      'DIGILOCKER', 'OFFICIAL', 'SCANNER', 'VERIFIED'
+      'DIGILOCKER', 'OFFICIAL', 'SCANNER', 'VERIFIED', 'LOSRAM', 'ATT'
     ];
 
     for (final phrase in blacklistedPhrases) {
@@ -247,13 +254,21 @@ class DocumentParserService {
       'IND', 'ITD', 'INC', 'AYK', 'VIB', 'NUM', 'CARD', 'CRD', 'SIGN', 'HVR',
       'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
       'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ',
-      'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL'
+      'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
+      'LOSRAM', 'ATT', 'LOS'
     };
 
     final genuineWords = <String>[];
     for (int i = 0; i < tokens.length; i++) {
       final token = tokens[i];
       if (noiseWords.contains(token)) continue;
+
+      // Reject tokens containing common Hindi OCR noise patterns
+      if (token.contains('SRAM') || token.contains('BRAM') || token.contains('VRAM') ||
+          token.contains('NRAM') || token.contains('FARA') || token.contains('HIVA') ||
+          token.contains('WATE') || token.contains('STAE')) {
+        continue;
+      }
 
       // Keep single-letter initials only if they are attached to/preceding a long word (e.g. "S K SHARMA")
       if (token.length == 1) {
@@ -306,10 +321,11 @@ class DocumentParserService {
     // Reject known non-name abbreviations
     const junkWords = {
       'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM',
-      'CARD', 'TGA', 'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL'
+      'CARD', 'TGA', 'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
+      'LOSRAM', 'ATT', 'LOS'
     };
     for (final w in words) {
-      if (junkWords.contains(w)) return false;
+      if (junkWords.contains(w) || w.contains('SRAM')) return false;
     }
 
     return true;
@@ -466,14 +482,24 @@ class DocumentParserService {
           if (panMatch != null) {
             docNumber = panMatch.group(1)!;
           } else {
-            // Check for fuzzy character substitutions in candidate tokens
-            final tokens = upper.split(RegExp(r'[\s,:\/\-]+'));
-            for (final token in tokens) {
-              if (token.length == 10) {
-                final fixed = tryFixPanSubstitutions(token);
-                if (fixed != null) {
-                  docNumber = fixed;
-                  break;
+            // Check for spaced PAN e.g. "SFAPS 5084D" or "SFAPS 5084 D"
+            final spacedMatch = RegExp(r'\b([A-Z0-9]{5})\s+([A-Z0-9]{4})\s*([A-Z0-9])\b').firstMatch(upper);
+            if (spacedMatch != null) {
+              final candidate = '${spacedMatch.group(1)}${spacedMatch.group(2)}${spacedMatch.group(3)}';
+              final fixed = tryFixPanSubstitutions(candidate);
+              if (fixed != null) docNumber = fixed;
+            }
+
+            if (docNumber.isEmpty) {
+              // Check for fuzzy character substitutions in candidate tokens
+              final tokens = upper.split(RegExp(r'[\s,:\/\-]+'));
+              for (final token in tokens) {
+                if (token.length == 10) {
+                  final fixed = tryFixPanSubstitutions(token);
+                  if (fixed != null) {
+                    docNumber = fixed;
+                    break;
+                  }
                 }
               }
             }
@@ -519,7 +545,7 @@ class DocumentParserService {
               final surnameInitial = (docNumber.length == 10) ? docNumber[4] : '';
               String? bestMatch;
 
-              // Priority 1: Match surname initial (e.g., 'SAMAL' matching 'S' in SFAPS5084D)
+              // If surnameInitial is known from the PAN number, ONLY accept candidates that match it!
               if (surnameInitial.isNotEmpty) {
                 for (final c in candidateNames) {
                   final words = c.split(' ');
@@ -528,10 +554,9 @@ class DocumentParserService {
                     break;
                   }
                 }
-              }
-
-              // Priority 2: Multi-word candidate (>= 2 words, each >= 3 chars)
-              if (bestMatch == null) {
+              } else {
+                // When no PAN number is available (unanchored scan), require multi-word name
+                // with genuine name length to prevent picking up phantom header noise
                 for (final c in candidateNames) {
                   final words = c.split(' ');
                   if (words.length >= 2 && words.every((w) => w.length >= 3)) {
@@ -539,15 +564,15 @@ class DocumentParserService {
                     break;
                   }
                 }
-              }
 
-              // Priority 3: Longest candidate (must be >= 5 chars if single word without surname anchor)
-              if (bestMatch == null) {
-                final viable = candidateNames.where((c) => c.contains(' ') || c.length >= 5).toList();
-                if (viable.isNotEmpty) {
-                  bestMatch = viable.reduce((a, b) => a.length >= b.length ? a : b);
+                if (bestMatch == null) {
+                  final viable = candidateNames.where((c) => c.contains(' ') || c.length >= 5).toList();
+                  if (viable.isNotEmpty) {
+                    bestMatch = viable.reduce((a, b) => a.length >= b.length ? a : b);
+                  }
                 }
               }
+
               if (bestMatch != null) {
                 fullName = bestMatch;
               }
