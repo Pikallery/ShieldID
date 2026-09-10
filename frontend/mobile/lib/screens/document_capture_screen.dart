@@ -11,6 +11,7 @@ import '../services/document_parser_service.dart';
 import '../services/screening_service.dart';
 import '../services/web_ocr_service.dart';
 import '../widgets/document_scanner_overlay.dart';
+import '../widgets/shield_logo.dart';
 import 'document_info_dossier_screen.dart';
 
 class DocumentCaptureScreen extends StatefulWidget {
@@ -394,24 +395,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                         Row(
                           children: [
                             Container(
-                              width: 28,
-                              height: 28,
                               margin: const EdgeInsets.only(left: 4, right: 8),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.shield_rounded,
-                                  color: Colors.black87,
-                                  size: 17,
-                                ),
-                              ),
+                              child: const ShieldLogo(size: 28, padding: 3),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(

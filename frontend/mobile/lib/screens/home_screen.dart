@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
+import '../widgets/shield_logo.dart';
 import 'document_selection_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
@@ -51,8 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
           items: [
             BottomNavigationBarItem(
               icon: const Icon(Icons.shield_outlined, semanticLabel: 'Screening tab'),
-              activeIcon: const Icon(Icons.shield_rounded,
-                  semanticLabel: 'Screening tab selected'),
+              activeIcon: const ShieldLogo(size: 28, padding: 3),
               label: l10n.screeningTab,
             ),
             BottomNavigationBarItem(
@@ -93,33 +93,7 @@ class _HomeDashboardTab extends StatelessWidget {
             // Top App Bar / Identity Shield Header (Prominent Top Left Logo)
             Row(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryCyan.withValues(alpha: 0.45),
-                        blurRadius: 16,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.shield_rounded,
-                      color: Colors.black87,
-                      size: 26,
-                    ),
-                  ),
-                ),
+                const ShieldLogo(size: 44, padding: 5),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

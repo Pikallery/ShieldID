@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../services/screening_service.dart';
 import '../widgets/face_mesh_overlay.dart';
+import '../widgets/shield_logo.dart';
 import 'ai_processing_screen.dart';
 
 class LivenessDetectionScreen extends StatefulWidget {
@@ -131,26 +132,7 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
                         size: 20),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    margin: const EdgeInsets.only(left: 4, right: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.shield_rounded,
-                        color: Colors.black87,
-                        size: 17,
-                      ),
-                    ),
-                  ),
+                  const ShieldLogo(size: 28, padding: 3),
                   const Spacer(),
                   Container(
                     padding:

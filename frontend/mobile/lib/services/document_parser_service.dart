@@ -204,6 +204,30 @@ class DocumentParserService {
     return s.toUpperCase();
   }
 
+  static const _vowels = {'A', 'E', 'I', 'O', 'U', 'Y'};
+
+  // Valid 2-consonant clusters that appear at the start of real Indian/English names
+  // e.g. PRADYUMNA (PR), BRIJESH (BR), THAKUR (TH), SHARMA (SH), KRISHNA (KR)
+  static const _allowedStartClusters = {
+    'PR', 'BR', 'TR', 'DR', 'GR', 'KR', 'FR', 'CR', 'WR',
+    'KH', 'GH', 'SH', 'TH', 'CH', 'PH', 'DH', 'BH', 'JH', 'RH',
+    'SP', 'ST', 'SK', 'SN', 'SM', 'SL', 'SW', 'SC', 'SQ',
+    'PL', 'BL', 'CL', 'FL', 'GL',
+  };
+
+  /// Returns true if a word starts with a 2-consonant cluster that is NOT
+  /// a known valid Indian/English cluster — indicating OCR garbage like SRAM, NRAM, etc.
+  bool _startsWithBadConsonantCluster(String word) {
+    if (word.length < 2) return false;
+    final first = word[0];
+    final second = word[1];
+    // Both first AND second are consonants
+    if (_vowels.contains(first) || _vowels.contains(second)) return false;
+    final pair = '$first$second';
+    // If the cluster is a known valid cluster, do NOT reject
+    return !_allowedStartClusters.contains(pair);
+  }
+
   /// Filters out isolated noise particles, single letters, and OCR junk from genuine name words
   String sanitizeExtractedName(String rawLine, [String panNumber = '']) {
     final rawCleaned = cleanCandidateName(rawLine);
@@ -221,7 +245,8 @@ class DocumentParserService {
       'IS', 'AS', 'OR', 'IF', 'SO', 'NO', 'DO', 'GO', 'UP', 'MY', 'HE', 'WE', 'ME',
       'US', 'AM', 'TE', 'WT', 'TGA', 'TCA', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT',
       'IND', 'ITD', 'INC', 'AYK', 'VIB', 'NUM', 'CARD', 'CRD', 'SIGN', 'HVR',
-      'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT'
+      'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
+      'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ'
     };
 
     final genuineWords = <String>[];
@@ -237,8 +262,12 @@ class DocumentParserService {
         continue;
       }
 
-      // Check if word has vowels and length >= 2
-      if (token.length >= 2 && RegExp(r'[AEIOUY]').hasMatch(token)) {
+      // Reject words that start with a bad 2-consonant cluster — OCR garbage
+      // e.g. SRAM, NRAM → rejected; PRADYUMNA, SHARMA, KRISHNA → accepted
+      if (_startsWithBadConsonantCluster(token)) continue;
+
+      // Must be at least 3 chars, have at least one vowel
+      if (token.length >= 3 && RegExp(r'[AEIOUY]').hasMatch(token)) {
         genuineWords.add(token);
       }
     }

@@ -7,6 +7,7 @@ import '../models/digilocker_model.dart';
 import '../models/document_model.dart';
 import '../services/digilocker_service.dart';
 import '../services/screening_service.dart';
+import '../widgets/shield_logo.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -179,24 +180,8 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
         title: Row(
           children: [
             Container(
-              width: 28,
-              height: 28,
               margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.shield_rounded,
-                  color: Colors.black87,
-                  size: 17,
-                ),
-              ),
+              child: const ShieldLogo(size: 28, padding: 3),
             ),
             const Expanded(
               child: Text(

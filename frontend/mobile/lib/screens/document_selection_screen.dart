@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/document_model.dart';
 import '../services/screening_service.dart';
+import '../widgets/shield_logo.dart';
 import 'document_capture_screen.dart';
 import '../l10n/app_localizations.dart';
 
@@ -26,25 +27,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.shield_rounded,
-                  color: Colors.black87,
-                  size: 17,
-                ),
-              ),
-            ),
+            const ShieldLogo(size: 28, padding: 3),
             const SizedBox(width: 10),
             Text(l10n.selectDocument),
           ],
