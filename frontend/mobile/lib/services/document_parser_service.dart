@@ -136,7 +136,7 @@ class DocumentParserService {
     return null;
   }
 
-  /// Discards Indian ID header noise and Hindi OCR misread artifacts
+  /// Discards Indian ID header noise, Hindi OCR misread artifacts, and non-name phrases
   bool isHeaderOrNoiseLine(String line) {
     final trimmed = line.trim();
     if (trimmed.length < 3) return true;
@@ -151,24 +151,81 @@ class DocumentParserService {
       'AUTHORITY OF INDIA', 'UIDAI', 'AADHAAR', 'MERA AADHAAR', 'ENROLLMENT',
       'HELP@UIDAI', 'WWW.UIDAI', 'MINISTRY OF', 'TRANSPORT', 'HIGHWAYS',
       'DRIVING LICENCE', 'UNION OF INDIA', 'REPUBLIC OF INDIA', 'PASSPORT',
-      'DATE OF BIRTH', 'FATHER NAME', 'FATHER\'S NAME'
+      'DATE OF BIRTH', 'FATHER NAME', 'FATHER\'S NAME', 'TE WT', 'TE', 'WT',
+      'TAX DEPT', 'ITD', 'GVT', 'INCOME', 'TAX', 'REPUBLIC', 'NATIONAL',
+      'DIGILOCKER', 'OFFICIAL', 'SCANNER', 'VERIFIED'
     ];
 
     for (final phrase in blacklistedPhrases) {
-      if (u.contains(phrase)) return true;
+      if (u == phrase || u.contains(phrase)) return true;
     }
 
-    // Filter out lines that look like garbled single-letter sequences (e.g. "y STaE...")
-    final words = trimmed.split(RegExp(r'\s+'));
+    // Filter out lines that look like garbled single/two-letter sequences (e.g. "TE WT", "y STaE...")
+    final words = trimmed.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return true;
+
     int shortWordCount = 0;
     for (final w in words) {
       if (w.length <= 2) shortWordCount++;
     }
-    if (words.length >= 3 && shortWordCount >= (words.length / 2)) {
-      return true;
+    if (words.length >= 2 && shortWordCount == words.length) {
+      return true; // All words are <= 2 letters (e.g. "TE WT", "ST DR") -> reject
     }
 
     return false;
+  }
+
+  /// Cleans and repairs optical motion-blur character distortions in names
+  String cleanCandidateName(String raw) {
+    String s = raw.trim();
+    s = s.replaceAll('1', 'I')
+         .replaceAll('0', 'O')
+         .replaceAll('5', 'S')
+         .replaceAll('8', 'B')
+         .replaceAll('|', 'I')
+         .replaceAll('/', '')
+         .replaceAll('\\', '')
+         .replaceAll('~', '')
+         .replaceAll('_', '')
+         .replaceAll(':', '')
+         .replaceAll(';', '')
+         .replaceAll('"', '')
+         .replaceAll('\'', '')
+         .replaceAll(RegExp(r'\s+'), ' ')
+         .trim();
+    return s.toUpperCase();
+  }
+
+  /// Strictly validates whether an extracted line constitutes a genuine human name
+  bool isValidHumanName(String name) {
+    final cleaned = cleanCandidateName(name);
+    if (cleaned.length < 3 || cleaned.length > 50) return false;
+    if (isHeaderOrNoiseLine(cleaned)) return false;
+
+    // Must contain letters only (with spaces and dots for initials)
+    if (!RegExp(r'^[A-Z\s\.]+$').hasMatch(cleaned)) return false;
+
+    // Must contain at least one vowel
+    if (!RegExp(r'[AEIOUY]').hasMatch(cleaned)) return false;
+
+    // Reject PAN number patterns or dates
+    if (RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(cleaned)) return false;
+    if (RegExp(r'\b\d{2}[/-]\d{2}[/-]\d{4}\b').hasMatch(cleaned)) return false;
+
+    final words = cleaned.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return false;
+
+    // Reject if all words are 2 characters or shorter (e.g. "TE WT", "AB CD")
+    final validWords = words.where((w) => w.length >= 3 && RegExp(r'[AEIOUY]').hasMatch(w)).toList();
+    if (validWords.isEmpty) return false;
+
+    // Reject known non-name abbreviations
+    const junkWords = {'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM', 'CARD'};
+    for (final w in words) {
+      if (junkWords.contains(w)) return false;
+    }
+
+    return true;
   }
 
   /// Extract genuine document fields from raw scanned OCR text / QR data
@@ -338,55 +395,49 @@ class DocumentParserService {
           }
         }
 
-  /// Cleans and repairs optical motion-blur character distortions in names
-  String cleanCandidateName(String raw) {
-    String s = raw.trim();
-    s = s.replaceAll('1', 'I')
-         .replaceAll('0', 'O')
-         .replaceAll('5', 'S')
-         .replaceAll('8', 'B')
-         .replaceAll('|', 'I')
-         .replaceAll('/', '')
-         .replaceAll('\\', '')
-         .replaceAll('~', '')
-         .replaceAll('_', '')
-         .replaceAll(RegExp(r'\s+'), ' ')
-         .trim();
-    return s.toUpperCase();
-  }
-
-        // Full Name Extraction (Cardholder Name)
+        // Cardholder Name Extraction
         if (fullName.isEmpty) {
           final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z0-9\s]+)', caseSensitive: false).firstMatch(ocrText);
-          if (panNameMatch != null && !isHeaderOrNoiseLine(panNameMatch.group(1)!)) {
+          if (panNameMatch != null && isValidHumanName(panNameMatch.group(1)!)) {
             fullName = cleanCandidateName(panNameMatch.group(1)!.split('\n').first);
           } else {
-            // Find all uppercase alphabetic lines that are strictly not header noise
+            // Gather all candidate lines that pass strict human name verification
             final candidateNames = <String>[];
             for (final line in lines) {
-              final cleaned = cleanCandidateName(line);
-              if (cleaned.length >= 4 &&
-                  cleaned.length <= 40 &&
-                  RegExp(r'^[A-Z\s\.]+$').hasMatch(cleaned) &&
-                  !isHeaderOrNoiseLine(cleaned) &&
-                  !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(cleaned) &&
-                  cleaned.contains(' ')) {
-                candidateNames.add(cleaned);
+              if (isValidHumanName(line)) {
+                candidateNames.add(cleanCandidateName(line));
               }
             }
+
             if (candidateNames.isNotEmpty) {
-              fullName = candidateNames.first;
-            } else {
-              for (final line in lines) {
-                final cleaned = cleanCandidateName(line);
-                if (cleaned.length >= 3 &&
-                    RegExp(r'^[A-Z\s\.]+$').hasMatch(cleaned) &&
-                    !isHeaderOrNoiseLine(cleaned) &&
-                    !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(cleaned)) {
-                  fullName = cleaned;
-                  break;
+              // 5th letter of PAN represents first char of cardholder's surname
+              final surnameInitial = (docNumber.length == 10) ? docNumber[4] : '';
+              String? bestMatch;
+
+              // Priority 1: Multi-word candidate matching surname initial
+              for (final c in candidateNames) {
+                final words = c.split(' ');
+                if (words.length >= 2) {
+                  if (surnameInitial.isNotEmpty && (words.last.startsWith(surnameInitial) || words.first.startsWith(surnameInitial))) {
+                    bestMatch = c;
+                    break;
+                  }
                 }
               }
+
+              // Priority 2: Multi-word candidate with valid words (>= 3 chars)
+              if (bestMatch == null) {
+                for (final c in candidateNames) {
+                  final words = c.split(' ');
+                  if (words.length >= 2 && words.every((w) => w.length >= 3)) {
+                    bestMatch = c;
+                    break;
+                  }
+                }
+              }
+
+              // Priority 3: First valid candidate line
+              fullName = bestMatch ?? candidateNames.first;
             }
           }
         }

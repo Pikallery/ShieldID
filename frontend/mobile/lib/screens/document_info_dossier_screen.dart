@@ -368,12 +368,32 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _result.personName,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                    InkWell(
+                      onTap: _showManualEntryModal,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _result.personName.trim().isNotEmpty
+                                  ? _result.personName
+                                  : 'Cardholder Name (Tap to Edit)',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: _result.personName.trim().isNotEmpty
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.primaryCyan,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.edit_note_rounded,
+                            color: AppTheme.primaryCyan,
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 6),

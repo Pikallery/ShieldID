@@ -123,13 +123,14 @@
       return '';
     }
 
-    // Shake & Motion-Blur Resilient Preprocessing
+    // Adaptive contrast stretch & edge enhancement (preserves thin name characters on textured backgrounds)
     function preprocessCanvasForBlur(ctx, width, height) {
       try {
         const imgData = ctx.getImageData(0, 0, width, height);
         const d = imgData.data;
         let min = 255, max = 0;
 
+        // Calculate luminance histogram limits
         for (let i = 0; i < d.length; i += 4) {
           const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
           if (lum < min) min = lum;
@@ -137,15 +138,19 @@
         }
 
         const range = Math.max(1, max - min);
-        const threshold = min + range * 0.48;
 
         for (let i = 0; i < d.length; i += 4) {
           const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-          // Binarize to eliminate motion blur and color gradients
-          const val = lum < threshold ? 0 : 255;
-          d[i] = val;
-          d[i+1] = val;
-          d[i+2] = val;
+          // Linear contrast normalization (0..255)
+          const stretched = Math.min(255, Math.max(0, ((lum - min) / range) * 255));
+          // Apply gentle sigmoid-like S-curve for high text clarity without harsh binarization
+          const enhanced = stretched < 128 
+            ? (stretched * stretched) / 128 
+            : 255 - ((255 - stretched) * (255 - stretched)) / 128;
+
+          d[i] = enhanced;
+          d[i+1] = enhanced;
+          d[i+2] = enhanced;
         }
         ctx.putImageData(imgData, 0, 0);
       } catch (e) {}
@@ -187,7 +192,7 @@
           } catch (err) {}
         }
 
-        // 2. Multi-Zone jsQR Scanning (Full frame, center box, right crop, bottom crop)
+        // 2. Multi-Zone jsQR Scanning (Full frame, right crop, center box)
         if (!qrText) {
           qrText = scanCanvasForQR(canvas);
         }
@@ -224,8 +229,21 @@
           try {
             const ret = await Tesseract.recognize(enhancedCanvas, 'eng');
             ocrText = ret?.data?.text || '';
+
+            // If primary OCR missed name/text lines, run secondary focused pass on text zone
+            if (ocrText.length < 30 && width > 300 && height > 300) {
+              const textZoneCanvas = document.createElement('canvas');
+              textZoneCanvas.width = Math.floor(width * 0.75);
+              textZoneCanvas.height = Math.floor(height * 0.75);
+              const tzCtx = textZoneCanvas.getContext('2d');
+              tzCtx.drawImage(img, 0, Math.floor(height * 0.15), textZoneCanvas.width, textZoneCanvas.height, 0, 0, textZoneCanvas.width, textZoneCanvas.height);
+              preprocessCanvasForBlur(tzCtx, textZoneCanvas.width, textZoneCanvas.height);
+              const retTz = await Tesseract.recognize(textZoneCanvas, 'eng');
+              if (retTz?.data?.text) {
+                ocrText = ocrText + '\n' + retTz.data.text;
+              }
+            }
           } catch (e) {
-            // Fallback to raw canvas if enhanced fails
             try {
               const retRaw = await Tesseract.recognize(canvas, 'eng');
               ocrText = retRaw?.data?.text || '';
