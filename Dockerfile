@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy runtime source and model configuration.
 COPY src/ ./src/
-COPY alembic.ini .
 COPY migrations/ ./migrations/
 COPY models/ ./models/
 
