@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import '../models/verification_result.dart';
 import '../services/digilocker_service.dart';
 import '../services/document_parser_service.dart';
 import '../services/screening_service.dart';
+import '../services/web_ocr_service.dart';
 import '../widgets/document_scanner_overlay.dart';
 import '../widgets/step_progress_bar.dart';
 import 'document_info_dossier_screen.dart';
@@ -33,7 +35,6 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   bool _isTorchOn = false;
   bool _isCapturing = false;
   bool _isDetected = false;
-  String? _detectedLabel;
   Offset? _focusPoint;
   Timer? _autoDetectTimer;
 
@@ -50,9 +51,6 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
       if (!mounted || _isCapturing) return;
       setState(() {
         _isDetected = true;
-        _detectedLabel = widget.isBackSide
-            ? '⚡ Document Back Aligned • Ready to Capture'
-            : '⚡ Document Frame Aligned • Ready to Capture';
       });
     });
   }
@@ -115,6 +113,23 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   }
 
   Future<void> _toggleTorch() async {
+    if (kIsWeb) {
+      final newTorch = !_isTorchOn;
+      final success = await WebOcrService().toggleTorch(newTorch);
+      if (!mounted) return;
+      if (success) {
+        setState(() => _isTorchOn = newTorch);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Flashlight toggle attempted via browser camera'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
     if (_cameraController == null || !_cameraController!.value.isInitialized) return;
     try {
       final newTorch = !_isTorchOn;
@@ -182,7 +197,6 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     setState(() {
       _isCapturing = true;
       _isDetected = true;
-      _detectedLabel = '⚡ Reading Document & Extracting Data...';
     });
 
     String imagePath = '';
@@ -323,15 +337,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
 
                         // Document & QR Overlay with real-time detection feedback
                         DocumentScannerOverlay(
-                          title: widget.isBackSide
-                              ? 'Scan ${docType.shortName} (Back Side)'
-                              : 'Scan ${docType.displayName}',
-                          subtitle: widget.isBackSide
-                              ? 'Align barcode, security stamp & details inside frame'
-                              : 'Hold steady inside frame for instant optical scan',
                           isScanning: true,
                           isDetected: _isDetected,
-                          detectedLabel: _detectedLabel,
                         ),
 
                         // Tap to Focus Ring

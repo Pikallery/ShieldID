@@ -2,19 +2,13 @@ import 'package:flutter/material.dart';
 import '../constants/theme.dart';
 
 class DocumentScannerOverlay extends StatefulWidget {
-  final String title;
-  final String subtitle;
   final bool isScanning;
   final bool isDetected;
-  final String? detectedLabel;
 
   const DocumentScannerOverlay({
     super.key,
-    required this.title,
-    required this.subtitle,
     this.isScanning = true,
     this.isDetected = false,
-    this.detectedLabel,
   });
 
   @override
@@ -125,73 +119,6 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
                     size: 38,
                   ),
                 ),
-              ),
-            ),
-
-            // Top Status & Guidelines
-            Positioned(
-              top: 24,
-              left: 20,
-              right: 20,
-              child: Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: activeColor.withValues(alpha: 0.8),
-                        width: widget.isDetected ? 1.8 : 1.0,
-                      ),
-                      boxShadow: widget.isDetected
-                          ? [
-                              BoxShadow(
-                                color: activeColor.withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                spreadRadius: 1,
-                              )
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          widget.isDetected
-                              ? Icons.check_circle_rounded
-                              : Icons.radar_rounded,
-                          size: 16,
-                          color: activeColor,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.isDetected
-                              ? (widget.detectedLabel ?? '⚡ QR Detected • Verifying...')
-                              : widget.title,
-                          style: TextStyle(
-                            color: widget.isDetected
-                                ? activeColor
-                                : AppTheme.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.subtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppTheme.textSecondary.withValues(alpha: 0.95),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],

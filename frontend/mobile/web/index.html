@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -31,16 +18,53 @@
 
   <title>ShieldID</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Tesseract.js for Real-Time On-Device Web OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script>
+    // Browser Flashlight / Torch Toggle for Chrome on Android / iOS
+    window.toggleWebTorch = async function(enable) {
+      try {
+        const videos = document.querySelectorAll('video');
+        for (let v of videos) {
+          if (v && v.srcObject) {
+            const tracks = v.srcObject.getVideoTracks();
+            for (let t of tracks) {
+              try {
+                await t.applyConstraints({
+                  advanced: [{ torch: !!enable }]
+                });
+                return true;
+              } catch (err) {
+                console.warn('Torch constraint error on track:', err);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Web Torch error:', e);
+      }
+      return false;
+    };
+
+    // Client-side Browser OCR on captured document photo
+    window.performWebOCR = async function(imageDataUrl) {
+      try {
+        if (window.Tesseract) {
+          const worker = await Tesseract.createWorker('eng');
+          const ret = await worker.recognize(imageDataUrl);
+          await worker.terminate();
+          return ret.data.text || '';
+        }
+      } catch (e) {
+        console.error('Web Tesseract OCR failed:', e);
+      }
+      return '';
+    };
+  </script>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
