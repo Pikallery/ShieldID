@@ -70,6 +70,21 @@ void main() {
       expect(parsed.documentNumber, 'SFAPS5084D');
     });
 
+    test('Rejects OCR fragments like CREE and prevents false name extraction', () {
+      const noisyOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      CREE
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.fullName, isEmpty);
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 

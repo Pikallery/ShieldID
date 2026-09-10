@@ -209,7 +209,7 @@ class DocumentParserService {
   // Valid 2-consonant clusters that appear at the start of real Indian/English names
   // e.g. PRADYUMNA (PR), BRIJESH (BR), THAKUR (TH), SHARMA (SH), KRISHNA (KR)
   static const _allowedStartClusters = {
-    'PR', 'BR', 'TR', 'DR', 'GR', 'KR', 'FR', 'CR', 'WR',
+    'PR', 'BR', 'TR', 'DR', 'GR', 'KR', 'FR',
     'KH', 'GH', 'SH', 'TH', 'CH', 'PH', 'DH', 'BH', 'JH', 'RH',
     'SP', 'ST', 'SK', 'SN', 'SM', 'SL', 'SW', 'SC', 'SQ',
     'PL', 'BL', 'CL', 'FL', 'GL',
@@ -246,7 +246,8 @@ class DocumentParserService {
       'US', 'AM', 'TE', 'WT', 'TGA', 'TCA', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT',
       'IND', 'ITD', 'INC', 'AYK', 'VIB', 'NUM', 'CARD', 'CRD', 'SIGN', 'HVR',
       'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
-      'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ'
+      'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ',
+      'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL'
     };
 
     final genuineWords = <String>[];
@@ -303,7 +304,10 @@ class DocumentParserService {
     if (validWords.isEmpty) return false;
 
     // Reject known non-name abbreviations
-    const junkWords = {'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM', 'CARD', 'TGA'};
+    const junkWords = {
+      'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM',
+      'CARD', 'TGA', 'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL'
+    };
     for (final w in words) {
       if (junkWords.contains(w)) return false;
     }
@@ -537,9 +541,16 @@ class DocumentParserService {
                 }
               }
 
-              // Priority 3: Longest single candidate
-              bestMatch ??= candidateNames.reduce((a, b) => a.length >= b.length ? a : b);
-              fullName = bestMatch;
+              // Priority 3: Longest candidate (must be >= 5 chars if single word without surname anchor)
+              if (bestMatch == null) {
+                final viable = candidateNames.where((c) => c.contains(' ') || c.length >= 5).toList();
+                if (viable.isNotEmpty) {
+                  bestMatch = viable.reduce((a, b) => a.length >= b.length ? a : b);
+                }
+              }
+              if (bestMatch != null) {
+                fullName = bestMatch;
+              }
             }
           }
         }
