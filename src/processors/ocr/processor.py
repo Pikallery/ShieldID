@@ -563,13 +563,29 @@ class OCRProcessor(BaseProcessor):
 
             best_name = None
             if surname_initial:
+                # Tier 1: Multi-word candidate whose surname or any word matches surnameInitial
                 for cand in candidate_lines:
                     words = cand.split()
-                    if any(w.upper().startswith(surname_initial) for w in words):
+                    if len(words) >= 2 and any(w.upper().startswith(surname_initial) for w in words):
                         best_name = cand
                         break
 
-            if not best_name and candidate_lines:
+                # Tier 2: Single-word candidate matching surnameInitial (MUST be >= 5 chars, e.g. "SAMAL")
+                if not best_name:
+                    for cand in candidate_lines:
+                        words = cand.split()
+                        if len(words) == 1 and len(cand) >= 5 and cand.upper().startswith(surname_initial):
+                            best_name = cand
+                            break
+
+                # Tier 3: Any multi-word candidate (>= 2 words, each >= 3 chars)
+                if not best_name:
+                    for cand in candidate_lines:
+                        words = cand.split()
+                        if len(words) >= 2 and all(len(w) >= 3 for w in words):
+                            best_name = cand
+                            break
+            elif candidate_lines:
                 # Require candidate to have at least 2 words or length >= 5
                 for cand in candidate_lines:
                     words = cand.split()

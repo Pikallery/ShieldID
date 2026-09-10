@@ -255,7 +255,7 @@ class DocumentParserService {
       'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
       'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ',
       'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
-      'LOSRAM', 'ATT', 'LOS'
+      'LOSRAM', 'ATT', 'LOS', 'SHAD'
     };
 
     final genuineWords = <String>[];
@@ -322,7 +322,7 @@ class DocumentParserService {
     const junkWords = {
       'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM',
       'CARD', 'TGA', 'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
-      'LOSRAM', 'ATT', 'LOS'
+      'LOSRAM', 'ATT', 'LOS', 'SHAD'
     };
     for (final w in words) {
       if (junkWords.contains(w) || w.contains('SRAM')) return false;
@@ -545,13 +545,38 @@ class DocumentParserService {
               final surnameInitial = (docNumber.length == 10) ? docNumber[4] : '';
               String? bestMatch;
 
-              // If surnameInitial is known from the PAN number, ONLY accept candidates that match it!
+              // If surnameInitial is known from the PAN number:
               if (surnameInitial.isNotEmpty) {
+                // Tier 1: Multi-word candidate whose surname or any word matches surnameInitial
+                // (e.g. "SAI PRADYUMNA SAMAL" matching 'S' for Samal)
                 for (final c in candidateNames) {
                   final words = c.split(' ');
-                  if (words.any((w) => w.startsWith(surnameInitial))) {
+                  if (words.length >= 2 && words.any((w) => w.startsWith(surnameInitial))) {
                     bestMatch = c;
                     break;
+                  }
+                }
+
+                // Tier 2: Single-word candidate matching surnameInitial (MUST be >= 5 chars, e.g. "SAMAL")
+                // Never pick 3-4 char noise like "SHAD", "SEAL", "SIGN"
+                if (bestMatch == null) {
+                  for (final c in candidateNames) {
+                    final words = c.split(' ');
+                    if (words.length == 1 && c.length >= 5 && c.startsWith(surnameInitial)) {
+                      bestMatch = c;
+                      break;
+                    }
+                  }
+                }
+
+                // Tier 3: Any multi-word candidate (>= 2 words, each >= 3 chars)
+                if (bestMatch == null) {
+                  for (final c in candidateNames) {
+                    final words = c.split(' ');
+                    if (words.length >= 2 && words.every((w) => w.length >= 3)) {
+                      bestMatch = c;
+                      break;
+                    }
                   }
                 }
               } else {

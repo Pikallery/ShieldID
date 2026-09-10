@@ -118,6 +118,43 @@ void main() {
       expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
     });
 
+    test('Rejects 4-letter token SHAD and correctly extracts multi-word cardholder name', () {
+      const noisyOcr = '''
+      SHAD
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      SAI PRADYUMNA SAMAL
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+    });
+
+    test('Single-word candidate starting with S must be >= 5 chars (e.g. SAMAL, not SHAD)', () {
+      const noisyOcr = '''
+      SHAD
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, isEmpty);
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 
