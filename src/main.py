@@ -19,15 +19,22 @@ async def lifespan(app: FastAPI):
     Manage startup and shutdown of shared async resources.
 
     Startup:
-        - Creates database tables if they don't exist (dev convenience).
+        - Attempts to create database tables (dev convenience).
           In production, tables are managed via Alembic migrations.
+          If the DB is temporarily unreachable at boot, we log a warning
+          and continue — individual requests will surface the real error.
 
     Shutdown:
         - Disposes the SQLAlchemy async engine connection pool cleanly.
     """
     logger.info("Starting ShieldID — initialising database connection pool...")
-    await create_db_tables()
-    logger.info("Database ready.")
+    try:
+        await create_db_tables()
+        logger.info("Database ready.")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "create_db_tables() failed at startup (non-fatal in production): %s", exc
+        )
     yield
     logger.info("Shutting down ShieldID — closing database connections...")
     await dispose_engine()
