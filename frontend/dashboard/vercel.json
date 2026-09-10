@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/sandbox/(.*)",
+      "destination": "https://api.sandbox.co.in/$1"
+    },
+    {
       "source": "/mobile/(.*)",
       "destination": "/mobile/$1"
     },

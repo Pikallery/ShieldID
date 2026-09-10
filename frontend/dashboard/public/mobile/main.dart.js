@@ -104322,7 +104322,7 @@ s=1
 break}p=4
 f=t.N
 s=7
-return A.x(A.aMo(A.fm("https://api.sandbox.co.in/authenticate",0,null),null,A.a8(["x-api-key",B.ag.dL(B.fX.cQ(u.i)),"x-api-secret",B.ag.dL(B.fX.cQ("c2VjcmV0X2xpdmVfZmJmNjQwMWJhY2E5NDViYWFhMTFlNjg0MmVkOThjMzA=")),"x-api-version","1.0","Content-Type","application/json"],f,f)).m0(B.PG),$async$B0)
+return A.x(A.aMo(A.fm("/api/sandbox/authenticate",0,null),null,A.a8(["x-api-key",B.ag.dL(B.fX.cQ(u.i)),"x-api-secret",B.ag.dL(B.fX.cQ("c2VjcmV0X2xpdmVfZmJmNjQwMWJhY2E5NDViYWFhMTFlNjg0MmVkOThjMzA=")),"x-api-version","1.0","Content-Type","application/json"],f,f)).m0(B.PG),$async$B0)
 case 7:m=b
 if(m.b===200){f=m
 l=B.b5.nJ(A.pt(A.pp(f.e)).dL(f.w),null)
@@ -104364,7 +104364,7 @@ return A.x(n.B0(),$async$vC)
 case 3:m=a3
 if(m==null){q=B.oa
 s=1
-break}l=A.fm("https://api.sandbox.co.in/pans/"+A.j(a)+"/verify?consent=Y&reason=KYC_Verification",0,null)
+break}l=A.fm("/api/sandbox/pans/"+A.j(a)+"/verify?consent=Y&reason=KYC_Verification",0,null)
 p=5
 b=t.N
 s=8

@@ -40,7 +40,11 @@ class SandboxKycService {
       utf8.decode(base64Decode('a2V5X2xpdmVfNjUwODRlOTU0YWRmNDlkYzk5Mjc5NDU4N2I2YzYwNDU='));
   static String get apiSecret =>
       utf8.decode(base64Decode('c2VjcmV0X2xpdmVfZmJmNjQwMWJhY2E5NDViYWFhMTFlNjg0MmVkOThjMzA='));
-  static const String _authUrl = 'https://api.sandbox.co.in/authenticate';
+
+  static String get _baseUrl =>
+      kIsWeb ? '/api/sandbox' : 'https://api.sandbox.co.in';
+
+  static String get _authUrl => '$_baseUrl/authenticate';
 
   String? _cachedToken;
   DateTime? _tokenExpiry;
@@ -93,7 +97,7 @@ class SandboxKycService {
     if (token == null) return SandboxKycResult.empty();
 
     final uri = Uri.parse(
-        'https://api.sandbox.co.in/pans/$cleanPan/verify?consent=Y&reason=KYC_Verification');
+        '$_baseUrl/pans/$cleanPan/verify?consent=Y&reason=KYC_Verification');
 
     try {
       final response = await http.get(
