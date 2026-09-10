@@ -5,12 +5,16 @@ class DocumentScannerOverlay extends StatefulWidget {
   final String title;
   final String subtitle;
   final bool isScanning;
+  final bool isDetected;
+  final String? detectedLabel;
 
   const DocumentScannerOverlay({
     super.key,
     required this.title,
     required this.subtitle,
     this.isScanning = true,
+    this.isDetected = false,
+    this.detectedLabel,
   });
 
   @override
@@ -27,7 +31,7 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
     _scanAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -45,10 +49,11 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Document card aspect ratio (standard ID-1 card: 85.6mm x 53.98mm ~ 1.586)
         final screenWidth = constraints.maxWidth;
         final cardWidth = screenWidth * 0.88;
         final cardHeight = cardWidth / 1.58;
+        final activeColor =
+            widget.isDetected ? AppTheme.passGreen : AppTheme.primaryCyan;
 
         return Stack(
           children: [
@@ -58,6 +63,8 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
               painter: _ScannerCutoutPainter(
                 cardWidth: cardWidth,
                 cardHeight: cardHeight,
+                isDetected: widget.isDetected,
+                accentColor: activeColor,
               ),
             ),
 
@@ -73,23 +80,22 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
                       return Align(
                         alignment: Alignment(0, (_scanAnimation.value * 2) - 1),
                         child: Container(
-                          height: 3,
+                          height: widget.isDetected ? 4 : 3,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               colors: [
                                 Colors.transparent,
-                                AppTheme.primaryCyan,
+                                activeColor,
                                 Colors.white,
-                                AppTheme.primaryCyan,
+                                activeColor,
                                 Colors.transparent,
                               ],
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    AppTheme.primaryCyan.withValues(alpha: 0.8),
-                                blurRadius: 12,
-                                spreadRadius: 2,
+                                color: activeColor.withValues(alpha: 0.9),
+                                blurRadius: 14,
+                                spreadRadius: 3,
                               ),
                             ],
                           ),
@@ -100,49 +106,89 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
                 ),
               ),
 
+            // QR & Document Center Target Reticle
+            Center(
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: activeColor.withValues(alpha: widget.isDetected ? 0.9 : 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    widget.isDetected ? Icons.qr_code_scanner_rounded : Icons.qr_code_2_rounded,
+                    color: activeColor.withValues(alpha: widget.isDetected ? 1.0 : 0.6),
+                    size: 38,
+                  ),
+                ),
+              ),
+            ),
+
             // Top Status & Guidelines
             Positioned(
-              top: 30,
+              top: 24,
               left: 20,
               right: 20,
               child: Column(
                 children: [
-                  Container(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.surface.withValues(alpha: 0.9),
+                      color: AppTheme.surface.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: AppTheme.primaryCyan.withValues(alpha: 0.5)),
+                        color: activeColor.withValues(alpha: 0.8),
+                        width: widget.isDetected ? 1.8 : 1.0,
+                      ),
+                      boxShadow: widget.isDetected
+                          ? [
+                              BoxShadow(
+                                color: activeColor.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : null,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.radar_rounded,
+                        Icon(
+                          widget.isDetected
+                              ? Icons.check_circle_rounded
+                              : Icons.radar_rounded,
                           size: 16,
-                          color: AppTheme.primaryCyan,
+                          color: activeColor,
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          widget.title,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontWeight: FontWeight.w600,
+                          widget.isDetected
+                              ? (widget.detectedLabel ?? '⚡ QR Detected • Verifying...')
+                              : widget.title,
+                          style: TextStyle(
+                            color: widget.isDetected
+                                ? activeColor
+                                : AppTheme.textPrimary,
+                            fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Text(
                     widget.subtitle,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppTheme.textSecondary.withValues(alpha: 0.9),
-                      fontSize: 13,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.95),
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -158,27 +204,31 @@ class _DocumentScannerOverlayState extends State<DocumentScannerOverlay>
 class _ScannerCutoutPainter extends CustomPainter {
   final double cardWidth;
   final double cardHeight;
+  final bool isDetected;
+  final Color accentColor;
 
   _ScannerCutoutPainter({
     required this.cardWidth,
     required this.cardHeight,
+    required this.isDetected,
+    required this.accentColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final backgroundPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.7)
+      ..color = Colors.black.withValues(alpha: 0.72)
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()
-      ..color = AppTheme.primaryCyan
+      ..color = accentColor.withValues(alpha: isDetected ? 0.9 : 0.6)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
+      ..strokeWidth = isDetected ? 2.5 : 1.8;
 
     final cornerPaint = Paint()
-      ..color = AppTheme.primaryCyan
+      ..color = accentColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.5
+      ..strokeWidth = isDetected ? 5.5 : 4.5
       ..strokeCap = StrokeCap.round;
 
     final rect = Rect.fromCenter(
@@ -200,7 +250,7 @@ class _ScannerCutoutPainter extends CustomPainter {
     canvas.drawRRect(rrect, borderPaint);
 
     // Corner Target Brackets
-    const cornerLength = 28.0;
+    final cornerLength = isDetected ? 34.0 : 28.0;
     const radius = 16.0;
 
     // Top-Left Corner
@@ -222,7 +272,7 @@ class _ScannerCutoutPainter extends CustomPainter {
         Offset(rect.right, rect.top + radius),
         radius: const Radius.circular(radius),
       )
-      ..lineTo(rect.right, rect.top + cornerLength);
+      ..lineTo(rect.right + cornerLength, rect.top);
     canvas.drawPath(topRight, cornerPaint);
 
     // Bottom-Left Corner
@@ -249,5 +299,9 @@ class _ScannerCutoutPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _ScannerCutoutPainter oldDelegate) =>
+      oldDelegate.isDetected != isDetected ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.cardWidth != cardWidth ||
+      oldDelegate.cardHeight != cardHeight;
 }
