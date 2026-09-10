@@ -1,7 +1,7 @@
 const API_BASE_URL =
-  typeof window !== "undefined" && window.SHIELDID_API_URL
+  (typeof window !== "undefined" && window.SHIELDID_API_URL)
     ? window.SHIELDID_API_URL
-    : "http://localhost:8080";
+    : (import.meta.env?.VITE_API_URL || "https://shieldid-api.onrender.com");
 
 export async function verifyDocument(documentFile, selfieFile) {
   const formData = new FormData();
