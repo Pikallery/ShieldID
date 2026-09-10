@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "மோசடி எதிர்ப்பு மற்றும் ஹோலோகிராம் சரிபார்ப்பு",
+  "extractedOcrFields": "பிரித்தெடுக்கப்பட்ட OCR புலங்கள்",
+  "cameraInitializationFailed": "கேமரா தொடங்குவதில் தோல்வி",
+  "retry": "மீண்டும் முயற்சி செய்",
+  "auditHistory": "தணிக்கை வரலாறு",
+  "searchHistoryHint": "வரலாற்றைத் தேடுக",
+  "allStatuses": "அனைத்து நிலைகளும்",
+  "passed": "வெற்றி பெற்றது",
+  "review": "மதிப்பாய்வு",
+  "rejected": "நிராகரிக்கப்பட்டது",
+  "noMatchingRecords": "பொருந்தும் பதிவுகள் எதுவும் இல்லை",
+  "verdict": "{status}"
+}

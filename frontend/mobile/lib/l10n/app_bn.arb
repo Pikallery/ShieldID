@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "ট্যাম্পার-প্রতিরোধী ও হলোগ্রাম যাচাই",
+  "extractedOcrFields": "সংগৃহীত OCR ক্ষেত্রসমূহ",
+  "cameraInitializationFailed": "ক্যামেরা চালু করতে ব্যর্থ",
+  "retry": "পুনরায় চেষ্টা করুন",
+  "auditHistory": "অডিট ইতিহাস",
+  "searchHistoryHint": "ইতিহাস খুঁজুন",
+  "allStatuses": "সমস্ত স্থিতি",
+  "passed": "উত্তীর্ণ",
+  "review": "পর্যালোচনা",
+  "rejected": "প্রত্যাখ্যাত",
+  "noMatchingRecords": "কোনো মিল পাওয়া যায়নি",
+  "verdict": "{status}"
+}

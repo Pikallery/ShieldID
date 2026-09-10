@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "యాంటీ ట్యాంపరింగ్ & హోలోగ్రామ్ ధృవీకరణ",
+  "extractedOcrFields": "వెలికితీసిన OCR ఫీల్డ్‌లు",
+  "cameraInitializationFailed": "కెమెరా ప్రారంభం విఫలమైంది",
+  "retry": "మళ్ళీ ప్రయత్నించండి",
+  "auditHistory": "ఆడిట్ చరిత్ర",
+  "searchHistoryHint": "చరిత్రను శోధించండి",
+  "allStatuses": "అన్ని స్థితులు",
+  "passed": "ఉత్తీర్ణం",
+  "review": "సమీక్ష",
+  "rejected": "తిరస్కరించబడింది",
+  "noMatchingRecords": "సరిపోలే రికార్డులు లేవు",
+  "verdict": "{status}"
+}

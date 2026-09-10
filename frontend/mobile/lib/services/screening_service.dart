@@ -69,7 +69,7 @@ class ScreeningService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setDocumentType(DocumentType type, {String country = 'United States'}) {
+  void setDocumentType(DocumentType type, {String country = 'India'}) {
     _session.selectedDocType = type;
     _session.issuingCountry = country;
     _session.stage = ScreeningStage.captureFront;

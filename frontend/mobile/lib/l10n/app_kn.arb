@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "ಟ್ಯಾಂಪರಿಂಗ್ ವಿರೋಧಿ ಮತ್ತು ಹೊಲೊಗ್ರಾಮ್ ಪರಿಶೀಲನೆ",
+  "extractedOcrFields": "ತೆಗೆದ OCR ಕ್ಷೇತ್ರಗಳು",
+  "cameraInitializationFailed": "ಕ್ಯಾಮೆರಾ ಪ್ರಾರಂಭ ವಿಫಲವಾಗಿದೆ",
+  "retry": "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+  "auditHistory": "ಆಡಿಟ್ ಇತಿಹಾಸ",
+  "searchHistoryHint": "ಇತಿಹಾಸವನ್ನು ಹುಡುಕಿ",
+  "allStatuses": "ಎಲ್ಲಾ ಸ್ಥಿತಿಗಳು",
+  "passed": "ಉತ್ತೀರ್ಣ",
+  "review": "ಪರಿಶೀಲನೆ",
+  "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+  "noMatchingRecords": "ಯಾವುದೇ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
+  "verdict": "{status}"
+}

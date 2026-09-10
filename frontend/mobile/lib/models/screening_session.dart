@@ -61,7 +61,7 @@ class ScreeningSession {
 
   ScreeningSession({
     this.selectedDocType = DocumentType.passport,
-    this.issuingCountry = 'United States',
+    this.issuingCountry = 'India',
     this.frontImagePath,
     this.backImagePath,
     this.selfieImagePath,
@@ -74,7 +74,7 @@ class ScreeningSession {
 
   void reset() {
     selectedDocType = DocumentType.passport;
-    issuingCountry = 'United States';
+    issuingCountry = 'India';
     frontImagePath = null;
     backImagePath = null;
     selfieImagePath = null;

@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "വ്യാജനിർമ്മാണ തടയലും ഹോളോഗ്രാം പരിശോധനയും",
+  "extractedOcrFields": "എക്‌സ്‌ട്രാക്‌റ്റ് ചെയ്‌ത OCR ഫീൽഡുകൾ",
+  "cameraInitializationFailed": "ക്യാമറ ആരംഭിക്കുന്നത് പരാജയപ്പെട്ടു",
+  "retry": "വീണ്ടും ശ്രമിക്കുക",
+  "auditHistory": "ഓഡിറ്റ് ചരിത്രം",
+  "searchHistoryHint": "ചരിത്രം തിരയുക",
+  "allStatuses": "എല്ലാ നിലകളും",
+  "passed": "വിജയിച്ചു",
+  "review": "പുനരവലോകനം",
+  "rejected": "നിരസിച്ചു",
+  "noMatchingRecords": "പൊരുത്തപ്പെടുന്ന റെക്കോർഡുകളില്ല",
+  "verdict": "{status}"
+}

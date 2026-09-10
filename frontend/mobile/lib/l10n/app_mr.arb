@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "छेडछाड विरोधी आणि होलोग्राम पडताळणी",
+  "extractedOcrFields": "काढलेले OCR फील्ड",
+  "cameraInitializationFailed": "कॅमेरा सुरू करण्यात अयशस्वी",
+  "retry": "पुन्हा प्रयत्न करा",
+  "auditHistory": "ऑडिट इतिहास",
+  "searchHistoryHint": "इतिहास शोधा",
+  "allStatuses": "सर्व स्थिती",
+  "passed": "मंजूर",
+  "review": "पुनरावलोकन",
+  "rejected": "नाकारले",
+  "noMatchingRecords": "कोणतीही जुळणी सापडली नाही",
+  "verdict": "{status}"
+}

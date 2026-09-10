@@ -1,0 +1,15 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "ਛੇੜਛਾੜ ਵਿਰੋਧੀ ਅਤੇ ਹੋਲੋਗ੍ਰਾਮ ਜਾਂਚ",
+  "extractedOcrFields": "ਕੱਢੇ ਗਏ OCR ਖੇਤਰ",
+  "cameraInitializationFailed": "ਕੈਮਰਾ ਸ਼ੁਰੂ ਕਰਨ ਵਿੱਚ ਅਸਫਲ",
+  "retry": "ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
+  "auditHistory": "ਆਡਿਟ ਇਤਿਹਾਸ",
+  "searchHistoryHint": "ਇਤਿਹਾਸ ਖੋਜੋ",
+  "allStatuses": "ਸਾਰੀਆਂ ਸਥਿਤੀਆਂ",
+  "passed": "ਪਾਸ ਕੀਤਾ",
+  "review": "ਸਮੀਖਿਆ",
+  "rejected": "ਰੱਦ ਕੀਤਾ ਗਿਆ",
+  "noMatchingRecords": "ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਰਿਕਾਰਡ ਨਹੀਂ ਮਿਲਿਆ",
+  "verdict": "{status}"
+}
