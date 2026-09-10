@@ -19,7 +19,7 @@
   <title>ShieldID</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Fast Web QR Decoder (jsQR) -->
+  <!-- Fast Web QR & Barcode Decoder (jsQR) -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
   <!-- Tesseract.js for Real-Time On-Device Web OCR -->
@@ -51,13 +51,28 @@
       return false;
     };
 
+    // Fast helper to scan QR code on a canvas region
+    function scanCanvasForQR(canvas) {
+      if (window.jsQR) {
+        try {
+          const ctx = canvas.getContext('2d');
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const res = jsQR(imgData.data, imgData.width, imgData.height, {
+            inversionAttempts: 'attemptBoth'
+          });
+          if (res && res.data) return res.data;
+        } catch (e) {}
+      }
+      return '';
+    }
+
     // Client-side Browser QR & OCR Scanner on captured document photo
     window.performWebOCR = async function(imageDataUrl) {
       let qrText = '';
       let ocrText = '';
 
       try {
-        // 1. Load image onto canvas for high-accuracy QR decoding and OCR preprocessing
+        // 1. Load captured image onto canvas
         const img = new Image();
         const loadPromise = new Promise((resolve, reject) => {
           img.onload = () => resolve();
@@ -66,13 +81,16 @@
         });
         await loadPromise;
 
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+        const width = img.naturalWidth || img.width || 1280;
+        const height = img.naturalHeight || img.height || 720;
 
-        // A. Native Browser BarcodeDetector (Supported in Chrome on Android)
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // A. BarcodeDetector check (Hardware accelerated in Chrome Android)
         if ('BarcodeDetector' in window) {
           try {
             const detector = new BarcodeDetector({
@@ -82,42 +100,47 @@
             if (barcodes && barcodes.length > 0) {
               qrText = barcodes[0].rawValue || '';
             }
-          } catch (err) {
-            console.warn('BarcodeDetector error:', err);
-          }
+          } catch (err) {}
         }
 
-        // B. jsQR fallback if native detector did not find QR
-        if (!qrText && window.jsQR) {
-          try {
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const qrCode = jsQR(imgData.data, imgData.width, imgData.height, {
-              inversionAttempts: 'attemptBoth'
-            });
-            if (qrCode && qrCode.data) {
-              qrText = qrCode.data;
-            }
-          } catch (err) {
-            console.warn('jsQR full-frame scan error:', err);
-          }
+        // B. Multi-region jsQR scanning (Full frame, center box, right side)
+        if (!qrText) {
+          qrText = scanCanvasForQR(canvas);
         }
 
-        // C. OCR with Tesseract.js
+        if (!qrText && width > 300 && height > 300) {
+          // Check center crop (inside guideline box)
+          const centerCanvas = document.createElement('canvas');
+          centerCanvas.width = Math.floor(width * 0.7);
+          centerCanvas.height = Math.floor(height * 0.7);
+          const cCtx = centerCanvas.getContext('2d');
+          cCtx.drawImage(img, Math.floor(width * 0.15), Math.floor(height * 0.15), centerCanvas.width, centerCanvas.height, 0, 0, centerCanvas.width, centerCanvas.height);
+          qrText = scanCanvasForQR(centerCanvas);
+        }
+
+        if (!qrText && width > 300 && height > 300) {
+          // Check right-half crop (where Indian PAN QR codes are located)
+          const rightCanvas = document.createElement('canvas');
+          rightCanvas.width = Math.floor(width * 0.5);
+          rightCanvas.height = height;
+          const rCtx = rightCanvas.getContext('2d');
+          rCtx.drawImage(img, Math.floor(width * 0.5), 0, rightCanvas.width, height, 0, 0, rightCanvas.width, height);
+          qrText = scanCanvasForQR(rightCanvas);
+        }
+
+        // C. Tesseract.js High-Performance OCR
         if (window.Tesseract) {
           try {
-            const worker = await Tesseract.createWorker('eng');
-            const ret = await worker.recognize(canvas);
-            await worker.terminate();
-            ocrText = ret.data.text || '';
+            const ret = await Tesseract.recognize(canvas, 'eng');
+            ocrText = ret?.data?.text || '';
           } catch (e) {
-            console.error('Tesseract OCR failed:', e);
+            console.warn('Tesseract OCR recognize error:', e);
           }
         }
       } catch (err) {
         console.error('performWebOCR general error:', err);
       }
 
-      // Return structured JSON string containing both QR data and OCR text
       return JSON.stringify({
         qr: qrText,
         ocr: ocrText
