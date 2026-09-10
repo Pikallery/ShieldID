@@ -479,7 +479,10 @@ class OCRProcessor(BaseProcessor):
                 "BIRTH",
             }
             for line in lines:
-                tokens = set(line.upper().split())
+                u_line = line.upper()
+                if any(noise in u_line for noise in ("SRAM", "BRAM", "VRAM", "NRAM", "FARA", "HIVA", "WATE", "STAE", "ATT", "LOSRAM")):
+                    continue
+                tokens = set(u_line.split())
                 if (
                     len(line) > 3
                     and re.match(r"^[A-Za-z\s]+$", line)
@@ -511,6 +514,13 @@ class OCRProcessor(BaseProcessor):
         pan_match = re.search(r"\b([A-Z]{5}[0-9]{4}[A-Z])\b", upper)
         if pan_match:
             pan_number = pan_match.group(1)
+        else:
+            # Check for spaced PAN e.g. "SFAPS 5084D" or "SFAPS 5084 D"
+            spaced_pan = re.search(r"\b([A-Z0-9]{5})\s+([A-Z0-9]{4})\s*([A-Z0-9])\b", upper)
+            if spaced_pan:
+                candidate = "".join(spaced_pan.groups())
+                if re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]$", candidate):
+                    pan_number = candidate
 
         # DOB
         dob = None
@@ -524,32 +534,55 @@ class OCRProcessor(BaseProcessor):
         if name_match:
             name = name_match.group(1).split("\n")[0].strip()
         else:
-            # Search lines between "INCOME TAX DEPARTMENT" / "GOVT OF INDIA" and Father's name / DOB
+            # Comprehensive blacklist of government card headers, Devanagari transliteration noise & artifacts
             ignore = {
-                "INCOME",
-                "TAX",
-                "DEPARTMENT",
-                "GOVT",
-                "GOVERNMENT",
-                "INDIA",
-                "PERMANENT",
-                "ACCOUNT",
-                "NUMBER",
-                "CARD",
-                "SIGNATURE",
+                "INCOME", "TAX", "DEPARTMENT", "GOVT", "GOVERNMENT", "INDIA",
+                "PERMANENT", "ACCOUNT", "NUMBER", "CARD", "SIGNATURE",
+                "AYAKAR", "VIBHAG", "BHARAT", "SARKAR", "FATHER", "FATHERS",
+                "NAME", "LOSRAM", "ATT", "SRAM", "CREE", "TE", "WT", "TGA", "TCA",
+                "HIVA", "WATE", "STAE", "FARA", "YATE", "BRAM", "NRAM", "VRAM",
+                "HOLDER", "DATE", "BIRTH", "DIGILOCKER"
             }
+            noise_substrings = ("SRAM", "BRAM", "VRAM", "NRAM", "FARA", "HIVA", "WATE", "STAE", "ATT", "LOSRAM")
+
             candidate_lines = []
             for line in lines:
-                tokens = set(line.upper().split())
+                u_line = line.upper()
+                if any(noise in u_line for noise in noise_substrings):
+                    continue
+                tokens = set(u_line.split())
                 if (
-                    re.match(r"^[A-Za-z\s]{3,40}$", line)
+                    re.match(r"^[A-Za-z\s\.]{3,40}$", line)
                     and not (tokens & ignore)
-                    and not re.search(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b", line.upper())
+                    and not re.search(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b", u_line)
                 ):
                     candidate_lines.append(line.strip())
 
-            if candidate_lines:
-                name = candidate_lines[0]
+            # 5th letter of PAN represents the cardholder's surname initial
+            surname_initial = pan_number[4] if len(pan_number) == 10 and pan_number[4].isalpha() else ""
+
+            best_name = None
+            if surname_initial:
+                for cand in candidate_lines:
+                    words = cand.split()
+                    if any(w.upper().startswith(surname_initial) for w in words):
+                        best_name = cand
+                        break
+
+            if not best_name and candidate_lines:
+                # Require candidate to have at least 2 words or length >= 5
+                for cand in candidate_lines:
+                    words = cand.split()
+                    if len(words) >= 2 and all(len(w) >= 3 for w in words):
+                        best_name = cand
+                        break
+                if not best_name:
+                    long_cands = [c for c in candidate_lines if len(c) >= 5]
+                    if long_cands:
+                        best_name = max(long_cands, key=len)
+
+            if best_name:
+                name = best_name
 
         return PANData(
             name=name,
