@@ -1,4 +1,4 @@
-{
+﻿{
   "appTitle": "ShieldID",
   "identityScreeningOs": "గుర్తింపు మరియు స్క్రీనింగ్ OS • క్రియాశీలం",
   "realTimeScreening": "రియల్-టైమ్ స్క్రీనింగ్",
@@ -77,5 +77,11 @@
   "interfaceLanguage": "ఇంటర్‌ఫేస్ భాష",
   "chooseLocale": "మీకు నచ్చిన భాషను ఎంచుకోండి",
   "backendService": "బ్యాకెండ్ AI సేవ",
+    "metricPassRate": "పాస్ రేటు",
+  "metricFraudBlocked": "మోసం నిలిపివేశారు",
+  "metricAvgLatency": "సగటు ఆలస్యం",
+  "metricTotalScreened": "మొత్తం స్క్రీన్",
+  "applicantDocument": "దరఖాస్తుదారు పత్రం",
   "verdict": "{status}"
 }
+

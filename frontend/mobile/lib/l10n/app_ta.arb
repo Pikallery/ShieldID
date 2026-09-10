@@ -1,4 +1,4 @@
-{
+﻿{
   "appTitle": "ShieldID",
   "identityScreeningOs": "அடையாளம் மற்றும் திரையிடல் OS • செயலில்",
   "realTimeScreening": "நிகழ்நேர திரையிடல்",
@@ -77,5 +77,11 @@
   "interfaceLanguage": "இடைமுக மொழி",
   "chooseLocale": "உங்கள் விருப்பமான மொழியைத் தேர்ந்தெடுக்கவும்",
   "backendService": "பின்தளத்தில் AI சேவை",
+    "metricPassRate": "தேர்ச்சி விகிதம்",
+  "metricFraudBlocked": "மோசடி தடுக்கப்பட்டது",
+  "metricAvgLatency": "சராசரி தாமதம்",
+  "metricTotalScreened": "மொத்தம் திரையிட்டது",
+  "applicantDocument": "விண்ணப்பதாரர் ஆவணம்",
   "verdict": "{status}"
 }
+

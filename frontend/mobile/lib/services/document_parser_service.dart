@@ -136,11 +136,19 @@ class DocumentParserService {
     return null;
   }
 
+  /// Returns true if the string looks like a PAN card number (AAAAA9999A)
+  bool _looksLikePanNumber(String s) {
+    return RegExp(r'[A-Z]{5}[0-9]{4}[A-Z]').hasMatch(s.toUpperCase().replaceAll(' ', ''));
+  }
+
   /// Discards Indian ID header noise, Hindi OCR misread artifacts, and non-name phrases
   bool isHeaderOrNoiseLine(String line) {
     final trimmed = line.trim();
     if (trimmed.length < 3) return true;
     final u = trimmed.toUpperCase();
+
+    // Reject anything that looks like a PAN number (e.g. SFAPS5084D or OCR garble of it)
+    if (_looksLikePanNumber(u)) return true;
 
     // Comprehensive blacklist of government card headers & OCR misread junk
     final blacklistedPhrases = [
@@ -396,15 +404,21 @@ class DocumentParserService {
         }
 
         if (fullName.isEmpty) {
-          final nameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(ocrText);
-          if (nameMatch != null && nameMatch.group(1)!.trim().length > 2) {
-            fullName = nameMatch.group(1)!.split('\n').first.trim();
-          } else {
+          // Priority 1: text immediately after NAME label
+          final nameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s\.]+)', caseSensitive: false).firstMatch(ocrText);
+          if (nameMatch != null) {
+            final candidate = nameMatch.group(1)!.split('\n').first.trim();
+            final sanitized = sanitizeExtractedName(candidate);
+            if (isValidHumanName(sanitized)) fullName = sanitized;
+          }
+
+          // Priority 2: scan every line
+          if (fullName.isEmpty) {
             for (final line in lines) {
-              if (line.length >= 3 &&
-                  RegExp(r'^[A-Za-z\s\.]+$').hasMatch(line) &&
-                  !isHeaderOrNoiseLine(line)) {
-                fullName = line;
+              if (_looksLikePanNumber(line)) continue;
+              final sanitized = sanitizeExtractedName(line);
+              if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
+                fullName = sanitized;
                 break;
               }
             }
@@ -441,20 +455,26 @@ class DocumentParserService {
           }
         }
 
-        // Cardholder Name Extraction
+        // Cardholder Name Extraction for PAN Card
         if (fullName.isEmpty) {
-          final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z0-9\s]+)', caseSensitive: false).firstMatch(ocrText);
+          // Step 1: look immediately after "Name" / "NAME :" label
+          final panNameMatch = RegExp(
+            r'(?:^|\n)\s*(?:Name|NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s\.]{2,40})',
+            caseSensitive: false, multiLine: true,
+          ).firstMatch(ocrText);
           if (panNameMatch != null) {
-            final sanitized = sanitizeExtractedName(panNameMatch.group(1)!.split('\n').first, docNumber);
-            if (isValidHumanName(sanitized)) {
-              fullName = sanitized;
+            final raw = panNameMatch.group(1)!.split('\n').first.trim();
+            if (!_looksLikePanNumber(raw)) {
+              final sanitized = sanitizeExtractedName(raw, docNumber);
+              if (isValidHumanName(sanitized)) fullName = sanitized;
             }
           }
 
+          // Step 2: scan all lines, skipping lines that look like PAN numbers
           if (fullName.isEmpty) {
-            // Gather all candidate lines, sanitize them, and pass strict human name verification
             final candidateNames = <String>[];
             for (final line in lines) {
+              if (_looksLikePanNumber(line)) continue;
               final sanitized = sanitizeExtractedName(line, docNumber);
               if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
                 candidateNames.add(sanitized);
@@ -466,7 +486,7 @@ class DocumentParserService {
               final surnameInitial = (docNumber.length == 10) ? docNumber[4] : '';
               String? bestMatch;
 
-              // Priority 1: Match surname initial (e.g., 'SAMAL' or 'SANJEEB SAMAL' matching 'S' in SFAPS5084D)
+              // Priority 1: Match surname initial (e.g., 'SAMAL' matching 'S' in SFAPS5084D)
               if (surnameInitial.isNotEmpty) {
                 for (final c in candidateNames) {
                   final words = c.split(' ');
@@ -477,7 +497,7 @@ class DocumentParserService {
                 }
               }
 
-              // Priority 2: Multi-word candidate with valid words (>= 3 chars)
+              // Priority 2: Multi-word candidate (>= 2 words, each >= 3 chars)
               if (bestMatch == null) {
                 for (final c in candidateNames) {
                   final words = c.split(' ');
@@ -488,8 +508,9 @@ class DocumentParserService {
                 }
               }
 
-              // Priority 3: First valid candidate line
-              fullName = bestMatch ?? candidateNames.first;
+              // Priority 3: Longest single candidate
+              bestMatch ??= candidateNames.reduce((a, b) => a.length >= b.length ? a : b);
+              fullName = bestMatch;
             }
           }
         }

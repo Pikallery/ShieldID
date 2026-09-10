@@ -252,6 +252,21 @@ class AppLocalizationsTa extends AppLocalizations {
   String get backendService => 'பின்தளத்தில் AI சேவை';
 
   @override
+  String get metricPassRate => 'தேர்ச்சி விகிதம்';
+
+  @override
+  String get metricFraudBlocked => 'மோசடி தடுக்கப்பட்டது';
+
+  @override
+  String get metricAvgLatency => 'சராசரி தாமதம்';
+
+  @override
+  String get metricTotalScreened => 'மொத்தம் திரையிட்டது';
+
+  @override
+  String get applicantDocument => 'விண்ணப்பதாரர் ஆவணம்';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

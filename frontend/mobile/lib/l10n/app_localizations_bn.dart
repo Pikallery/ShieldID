@@ -248,6 +248,21 @@ class AppLocalizationsBn extends AppLocalizations {
   String get backendService => 'ব্যাকএন্ড এআই পরিষেবা';
 
   @override
+  String get metricPassRate => 'পাস হার';
+
+  @override
+  String get metricFraudBlocked => 'জালিয়াতি বন্ধ';
+
+  @override
+  String get metricAvgLatency => 'গড় বিলম্ব';
+
+  @override
+  String get metricTotalScreened => 'মোট স্ক্যান';
+
+  @override
+  String get applicantDocument => 'আবেদনকারী দলিল';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

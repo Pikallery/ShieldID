@@ -253,6 +253,21 @@ class AppLocalizationsTe extends AppLocalizations {
   String get backendService => 'బ్యాకెండ్ AI సేవ';
 
   @override
+  String get metricPassRate => 'పాస్ రేటు';
+
+  @override
+  String get metricFraudBlocked => 'మోసం నిలిపివేశారు';
+
+  @override
+  String get metricAvgLatency => 'సగటు ఆలస్యం';
+
+  @override
+  String get metricTotalScreened => 'మొత్తం స్క్రీన్';
+
+  @override
+  String get applicantDocument => 'దరఖాస్తుదారు పత్రం';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

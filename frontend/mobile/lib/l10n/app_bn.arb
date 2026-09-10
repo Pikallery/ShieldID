@@ -1,4 +1,4 @@
-{
+﻿{
   "appTitle": "ShieldID",
   "identityScreeningOs": "পরিচয় ও স্ক্রীনিং ওএস • সক্রিয়",
   "realTimeScreening": "রিয়েল-টাইম স্ক্রীনিং",
@@ -77,5 +77,11 @@
   "interfaceLanguage": "ইন্টারফেস ভাষা",
   "chooseLocale": "আপনার পছন্দের ভাষা নির্বাচন করুন",
   "backendService": "ব্যাকএন্ড এআই পরিষেবা",
+    "metricPassRate": "পাস হার",
+  "metricFraudBlocked": "জালিয়াতি বন্ধ",
+  "metricAvgLatency": "গড় বিলম্ব",
+  "metricTotalScreened": "মোট স্ক্যান",
+  "applicantDocument": "আবেদনকারী দলিল",
   "verdict": "{status}"
 }
+

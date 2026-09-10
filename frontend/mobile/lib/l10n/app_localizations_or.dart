@@ -248,6 +248,21 @@ class AppLocalizationsOr extends AppLocalizations {
   String get backendService => 'ବ୍ୟାକଏଣ୍ଡ AI ସେବା';
 
   @override
+  String get metricPassRate => 'ପାସ ହାର';
+
+  @override
+  String get metricFraudBlocked => 'ଜାଲିଆତି ଅଟକାଇଲି';
+
+  @override
+  String get metricAvgLatency => 'ହାରାହାରି ଦେରୀ';
+
+  @override
+  String get metricTotalScreened => 'ମୋଟ ସ୍କ୍ରିନ';
+
+  @override
+  String get applicantDocument => 'ଆବେଦନକାରୀ ଦସ୍ତାବିଜ';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

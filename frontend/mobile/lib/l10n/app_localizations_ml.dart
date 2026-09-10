@@ -253,6 +253,21 @@ class AppLocalizationsMl extends AppLocalizations {
   String get backendService => 'ബാക്കെൻഡ് AI സേവനം';
 
   @override
+  String get metricPassRate => 'പാസ് നിരക്ക്';
+
+  @override
+  String get metricFraudBlocked => 'തട്ടിപ്പ് തടഞ്ഞു';
+
+  @override
+  String get metricAvgLatency => 'ശരാശരി കാലതാമസം';
+
+  @override
+  String get metricTotalScreened => 'ആകെ സ്ക്രീൻ';
+
+  @override
+  String get applicantDocument => 'അപേക്ഷകന്റെ രേഖ';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

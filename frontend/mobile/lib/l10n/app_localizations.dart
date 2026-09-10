@@ -584,6 +584,36 @@ abstract class AppLocalizations {
   /// **'Backend AI Service'**
   String get backendService;
 
+  /// No description provided for @metricPassRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass Rate'**
+  String get metricPassRate;
+
+  /// No description provided for @metricFraudBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Fraud Blocked'**
+  String get metricFraudBlocked;
+
+  /// No description provided for @metricAvgLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg Latency'**
+  String get metricAvgLatency;
+
+  /// No description provided for @metricTotalScreened.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Screened'**
+  String get metricTotalScreened;
+
+  /// No description provided for @applicantDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Applicant Document'**
+  String get applicantDocument;
+
   /// No description provided for @verdict.
   ///
   /// In en, this message translates to:

@@ -249,6 +249,21 @@ class AppLocalizationsGu extends AppLocalizations {
   String get backendService => 'બેકએન્ડ AI સેવા';
 
   @override
+  String get metricPassRate => 'પાસ રેટ';
+
+  @override
+  String get metricFraudBlocked => 'છળ અટકાવ્યું';
+
+  @override
+  String get metricAvgLatency => 'સરેરાશ વિલંબ';
+
+  @override
+  String get metricTotalScreened => 'કુલ સ્ક્રિન';
+
+  @override
+  String get applicantDocument => 'અરજદાર દસ્તાવેજ';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

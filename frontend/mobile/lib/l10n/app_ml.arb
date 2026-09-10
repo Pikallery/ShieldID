@@ -1,4 +1,4 @@
-{
+﻿{
   "appTitle": "ShieldID",
   "identityScreeningOs": "ഐഡന്റിറ്റി & സ്ക്രീനിംഗ് ഒഎസ് • സജീവം",
   "realTimeScreening": "തത്സമയ സ്ക്രീനിംഗ്",
@@ -77,5 +77,11 @@
   "interfaceLanguage": "ഇന്റർഫേസ് ഭാഷ",
   "chooseLocale": "നിങ്ങളുടെ മുൻഗണനാ ഭാഷ തിരഞ്ഞെടുക്കുക",
   "backendService": "ബാക്കെൻഡ് AI സേവനം",
+    "metricPassRate": "പാസ് നിരക്ക്",
+  "metricFraudBlocked": "തട്ടിപ്പ് തടഞ്ഞു",
+  "metricAvgLatency": "ശരാശരി കാലതാമസം",
+  "metricTotalScreened": "ആകെ സ്ക്രീൻ",
+  "applicantDocument": "അപേക്ഷകന്റെ രേഖ",
   "verdict": "{status}"
 }
+

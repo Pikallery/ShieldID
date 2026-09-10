@@ -1,4 +1,4 @@
-{
+﻿{
   "appTitle": "ShieldID",
   "identityScreeningOs": "ಗುರುತು ಮತ್ತು ತಪಾಸಣೆ OS • ಸಕ್ರಿಯ",
   "realTimeScreening": "ನೈಜ-ಸಮಯದ ತಪಾಸಣೆ",
@@ -77,5 +77,11 @@
   "interfaceLanguage": "ಇಂಟರ್ಫೇಸ್ ಭಾಷೆ",
   "chooseLocale": "ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   "backendService": "ಬ್ಯಾಕೆಂಡ್ AI ಸೇವೆ",
+    "metricPassRate": "ಪಾಸ್ ದರ",
+  "metricFraudBlocked": "ವಂಚನೆ ತಡೆಗಟ್ಟಲಾಗಿದೆ",
+  "metricAvgLatency": "ಸರಾಸರಿ ತಡ",
+  "metricTotalScreened": "ಒಟ್ಟು ಸ್ಕ್ರೀನ್",
+  "applicantDocument": "ಅರ್ಜಿದಾರ ದಾಖಲೆ",
   "verdict": "{status}"
 }
+

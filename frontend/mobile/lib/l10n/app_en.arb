@@ -77,6 +77,11 @@
   "interfaceLanguage": "Interface Language",
   "chooseLocale": "Choose your preferred locale",
   "backendService": "Backend AI Service",
+  "metricPassRate": "Pass Rate",
+  "metricFraudBlocked": "Fraud Blocked",
+  "metricAvgLatency": "Avg Latency",
+  "metricTotalScreened": "Total Screened",
+  "applicantDocument": "Applicant Document",
   "verdict": "{status}",
   "@verdict": {
     "placeholders": {

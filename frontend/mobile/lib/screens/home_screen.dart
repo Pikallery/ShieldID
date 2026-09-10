@@ -314,20 +314,20 @@ class _HomeDashboardTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Row(
+            Row(
               children: [
                 Expanded(
                   child: _MetricTile(
-                    title: 'Pass Rate',
+                    title: l10n.metricPassRate,
                     value: '96.8%',
                     icon: Icons.verified_user_rounded,
                     accentColor: AppTheme.passGreen,
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _MetricTile(
-                    title: 'Fraud Blocked',
+                    title: l10n.metricFraudBlocked,
                     value: '42',
                     icon: Icons.gpp_bad_rounded,
                     accentColor: AppTheme.rejectRed,
@@ -338,9 +338,9 @@ class _HomeDashboardTab extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: _MetricTile(
-                    title: 'Avg Latency',
+                    title: l10n.metricAvgLatency,
                     value: '1.2s',
                     icon: Icons.speed_rounded,
                     accentColor: AppTheme.primaryCyan,
@@ -349,7 +349,7 @@ class _HomeDashboardTab extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _MetricTile(
-                    title: 'Total Screened',
+                    title: l10n.metricTotalScreened,
                     value: '${history.length + 1240}',
                     icon: Icons.auto_graph_rounded,
                     accentColor: AppTheme.primaryBlue,
@@ -523,7 +523,7 @@ class _HistoryCardItem extends StatelessWidget {
                   Text(
                     report.documentData.fullName.isNotEmpty
                         ? report.documentData.fullName
-                        : 'Applicant Document',
+                        : AppLocalizations.of(context).applicantDocument,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

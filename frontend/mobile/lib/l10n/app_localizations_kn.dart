@@ -253,6 +253,21 @@ class AppLocalizationsKn extends AppLocalizations {
   String get backendService => 'ಬ್ಯಾಕೆಂಡ್ AI ಸೇವೆ';
 
   @override
+  String get metricPassRate => 'ಪಾಸ್ ದರ';
+
+  @override
+  String get metricFraudBlocked => 'ವಂಚನೆ ತಡೆಗಟ್ಟಲಾಗಿದೆ';
+
+  @override
+  String get metricAvgLatency => 'ಸರಾಸರಿ ತಡ';
+
+  @override
+  String get metricTotalScreened => 'ಒಟ್ಟು ಸ್ಕ್ರೀನ್';
+
+  @override
+  String get applicantDocument => 'ಅರ್ಜಿದಾರ ದಾಖಲೆ';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

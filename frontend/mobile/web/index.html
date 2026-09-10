@@ -156,6 +156,76 @@
       } catch (e) {}
     }
 
+    // ── Persistent Tesseract Worker (initialised once, reused for speed) ──────
+    let _tessWorker = null;
+    let _tessWorkerReady = false;
+    let _tessWorkerInit = null;
+
+    async function getTessWorker() {
+      if (_tessWorker && _tessWorkerReady) return _tessWorker;
+      if (_tessWorkerInit) return _tessWorkerInit;
+
+      _tessWorkerInit = (async () => {
+        try {
+          const w = await Tesseract.createWorker('eng', 1, {
+            logger: () => {}
+          });
+          // PSM 6 = Assume a single uniform block of text — fastest & cleanest for ID cards
+          await w.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK });
+          _tessWorker = w;
+          _tessWorkerReady = true;
+          return w;
+        } catch (e) {
+          console.warn('Tesseract worker init failed, will use recognize() fallback:', e);
+          _tessWorkerInit = null;
+          return null;
+        }
+      })();
+      return _tessWorkerInit;
+    }
+
+    // Kick off worker init immediately so it's warm by the time user captures
+    if (window.Tesseract) {
+      getTessWorker().catch(() => {});
+    }
+
+    // Down-scale canvas to maxDim on its longer side (speeds OCR by 60-70%)
+    function scaleCanvas(srcCanvas, maxDim) {
+      const w = srcCanvas.width, h = srcCanvas.height;
+      if (w <= maxDim && h <= maxDim) return srcCanvas;
+      const scale = maxDim / Math.max(w, h);
+      const c = document.createElement('canvas');
+      c.width = Math.round(w * scale);
+      c.height = Math.round(h * scale);
+      c.getContext('2d').drawImage(srcCanvas, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    // Run OCR with the persistent worker, 8 s timeout
+    async function runOCR(canvas) {
+      const small = scaleCanvas(canvas, 1024);
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('OCR_TIMEOUT')), 8000));
+      try {
+        const worker = await getTessWorker();
+        if (worker) {
+          const result = await Promise.race([worker.recognize(small), timeout]);
+          return result?.data?.text || '';
+        }
+      } catch (e) {
+        if (e.message !== 'OCR_TIMEOUT') console.warn('Worker OCR error:', e);
+      }
+      // Fallback: stateless recognize
+      try {
+        const small2 = scaleCanvas(canvas, 800);
+        const result2 = await Promise.race([
+          Tesseract.recognize(small2, 'eng'),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('t')), 7000))
+        ]);
+        return result2?.data?.text || '';
+      } catch (_) {}
+      return '';
+    }
+
     // Client-side Browser QR & OCR Scanner on captured document photo
     window.performWebOCR = async function(imageDataUrl) {
       let qrText = '';
@@ -193,12 +263,9 @@
         }
 
         // 2. Multi-Zone jsQR Scanning (Full frame, right crop, center box)
-        if (!qrText) {
-          qrText = scanCanvasForQR(canvas);
-        }
+        if (!qrText) qrText = scanCanvasForQR(canvas);
 
         if (!qrText && width > 250 && height > 250) {
-          // Right half crop (NSDL PAN QR position)
           const rightCanvas = document.createElement('canvas');
           rightCanvas.width = Math.floor(width * 0.55);
           rightCanvas.height = height;
@@ -208,7 +275,6 @@
         }
 
         if (!qrText && width > 250 && height > 250) {
-          // Center guideline box crop
           const centerCanvas = document.createElement('canvas');
           centerCanvas.width = Math.floor(width * 0.75);
           centerCanvas.height = Math.floor(height * 0.75);
@@ -217,7 +283,7 @@
           qrText = scanCanvasForQR(centerCanvas);
         }
 
-        // 3. Motion-Blur Resilient Preprocessing & OCR
+        // 3. Enhanced Preprocessing + Persistent-Worker OCR (fast path)
         const enhancedCanvas = document.createElement('canvas');
         enhancedCanvas.width = width;
         enhancedCanvas.height = height;
@@ -226,38 +292,25 @@
         preprocessCanvasForBlur(eCtx, width, height);
 
         if (window.Tesseract) {
-          try {
-            const ret = await Tesseract.recognize(enhancedCanvas, 'eng');
-            ocrText = ret?.data?.text || '';
+          ocrText = await runOCR(enhancedCanvas);
 
-            // If primary OCR missed name/text lines, run secondary focused pass on text zone
-            if (ocrText.length < 30 && width > 300 && height > 300) {
-              const textZoneCanvas = document.createElement('canvas');
-              textZoneCanvas.width = Math.floor(width * 0.75);
-              textZoneCanvas.height = Math.floor(height * 0.75);
-              const tzCtx = textZoneCanvas.getContext('2d');
-              tzCtx.drawImage(img, 0, Math.floor(height * 0.15), textZoneCanvas.width, textZoneCanvas.height, 0, 0, textZoneCanvas.width, textZoneCanvas.height);
-              preprocessCanvasForBlur(tzCtx, textZoneCanvas.width, textZoneCanvas.height);
-              const retTz = await Tesseract.recognize(textZoneCanvas, 'eng');
-              if (retTz?.data?.text) {
-                ocrText = ocrText + '\n' + retTz.data.text;
-              }
-            }
-          } catch (e) {
-            try {
-              const retRaw = await Tesseract.recognize(canvas, 'eng');
-              ocrText = retRaw?.data?.text || '';
-            } catch (err2) {}
+          // Secondary pass on lower 60% of card (name / DOB / PAN number zone)
+          if (ocrText.length < 40 && height > 300) {
+            const nameZone = document.createElement('canvas');
+            nameZone.width = width;
+            nameZone.height = Math.floor(height * 0.65);
+            const nCtx = nameZone.getContext('2d');
+            nCtx.drawImage(img, 0, Math.floor(height * 0.35), width, nameZone.height, 0, 0, width, nameZone.height);
+            preprocessCanvasForBlur(nCtx, nameZone.width, nameZone.height);
+            const extra = await runOCR(nameZone);
+            if (extra) ocrText = ocrText + '\n' + extra;
           }
         }
       } catch (err) {
         console.error('performWebOCR general error:', err);
       }
 
-      return JSON.stringify({
-        qr: qrText,
-        ocr: ocrText
-      });
+      return JSON.stringify({ qr: qrText, ocr: ocrText });
     };
   </script>
 </head>

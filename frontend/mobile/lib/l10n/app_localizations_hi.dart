@@ -250,6 +250,21 @@ class AppLocalizationsHi extends AppLocalizations {
   String get backendService => 'बैकएंड एआई सेवा';
 
   @override
+  String get metricPassRate => 'पास दर';
+
+  @override
+  String get metricFraudBlocked => 'धोखाधड़ी रोकी';
+
+  @override
+  String get metricAvgLatency => 'औसत विलंब';
+
+  @override
+  String get metricTotalScreened => 'कुल स्क्रीन';
+
+  @override
+  String get applicantDocument => 'आवेदक दस्तावेज़';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

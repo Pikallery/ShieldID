@@ -251,6 +251,21 @@ class AppLocalizationsPa extends AppLocalizations {
   String get backendService => 'ਬੈਕਐਂਡ AI ਸੇਵਾ';
 
   @override
+  String get metricPassRate => 'ਪਾਸ ਦਰ';
+
+  @override
+  String get metricFraudBlocked => 'ਧੋਖਾਧੜੀ ਰੋਕੀ';
+
+  @override
+  String get metricAvgLatency => 'ਔਸਤ ਦੇਰੀ';
+
+  @override
+  String get metricTotalScreened => 'ਕੁੱਲ ਸਕ੍ਰੀਨ';
+
+  @override
+  String get applicantDocument => 'ਅਰਜ਼ੀਦਾਰ ਦਸਤਾਵੇਜ਼';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

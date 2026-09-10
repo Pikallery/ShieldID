@@ -251,6 +251,21 @@ class AppLocalizationsMr extends AppLocalizations {
   String get backendService => 'बॅकएंड एआय सेवा';
 
   @override
+  String get metricPassRate => 'उत्तीर्ण दर';
+
+  @override
+  String get metricFraudBlocked => 'फसवणूक थांबवली';
+
+  @override
+  String get metricAvgLatency => 'सरासरी विलंब';
+
+  @override
+  String get metricTotalScreened => 'एकूण तपासणी';
+
+  @override
+  String get applicantDocument => 'अर्जदार दस्तावेज';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

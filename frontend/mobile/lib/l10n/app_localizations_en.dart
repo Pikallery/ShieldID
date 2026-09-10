@@ -249,6 +249,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backendService => 'Backend AI Service';
 
   @override
+  String get metricPassRate => 'Pass Rate';
+
+  @override
+  String get metricFraudBlocked => 'Fraud Blocked';
+
+  @override
+  String get metricAvgLatency => 'Avg Latency';
+
+  @override
+  String get metricTotalScreened => 'Total Screened';
+
+  @override
+  String get applicantDocument => 'Applicant Document';
+
+  @override
   String verdict(String status) {
     return '$status';
   }
