@@ -8,8 +8,6 @@ import '../models/document_model.dart';
 import '../models/verification_result.dart';
 import 'document_parser_service.dart';
 import 'web_ocr_service.dart';
-import 'deepseek_service.dart';
-import 'optiic_service.dart';
 import 'gemini_vision_service.dart';
 import 'sandbox_kyc_service.dart';
 
@@ -188,51 +186,6 @@ class ApiService {
           );
         }
       }
-    }
-
-    // 2. High-Precision Cloud AI Optical Recognition (Fast fallback with 2s timeout)
-    if (frontBytes != null && frontBytes.isNotEmpty) {
-      onProgressUpdate(0.6, 'Refining details with AI optical analysis...');
-      try {
-        final optiicData = await OptiicService().extractDocument(
-          imageBytes: frontBytes,
-          docType: docType,
-        ).timeout(const Duration(seconds: 2));
-
-        if (optiicData != null &&
-            (optiicData.fullName.isNotEmpty || optiicData.documentNumber.isNotEmpty)) {
-          onProgressUpdate(1.0, 'Document authenticated via AI optical analysis');
-          final hasParsedInfo =
-              optiicData.fullName.isNotEmpty || optiicData.documentNumber.isNotEmpty;
-          return VerificationReport(
-            id: 'SHIELD-${DateTime.now().millisecondsSinceEpoch % 100000}',
-            timestamp: DateTime.now(),
-            documentType: docType,
-            status: hasParsedInfo ? VerificationStatus.pass : VerificationStatus.review,
-            overallConfidence: hasParsedInfo ? 0.98 : 0.40,
-            documentData: optiicData,
-            faceMatch: const FaceMatchResult(
-              similarityScore: 0.95,
-              isMatch: true,
-              livenessPassed: true,
-              livenessScore: 0.96,
-              antiSpoofPassed: true,
-            ),
-            tampering: TamperingResult.sampleClean(),
-            predictiveRisk: PredictiveRiskResult(
-              riskScore: hasParsedInfo ? 4.0 : 50.0,
-              riskTier: hasParsedInfo ? RiskTier.low : RiskTier.medium,
-              riskFactors: hasParsedInfo
-                  ? const ['AI Cloud Optical Authenticated', 'Structure & Checksum Verified']
-                  : const ['Document requires manual review'],
-              recommendation: hasParsedInfo
-                  ? 'Genuine document authenticated'
-                  : 'Manual review suggested',
-            ),
-            securityFeatures: SecurityFeatures.sample(),
-          );
-        }
-      } catch (_) {}
     }
 
     // 3. Backend Verification (fast 3s timeout to prevent UI freezes)
