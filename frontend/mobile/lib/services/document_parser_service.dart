@@ -546,14 +546,32 @@ class DocumentParserService {
                 candidateNames.add(sanitized);
               }
 
-              // Only combine if line i is a single incomplete word (e.g. "SAI" + "PRADYUMNA SAMAL")
-              if (i < lines.length - 1 && sanitized.isNotEmpty && sanitized.split(' ').length == 1) {
+              // Combine 2 consecutive lines (e.g. "SAI PRADYUMNA" + "SAMAL" or "SAI" + "PRADYUMNA")
+              if (i < lines.length - 1) {
                 final nextLine = lines[i + 1];
                 if (!_looksLikePanNumber(nextLine) && !isHeaderOrNoiseLine(nextLine)) {
                   final combined = '$line $nextLine';
                   final sanitizedCombined = sanitizeExtractedName(combined, docNumber);
-                  if (sanitizedCombined.isNotEmpty && isValidHumanName(sanitizedCombined)) {
+                  if (sanitizedCombined.isNotEmpty &&
+                      isValidHumanName(sanitizedCombined) &&
+                      sanitizedCombined.split(' ').length <= 4) {
                     candidateNames.add(sanitizedCombined);
+                  }
+                }
+              }
+
+              // Combine 3 consecutive lines (e.g. "SAI" + "PRADYUMNA" + "SAMAL")
+              if (i < lines.length - 2) {
+                final line2 = lines[i + 1];
+                final line3 = lines[i + 2];
+                if (!_looksLikePanNumber(line2) && !isHeaderOrNoiseLine(line2) &&
+                    !_looksLikePanNumber(line3) && !isHeaderOrNoiseLine(line3)) {
+                  final combined3 = '$line $line2 $line3';
+                  final sanitizedCombined3 = sanitizeExtractedName(combined3, docNumber);
+                  if (sanitizedCombined3.isNotEmpty &&
+                      isValidHumanName(sanitizedCombined3) &&
+                      sanitizedCombined3.split(' ').length <= 4) {
+                    candidateNames.add(sanitizedCombined3);
                   }
                 }
               }
@@ -566,14 +584,33 @@ class DocumentParserService {
 
               // If surnameInitial is known from the PAN number:
               if (surnameInitial.isNotEmpty) {
-                // Tier 1: Multi-word candidate whose surname or any word matches surnameInitial
+                // Tier 1: Multi-word candidate whose LAST word (the surname) starts with surnameInitial
                 // (e.g. "SAI PRADYUMNA SAMAL" matching 'S' for Samal).
-                // The first multi-word candidate matching surname is the cardholder name (subsequent is father's name).
+                // If multiple match, prefer the one with highest word count (most complete name).
+                final tier1Matches = <String>[];
                 for (final c in candidateNames) {
                   final words = c.split(' ');
-                  if (words.length >= 2 && words.any((w) => w.startsWith(surnameInitial))) {
-                    bestMatch = c;
-                    break;
+                  if (words.length >= 2 && words.last.startsWith(surnameInitial)) {
+                    tier1Matches.add(c);
+                  }
+                }
+
+                if (tier1Matches.isNotEmpty) {
+                  bestMatch = tier1Matches.reduce((a, b) {
+                    final aCount = a.split(' ').length;
+                    final bCount = b.split(' ').length;
+                    return aCount >= bCount ? a : b;
+                  });
+                }
+
+                // Tier 2: Multi-word candidate where ANY word starts with surnameInitial
+                if (bestMatch == null) {
+                  for (final c in candidateNames) {
+                    final words = c.split(' ');
+                    if (words.length >= 2 && words.any((w) => w.startsWith(surnameInitial))) {
+                      bestMatch = c;
+                      break;
+                    }
                   }
                 }
 

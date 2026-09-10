@@ -192,6 +192,45 @@ void main() {
       expect(parsed.fullName, 'YUMNA SAMAL');
     });
 
+    test('Combines 2-line name (SAI PRADYUMNA + SAMAL -> SAI PRADYUMNA SAMAL)', () {
+      const twoLineOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      SAI PRADYUMNA
+      SAMAL
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: twoLineOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+    });
+
+    test('Combines 3-line name (SAI + PRADYUMNA + SAMAL -> SAI PRADYUMNA SAMAL)', () {
+      const threeLineOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      SAI
+      PRADYUMNA
+      SAMAL
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: threeLineOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 

@@ -141,16 +141,11 @@
 
         for (let i = 0; i < d.length; i += 4) {
           const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-          // Linear contrast normalization (0..255)
+          // Standard linear contrast normalization (0..255)
           const stretched = Math.min(255, Math.max(0, ((lum - min) / range) * 255));
-          // Apply gentle sigmoid-like S-curve for high text clarity without harsh binarization
-          const enhanced = stretched < 128 
-            ? (stretched * stretched) / 128 
-            : 255 - ((255 - stretched) * (255 - stretched)) / 128;
-
-          d[i] = enhanced;
-          d[i+1] = enhanced;
-          d[i+2] = enhanced;
+          d[i] = stretched;
+          d[i+1] = stretched;
+          d[i+2] = stretched;
         }
         ctx.putImageData(imgData, 0, 0);
       } catch (e) {}
@@ -170,8 +165,6 @@
           const w = await Tesseract.createWorker('eng', 1, {
             logger: () => {}
           });
-          // PSM 6 = Assume a single uniform block of text — fastest & cleanest for ID cards
-          await w.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK });
           _tessWorker = w;
           _tessWorkerReady = true;
           return w;
@@ -294,33 +287,21 @@
         if (window.Tesseract) {
           ocrText = await runOCR(enhancedCanvas);
 
-          // If PAN or Aadhaar ID wasn't recognized on the full frame, run targeted crops
-          const hasDocId = /[A-Z]{5}[0-9]{4}[A-Z]/.test(ocrText) || /\b\d{4}\s\d{4}\s\d{4}\b/.test(ocrText);
-          if (!hasDocId && height > 250) {
-            // 1. Center card crop (removes background clutter like bedsheets, hands, desk)
-            const cw = Math.floor(width * 0.85);
-            const ch = Math.floor(height * 0.85);
-            const cardZone = document.createElement('canvas');
-            cardZone.width = cw;
-            cardZone.height = ch;
-            const cCtx = cardZone.getContext('2d');
-            cCtx.drawImage(img, Math.floor(width * 0.075), Math.floor(height * 0.075), cw, ch, 0, 0, cw, ch);
-            preprocessCanvasForBlur(cCtx, cw, ch);
+          // Card Viewport Crop (contains the full card width, removes background clutter above/below)
+          if (height > 250) {
+            const cardCanvas = document.createElement('canvas');
+            const cy = Math.floor(height * 0.20);
+            const ch = Math.floor(height * 0.60);
+            cardCanvas.width = width;
+            cardCanvas.height = ch;
+            const cCtx = cardCanvas.getContext('2d');
+            cCtx.drawImage(img, 0, cy, width, ch, 0, 0, width, ch);
+            preprocessCanvasForBlur(cCtx, width, ch);
 
-            if (!qrText) qrText = scanCanvasForQR(cardZone);
+            if (!qrText) qrText = scanCanvasForQR(cardCanvas);
 
-            const extra = await runOCR(cardZone);
-            if (extra) ocrText = ocrText + '\n' + extra;
-
-            // 2. Focused name/ID zone (lower 65% of the card where Name, DOB, PAN live)
-            const nameZone = document.createElement('canvas');
-            nameZone.width = cw;
-            nameZone.height = Math.floor(ch * 0.65);
-            const nCtx = nameZone.getContext('2d');
-            nCtx.drawImage(cardZone, 0, Math.floor(ch * 0.35), cw, nameZone.height, 0, 0, cw, nameZone.height);
-            preprocessCanvasForBlur(nCtx, cw, nameZone.height);
-            const extra2 = await runOCR(nameZone);
-            if (extra2) ocrText = ocrText + '\n' + extra2;
+            const extra = await runOCR(cardCanvas);
+            if (extra) ocrText = (ocrText ? ocrText + '\n' : '') + extra;
           }
         }
       } catch (err) {
