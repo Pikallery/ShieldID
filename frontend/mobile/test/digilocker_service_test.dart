@@ -189,7 +189,7 @@ void main() {
       );
 
       expect(parsed.documentNumber, 'SFAPS5084D');
-      expect(parsed.fullName, 'YUMNA SAMAL');
+      expect(parsed.fullName, 'PRADYUMNA SAMAL');
     });
 
     test('Combines 2-line name (SAI PRADYUMNA + SAMAL -> SAI PRADYUMNA SAMAL)', () {

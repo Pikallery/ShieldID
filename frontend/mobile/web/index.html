@@ -288,23 +288,25 @@
         preprocessCanvasForBlur(eCtx, width, height);
 
         if (window.Tesseract) {
-          // 1. Prioritize clean Card Viewport Crop (native resolution, zero bedsheet noise)
+          // 1. High-Resolution Card Viewport Crop (matching camera guide box)
           if (height > 250) {
             const cardCanvas = document.createElement('canvas');
-            const cy = Math.floor(height * 0.20);
-            const ch = Math.floor(height * 0.60);
-            cardCanvas.width = width;
+            const cx = Math.floor(width * 0.05);
+            const cw = Math.floor(width * 0.90);
+            const cy = Math.floor(height * 0.18);
+            const ch = Math.floor(height * 0.64);
+            cardCanvas.width = cw;
             cardCanvas.height = ch;
             const cCtx = cardCanvas.getContext('2d');
-            cCtx.drawImage(img, 0, cy, width, ch, 0, 0, width, ch);
-            preprocessCanvasForBlur(cCtx, width, ch);
+            cCtx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
 
             if (!qrText) qrText = scanCanvasForQR(cardCanvas);
 
+            // Run OCR on the high-detail color crop
             ocrText = await runOCR(cardCanvas);
           }
 
-          // 2. If card crop did not detect sufficient text, fall back to full frame
+          // 2. If card crop did not detect sufficient text, try enhanced canvas
           if (!ocrText || ocrText.trim().length < 8) {
             const fullText = await runOCR(enhancedCanvas);
             if (fullText) ocrText = fullText;

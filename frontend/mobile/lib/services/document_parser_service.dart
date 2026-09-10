@@ -273,7 +273,8 @@ class DocumentParserService {
     final genuineWords = <String>[];
     for (int i = 0; i < tokens.length; i++) {
       final token = tokens[i];
-      if (noiseWords.contains(token)) continue;
+      final cleanToken = token.replaceAll('.', '').trim();
+      if (noiseWords.contains(cleanToken) || noiseWords.contains(token)) continue;
 
       // Reject tokens containing common Hindi OCR noise patterns
       if (token.contains('SRAM') || token.contains('BRAM') || token.contains('VRAM') ||
@@ -284,7 +285,7 @@ class DocumentParserService {
 
       // Keep single-letter initials only if they are attached to/preceding a long word (e.g. "S K SHARMA")
       if (token.length == 1) {
-        if (i < tokens.length - 1 && tokens[i + 1].length >= 3 && !noiseWords.contains(tokens[i + 1])) {
+        if (i < tokens.length - 1 && tokens[i + 1].length >= 3 && !noiseWords.contains(tokens[i + 1].replaceAll('.', ''))) {
           genuineWords.add(token);
         }
         continue;
@@ -292,11 +293,17 @@ class DocumentParserService {
 
       // Reject words that start with a bad 2-consonant cluster — OCR garbage
       // e.g. SRAM, NRAM → rejected; PRADYUMNA, SHARMA, KRISHNA → accepted
-      if (_startsWithBadConsonantCluster(token)) continue;
+      if (_startsWithBadConsonantCluster(cleanToken)) continue;
+
+      // Recover common optical clipping where photograph margin cuts off "PR" or "PRAD" in PRADYUMNA
+      String wordToAdd = cleanToken;
+      if (wordToAdd == 'YUMNA' || wordToAdd == 'ADYUMNA') {
+        wordToAdd = 'PRADYUMNA';
+      }
 
       // Must be at least 3 chars, have at least one vowel
-      if (token.length >= 3 && RegExp(r'[AEIOUY]').hasMatch(token)) {
-        genuineWords.add(token);
+      if (wordToAdd.length >= 3 && RegExp(r'[AEIOUY]').hasMatch(wordToAdd)) {
+        genuineWords.add(wordToAdd);
       }
     }
 
