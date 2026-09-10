@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: deployment/docker/Dockerfile.backend
+      dockerfile: Dockerfile
     container_name: shieldid-backend
     ports:
       - "8000:8000"

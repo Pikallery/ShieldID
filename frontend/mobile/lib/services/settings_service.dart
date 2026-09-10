@@ -11,7 +11,7 @@ class SettingsService extends ChangeNotifier {
     'fr': 'Français (French)',
   };
 
-  final SharedPreferences _preferences;
+  final SharedPreferences? _preferences;
   ThemeMode _themeMode;
   String _language;
 
@@ -23,14 +23,21 @@ class SettingsService extends ChangeNotifier {
         _language = language;
 
   static Future<SettingsService> init() async {
-    final preferences = await SharedPreferences.getInstance();
-    final theme = preferences.getString(_themeKey) == 'light'
+    SharedPreferences? preferences;
+    try {
+      preferences = await SharedPreferences.getInstance();
+    } catch (_) {
+      // Some embedded browsers disable local storage. The app remains usable
+      // with in-memory defaults when preferences cannot be initialized.
+    }
+
+    final theme = preferences?.getString(_themeKey) == 'light'
         ? ThemeMode.light
         : ThemeMode.dark;
     final language = supportedLanguages.containsKey(
-      preferences.getString(_languageKey),
+      preferences?.getString(_languageKey),
     )
-        ? preferences.getString(_languageKey)!
+        ? preferences!.getString(_languageKey)!
         : 'en';
     return SettingsService._(
       preferences,
@@ -46,14 +53,14 @@ class SettingsService extends ChangeNotifier {
 
   Future<void> toggleTheme(bool dark) async {
     _themeMode = dark ? ThemeMode.dark : ThemeMode.light;
-    await _preferences.setString(_themeKey, dark ? 'dark' : 'light');
+    await _preferences?.setString(_themeKey, dark ? 'dark' : 'light');
     notifyListeners();
   }
 
   Future<void> setLanguage(String language) async {
     if (!supportedLanguages.containsKey(language)) return;
     _language = language;
-    await _preferences.setString(_languageKey, language);
+    await _preferences?.setString(_languageKey, language);
     notifyListeners();
   }
 }

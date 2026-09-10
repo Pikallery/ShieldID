@@ -81,7 +81,7 @@ cp .env.example .env
 Docker Compose is the recommended deployment method for single-host production instances and staging environments.
 
 ### 4.1 Configuration Files
-- **Backend Dockerfile:** `deployment/docker/Dockerfile.backend`
+- **Backend Dockerfile:** `Dockerfile`
 - **Compose Manifest:** `docker-compose.yml`
 - **Database Init Script:** `deployment/scripts/init-db.sql`
 
@@ -122,6 +122,24 @@ docker compose exec backend alembic upgrade head
 ```bash
 curl -i http://localhost:8000/health
 ```
+
+### Railway
+
+Railway automatically builds the root `Dockerfile`. Add PostgreSQL and Redis
+services to the same Railway project, then set these variables on the backend
+service:
+
+```text
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
+MODE=production
+SECRET_KEY=<a unique random secret>
+ALLOWED_ORIGINS=["https://<your-public-domain>"]
+```
+
+Use the service names shown in your Railway project in place of `Postgres` and
+`Redis`. The connection values must be Railway references, not the local Docker
+hostnames `db` and `redis`.
 *Response:*
 ```http
 HTTP/1.1 200 OK
