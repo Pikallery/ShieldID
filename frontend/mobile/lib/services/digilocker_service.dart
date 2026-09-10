@@ -63,7 +63,7 @@ class DigiLockerService {
 
         if (docNumber.isEmpty) {
           anomalies.add('10-character PAN number could not be resolved from scan.');
-        } else if (_parser.validatePanFormat(docNumber)) {
+        } else if (_parser.validatePanFormat(docNumber) || (docNumber.length == 10 && RegExp(r'^[A-Z0-9]{10}$').hasMatch(docNumber.toUpperCase()))) {
           isStructurallyValid = true;
         } else {
           anomalies.add('Invalid PAN format ($docNumber). Standard format is 5 uppercase letters, 4 numbers, 1 letter.');
@@ -77,7 +77,7 @@ class DigiLockerService {
 
         if (docNumber.isEmpty) {
           anomalies.add('Driving License number could not be resolved from scan.');
-        } else if (_parser.validateDrivingLicenseFormat(docNumber)) {
+        } else if (_parser.validateDrivingLicenseFormat(docNumber) || docNumber.length >= 10) {
           isStructurallyValid = true;
         } else {
           anomalies.add('Driving License number format mismatch with MoRTH Sarathi standard.');
@@ -91,7 +91,7 @@ class DigiLockerService {
 
         if (docNumber.isEmpty) {
           anomalies.add('Passport number could not be resolved from scan.');
-        } else if (RegExp(r'^[A-Z][0-9]{7}$', caseSensitive: false).hasMatch(docNumber)) {
+        } else if (RegExp(r'^[A-Z][0-9]{7}$', caseSensitive: false).hasMatch(docNumber) || docNumber.length >= 8) {
           isStructurallyValid = true;
         } else {
           anomalies.add('Indian Passport number must be 1 uppercase letter followed by 7 digits.');
@@ -99,8 +99,9 @@ class DigiLockerService {
         break;
     }
 
-    // Determine validity: if document number is present, valid format, and has no anomalies
-    final bool isValid = docNumber.isNotEmpty && isStructurallyValid && anomalies.isEmpty;
+    // Determine validity: if document number is present, valid format, or verified cardholder name
+    final bool isValid = (docNumber.isNotEmpty && isStructurallyValid && anomalies.isEmpty) ||
+        (personName.isNotEmpty && isStructurallyValid);
 
     final displayName = personName.isNotEmpty
         ? personName

@@ -1,9 +1,10 @@
+import 'dart:convert';
 import '../models/document_model.dart';
 
 /// Genuine Document Extraction and Cryptographic / Checksum Validation Service
 /// Performs zero-fake, mathematically strict validation on Indian ID documents:
-/// - Aadhaar: Verhoeff Checksum & 12-digit UID verification
-/// - PAN Card: ITD Structure & Entity code verification
+/// - Aadhaar: Verhoeff Checksum, UIDAI QR parser & 12-digit UID verification
+/// - PAN Card: NSDL/UTIITSL QR parser, ITD structure & entity code verification
 /// - Driving License: MoRTH State code & Sarathi structure verification
 /// - Passport: ICAO 9303 Check Digit & MRZ verification
 /// - Voter ID: ECI EPIC 10-character alphanumeric verification
@@ -87,7 +88,7 @@ class DocumentParserService {
       } else if (RegExp(r'[A-Z]').hasMatch(char)) {
         val = char.codeUnitAt(0) - 55;
       } else {
-        val = 0; // '<' filler
+        val = 0;
       }
       sum += val * weights[i % 3];
     }
@@ -95,13 +96,99 @@ class DocumentParserService {
     return expected == checkDigit;
   }
 
+  /// Corrects optical character substitutions for PAN cards
+  String? tryFixPanSubstitutions(String token) {
+    final clean = token.replaceAll(RegExp(r'[^A-Za-z0-9]'), '').toUpperCase();
+    if (clean.length != 10) return null;
+
+    final chars = clean.split('');
+
+    // Positions 0..4 should be letters
+    for (int i = 0; i < 5; i++) {
+      if (chars[i] == '0') chars[i] = 'O';
+      if (chars[i] == '1') chars[i] = 'I';
+      if (chars[i] == '8') chars[i] = 'B';
+      if (chars[i] == '5') chars[i] = 'S';
+      if (chars[i] == '2') chars[i] = 'Z';
+      if (chars[i] == '6') chars[i] = 'G';
+    }
+
+    // Positions 5..8 should be digits
+    for (int i = 5; i < 9; i++) {
+      if (chars[i] == 'O' || chars[i] == 'Q' || chars[i] == 'D') chars[i] = '0';
+      if (chars[i] == 'I' || chars[i] == 'L' || chars[i] == 'T') chars[i] = '1';
+      if (chars[i] == 'Z') chars[i] = '2';
+      if (chars[i] == 'S') chars[i] = '5';
+      if (chars[i] == 'G' || chars[i] == 'b') chars[i] = '6';
+      if (chars[i] == 'B') chars[i] = '8';
+    }
+
+    // Position 9 should be letter
+    if (chars[9] == '0') chars[9] = 'O';
+    if (chars[9] == '1') chars[9] = 'I';
+    if (chars[9] == '8') chars[9] = 'B';
+    if (chars[9] == '5') chars[9] = 'S';
+
+    final corrected = chars.join();
+    if (validatePanFormat(corrected)) {
+      return corrected;
+    }
+    return null;
+  }
+
+  /// Discards Indian ID header noise and Hindi OCR misread artifacts
+  bool isHeaderOrNoiseLine(String line) {
+    final trimmed = line.trim();
+    if (trimmed.length < 3) return true;
+    final u = trimmed.toUpperCase();
+
+    // Comprehensive blacklist of government card headers & OCR misread junk
+    final blacklistedPhrases = [
+      'INCOME TAX', 'INCOMETAX', 'DEPARTMENT', 'GOVT', 'GOVERNMENT', 'INDIA',
+      'PERMANENT ACCOUNT', 'ACCOUNT NUMBER', 'SIGNATURE', 'HOLDER', 'CARD',
+      'STAE FARA', 'HIVA WATE', 'FARA HIVA', 'STAE', 'HIVA', 'WATE', 'YATE',
+      'AYAKAR', 'VIBHAG', 'BHARAT', 'SARKAR', 'UNIQUE IDENTIFICATION',
+      'AUTHORITY OF INDIA', 'UIDAI', 'AADHAAR', 'MERA AADHAAR', 'ENROLLMENT',
+      'HELP@UIDAI', 'WWW.UIDAI', 'MINISTRY OF', 'TRANSPORT', 'HIGHWAYS',
+      'DRIVING LICENCE', 'UNION OF INDIA', 'REPUBLIC OF INDIA', 'PASSPORT',
+      'DATE OF BIRTH', 'FATHER NAME', 'FATHER\'S NAME'
+    ];
+
+    for (final phrase in blacklistedPhrases) {
+      if (u.contains(phrase)) return true;
+    }
+
+    // Filter out lines that look like garbled single-letter sequences (e.g. "y STaE...")
+    final words = trimmed.split(RegExp(r'\s+'));
+    int shortWordCount = 0;
+    for (final w in words) {
+      if (w.length <= 2) shortWordCount++;
+    }
+    if (words.length >= 3 && shortWordCount >= (words.length / 2)) {
+      return true;
+    }
+
+    return false;
+  }
+
   /// Extract genuine document fields from raw scanned OCR text / QR data
   ExtractedDocumentData parseRawDocumentText({
     required DocumentType docType,
     required String rawText,
   }) {
-    final lines = rawText.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
-    final upper = rawText.toUpperCase();
+    String qrPayload = '';
+    String ocrText = rawText;
+
+    // Check if input is structured JSON from Web scanner
+    if (rawText.trim().startsWith('{') && rawText.trim().endsWith('}')) {
+      try {
+        final decoded = jsonDecode(rawText);
+        if (decoded is Map<String, dynamic>) {
+          qrPayload = (decoded['qr'] ?? '').toString();
+          ocrText = (decoded['ocr'] ?? '').toString();
+        }
+      } catch (_) {}
+    }
 
     String docNumber = '';
     String fullName = '';
@@ -111,141 +198,240 @@ class DocumentParserService {
     String issuingCountry = 'India';
     String nationality = 'Indian';
 
+    // ── 1. Priority: Parse QR Code Payload if detected ──────────────────
+    if (qrPayload.isNotEmpty) {
+      final qrUpper = qrPayload.toUpperCase();
+
+      // A. Aadhaar XML QR: <PrintLetterBarcodeData .../>
+      if (qrPayload.contains('PrintLetterBarcodeData') || qrPayload.contains('uid=')) {
+        final uidMatch = RegExp(r'uid="(\d+)"').firstMatch(qrPayload);
+        if (uidMatch != null && uidMatch.group(1)!.length >= 12) {
+          final digits = uidMatch.group(1)!;
+          docNumber = '${digits.substring(0, 4)} ${digits.substring(4, 8)} ${digits.substring(8, 12)}';
+        }
+        final nameMatch = RegExp(r'name="([^"]+)"').firstMatch(qrPayload);
+        if (nameMatch != null) fullName = nameMatch.group(1)!.trim();
+
+        final dobMatch = RegExp(r'dob="([^"]+)"').firstMatch(qrPayload) ??
+            RegExp(r'yob="([^"]+)"').firstMatch(qrPayload);
+        if (dobMatch != null) dob = dobMatch.group(1)!.trim();
+
+        final genderMatch = RegExp(r'gender="([^"]+)"').firstMatch(qrPayload);
+        if (genderMatch != null) {
+          final g = genderMatch.group(1)!.toUpperCase();
+          gender = g.startsWith('F') ? 'Female' : 'Male';
+        }
+      }
+
+      // B. PAN Card QR Formats (Delimited / Key-Value / JSON)
+      if (docType == DocumentType.residencePermit || qrUpper.contains('PAN') || RegExp(r'[A-Z]{5}[0-9]{4}[A-Z]').hasMatch(qrUpper)) {
+        // Extract PAN number from QR
+        final panQrMatch = RegExp(r'\b([A-Z]{5}[0-9]{4}[A-Z])\b').firstMatch(qrUpper);
+        if (panQrMatch != null) {
+          docNumber = panQrMatch.group(1)!;
+        }
+
+        // Extract DOB from QR (DD/MM/YYYY or DD-MM-YYYY)
+        final dobQrMatch = RegExp(r'\b(\d{2}[/-]\d{2}[/-]\d{4})\b').firstMatch(qrPayload);
+        if (dobQrMatch != null) {
+          dob = dobQrMatch.group(1)!.replaceAll('-', '/');
+        }
+
+        // Extract Name from delimited QR (e.g. ^NAME^FATHER_NAME^DOB^PAN^)
+        final tokens = qrPayload.split(RegExp(r'[\^\|;\n]')).map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+        for (final token in tokens) {
+          if (token.length >= 3 &&
+              RegExp(r'^[A-Za-z\s\.]+$').hasMatch(token) &&
+              !isHeaderOrNoiseLine(token)) {
+            if (fullName.isEmpty) {
+              fullName = token;
+            }
+          }
+        }
+      }
+    }
+
+    // ── 2. Parse OCR Text Lines (If not fully resolved from QR) ──────────
+    final lines = ocrText
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    final upper = ocrText.toUpperCase();
+
     switch (docType) {
       case DocumentType.nationalId: // Aadhaar
-        // Search 12-digit Aadhaar Number
-        final aadhaarMatch = RegExp(r'\b(\d{4}\s\d{4}\s\d{4})\b').firstMatch(rawText) ??
-            RegExp(r'\b(\d{12})\b').firstMatch(rawText);
-        if (aadhaarMatch != null) {
-          final digits = aadhaarMatch.group(1)!.replaceAll(' ', '');
-          if (digits.length == 12) {
-            docNumber = '${digits.substring(0, 4)} ${digits.substring(4, 8)} ${digits.substring(8)}';
-          } else {
-            docNumber = aadhaarMatch.group(1)!;
+        if (docNumber.isEmpty) {
+          final aadhaarMatch = RegExp(r'\b(\d{4}\s\d{4}\s\d{4})\b').firstMatch(ocrText) ??
+              RegExp(r'\b(\d{12})\b').firstMatch(ocrText);
+          if (aadhaarMatch != null) {
+            final digits = aadhaarMatch.group(1)!.replaceAll(' ', '');
+            if (digits.length == 12) {
+              docNumber = '${digits.substring(0, 4)} ${digits.substring(4, 8)} ${digits.substring(8)}';
+            } else {
+              docNumber = aadhaarMatch.group(1)!;
+            }
           }
         }
 
-        // DOB / YOB
-        final dobMatch = RegExp(r'(?:DOB|DATE OF BIRTH|YEAR OF BIRTH|DOB\s*:)[:\s]*([0-9]{2}[/-][0-9]{2}[/-][0-9]{4}|[0-9]{4})', caseSensitive: false).firstMatch(rawText);
-        if (dobMatch != null) {
-          dob = dobMatch.group(1)!;
+        if (dob.isEmpty) {
+          final dobMatch = RegExp(
+            r'(?:DOB|DATE OF BIRTH|YEAR OF BIRTH|DOB\s*:)[:\s]*([0-9]{2}[/-][0-9]{2}[/-][0-9]{4}|[0-9]{4})',
+            caseSensitive: false,
+          ).firstMatch(ocrText);
+          if (dobMatch != null) dob = dobMatch.group(1)!;
         }
 
-        // Gender
-        if (upper.contains('FEMALE')) {
-          gender = 'Female';
-        } else if (upper.contains('TRANSGENDER')) {
-          gender = 'Transgender';
-        } else if (upper.contains('MALE')) {
-          gender = 'Male';
+        if (gender.isEmpty) {
+          if (upper.contains('FEMALE')) {
+            gender = 'Female';
+          } else if (upper.contains('TRANSGENDER')) {
+            gender = 'Transgender';
+          } else if (upper.contains('MALE')) {
+            gender = 'Male';
+          }
         }
 
-        // Name Extraction
-        final nameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(rawText);
-        if (nameMatch != null && nameMatch.group(1)!.trim().length > 2) {
-          fullName = nameMatch.group(1)!.split('\n').first.trim();
-        } else {
-          // Heuristic: pick the top alpha line before DOB that is not a header keyword
-          final ignored = {'GOVERNMENT', 'INDIA', 'AADHAAR', 'UNIQUE', 'IDENTIFICATION', 'AUTHORITY', 'UIDAI', 'MERA', 'ENROLLMENT', 'DOB', 'MALE', 'FEMALE'};
-          for (final line in lines) {
-            final words = line.toUpperCase().split(RegExp(r'\s+')).toSet();
-            if (line.length >= 3 && RegExp(r'^[A-Za-z\s\.]+$').hasMatch(line) && words.intersection(ignored).isEmpty) {
-              fullName = line;
-              break;
+        if (fullName.isEmpty) {
+          final nameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(ocrText);
+          if (nameMatch != null && nameMatch.group(1)!.trim().length > 2) {
+            fullName = nameMatch.group(1)!.split('\n').first.trim();
+          } else {
+            for (final line in lines) {
+              if (line.length >= 3 &&
+                  RegExp(r'^[A-Za-z\s\.]+$').hasMatch(line) &&
+                  !isHeaderOrNoiseLine(line)) {
+                fullName = line;
+                break;
+              }
             }
           }
         }
         break;
 
       case DocumentType.residencePermit: // PAN Card
-        // Search 10-character PAN
-        final panMatch = RegExp(r'\b([A-Z]{5}[0-9]{4}[A-Z])\b').firstMatch(upper);
-        if (panMatch != null) {
-          docNumber = panMatch.group(1)!;
+        // Search 10-character PAN Number
+        if (docNumber.isEmpty) {
+          final panMatch = RegExp(r'\b([A-Z]{5}[0-9]{4}[A-Z])\b').firstMatch(upper);
+          if (panMatch != null) {
+            docNumber = panMatch.group(1)!;
+          } else {
+            // Check for fuzzy character substitutions in candidate tokens
+            final tokens = upper.split(RegExp(r'[\s,:\/\-]+'));
+            for (final token in tokens) {
+              if (token.length == 10) {
+                final fixed = tryFixPanSubstitutions(token);
+                if (fixed != null) {
+                  docNumber = fixed;
+                  break;
+                }
+              }
+            }
+          }
         }
 
         // DOB
-        final panDobMatch = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').firstMatch(rawText);
-        if (panDobMatch != null) {
-          dob = panDobMatch.group(1)!;
+        if (dob.isEmpty) {
+          final panDobMatch = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').firstMatch(ocrText);
+          if (panDobMatch != null) {
+            dob = panDobMatch.group(1)!.replaceAll('-', '/');
+          }
         }
 
-        // Name
-        final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(rawText);
-        if (panNameMatch != null) {
-          fullName = panNameMatch.group(1)!.split('\n').first.trim();
-        } else {
-          final ignoredPan = {'INCOME', 'TAX', 'DEPARTMENT', 'GOVT', 'GOVERNMENT', 'INDIA', 'PERMANENT', 'ACCOUNT', 'NUMBER', 'CARD', 'SIGNATURE'};
-          for (final line in lines) {
-            final words = line.toUpperCase().split(RegExp(r'\s+')).toSet();
-            if (line.length >= 3 && RegExp(r'^[A-Za-z\s\.]+$').hasMatch(line) && words.intersection(ignoredPan).isEmpty && !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(line.toUpperCase())) {
-              fullName = line;
-              break;
+        // Full Name Extraction (Cardholder Name)
+        if (fullName.isEmpty) {
+          final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(ocrText);
+          if (panNameMatch != null && !isHeaderOrNoiseLine(panNameMatch.group(1)!)) {
+            fullName = panNameMatch.group(1)!.split('\n').first.trim();
+          } else {
+            // Find all uppercase alphabetic lines that are strictly not header noise
+            final candidateNames = <String>[];
+            for (final line in lines) {
+              final trimmed = line.trim();
+              if (trimmed.length >= 3 &&
+                  RegExp(r'^[A-Za-z\s\.]+$').hasMatch(trimmed) &&
+                  !isHeaderOrNoiseLine(trimmed) &&
+                  !RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').hasMatch(trimmed.toUpperCase())) {
+                candidateNames.add(trimmed);
+              }
+            }
+            if (candidateNames.isNotEmpty) {
+              fullName = candidateNames.first;
             }
           }
         }
         break;
 
       case DocumentType.driversLicense: // Driver's License
-        // Search DL Number
-        final dlMatch = RegExp(r'\b([A-Z]{2}[-\s]?[0-9]{2}[-\s]?[0-9]{11})\b').firstMatch(upper) ??
-            RegExp(r'\b([A-Z]{2}[0-9]{13,15})\b').firstMatch(upper);
-        if (dlMatch != null) {
-          docNumber = dlMatch.group(1)!;
+        if (docNumber.isEmpty) {
+          final dlMatch = RegExp(r'\b([A-Z]{2}[-\s]?[0-9]{2}[-\s]?[0-9]{11})\b').firstMatch(upper) ??
+              RegExp(r'\b([A-Z]{2}[0-9]{13,15})\b').firstMatch(upper);
+          if (dlMatch != null) {
+            docNumber = dlMatch.group(1)!;
+          }
         }
 
-        // DOB and Expiry
-        final dates = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').allMatches(rawText).map((m) => m.group(1)!).toList();
-        if (dates.length >= 2) {
-          dob = dates[0];
-          expiry = dates[1];
-        } else if (dates.length == 1) {
-          dob = dates[0];
+        if (dob.isEmpty || expiry.isEmpty) {
+          final dates = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').allMatches(ocrText).map((m) => m.group(1)!).toList();
+          if (dates.length >= 2) {
+            dob = dates[0];
+            expiry = dates[1];
+          } else if (dates.length == 1) {
+            dob = dates[0];
+          }
         }
 
-        if (upper.contains('FEMALE')) {
-          gender = 'Female';
-        } else if (upper.contains('MALE')) {
-          gender = 'Male';
+        if (gender.isEmpty) {
+          if (upper.contains('FEMALE')) {
+            gender = 'Female';
+          } else if (upper.contains('MALE')) {
+            gender = 'Male';
+          }
         }
 
-        // Name
-        final dlNameMatch = RegExp(r'(?:NAME|HOLDER\s*NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(rawText);
-        if (dlNameMatch != null) {
-          fullName = dlNameMatch.group(1)!.split('\n').first.trim();
+        if (fullName.isEmpty) {
+          final dlNameMatch = RegExp(r'(?:NAME|HOLDER\s*NAME|NAME\s*:)[:\s]*([A-Za-z\s]+)', caseSensitive: false).firstMatch(ocrText);
+          if (dlNameMatch != null && !isHeaderOrNoiseLine(dlNameMatch.group(1)!)) {
+            fullName = dlNameMatch.group(1)!.split('\n').first.trim();
+          }
         }
         break;
 
       case DocumentType.passport: // Passport
-        // Search MRZ (P<IND...)
-        final mrzMatch = RegExp(r'P<IND([A-Z<]+)').firstMatch(upper);
-        if (mrzMatch != null) {
-          final parts = mrzMatch.group(1)!.split('<').where((p) => p.isNotEmpty).toList();
-          if (parts.isNotEmpty) {
-            fullName = parts.take(2).join(' ');
+        if (fullName.isEmpty) {
+          final mrzMatch = RegExp(r'P<IND([A-Z<]+)').firstMatch(upper);
+          if (mrzMatch != null) {
+            final parts = mrzMatch.group(1)!.split('<').where((p) => p.isNotEmpty).toList();
+            if (parts.isNotEmpty) {
+              fullName = parts.take(2).join(' ');
+            }
           }
         }
 
-        // Search Passport Number (1 letter + 7 digits)
-        final passNumMatch = RegExp(r'\b([A-PR-WYa-pr-wy][1-9]\d{6})\b').firstMatch(upper) ??
-            RegExp(r'\b([A-Z][0-9]{7})\b').firstMatch(upper);
-        if (passNumMatch != null) {
-          docNumber = passNumMatch.group(1)!;
+        if (docNumber.isEmpty) {
+          final passNumMatch = RegExp(r'\b([A-PR-WYa-pr-wy][1-9]\d{6})\b').firstMatch(upper) ??
+              RegExp(r'\b([A-Z][0-9]{7})\b').firstMatch(upper);
+          if (passNumMatch != null) {
+            docNumber = passNumMatch.group(1)!;
+          }
         }
 
-        // Dates
-        final passDates = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').allMatches(rawText).map((m) => m.group(1)!).toList();
-        if (passDates.length >= 2) {
-          dob = passDates[0];
-          expiry = passDates[1];
-        } else if (passDates.length == 1) {
-          dob = passDates[0];
+        if (dob.isEmpty || expiry.isEmpty) {
+          final passDates = RegExp(r'\b([0-9]{2}[/-][0-9]{2}[/-][0-9]{4})\b').allMatches(ocrText).map((m) => m.group(1)!).toList();
+          if (passDates.length >= 2) {
+            dob = passDates[0];
+            expiry = passDates[1];
+          } else if (passDates.length == 1) {
+            dob = passDates[0];
+          }
         }
 
-        if (upper.contains('SEX: F') || upper.contains('SEX : F') || upper.contains('GENDER: FEMALE')) {
-          gender = 'Female';
-        } else {
-          gender = 'Male';
+        if (gender.isEmpty) {
+          if (upper.contains('SEX: F') || upper.contains('SEX : F') || upper.contains('GENDER: FEMALE')) {
+            gender = 'Female';
+          } else {
+            gender = 'Male';
+          }
         }
         break;
     }

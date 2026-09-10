@@ -16,9 +16,7 @@ void main() {
     });
 
     test('Verhoeff Checksum correctly validates genuine 12-digit Aadhaar', () {
-      // Known valid Verhoeff Aadhaar format (check digit 4)
       expect(parser.validateAadhaarVerhoeff('234567890124'), isTrue);
-      // Altered last digit
       expect(parser.validateAadhaarVerhoeff('234567890129'), isFalse);
     });
 
@@ -26,6 +24,45 @@ void main() {
       expect(parser.validatePanFormat('ABCPS1234F'), isTrue);
       expect(parser.validatePanFormat('ABCD1234F'), isFalse);
       expect(parser.validatePanFormat('12345ABCDE'), isFalse);
+    });
+
+    test('Fuzzy PAN OCR corrector fixes optical character confusions', () {
+      expect(parser.tryFixPanSubstitutions('ABCPS1234F'), 'ABCPS1234F');
+      expect(parser.tryFixPanSubstitutions('0BCPSI234F'), 'OBCPS1234F');
+    });
+
+    test('Filters out Hindi/English header noise and extracts genuine cardholder name', () {
+      const noisyOcr = '''
+      y STaE fara HIVA WATE
+      INCOME TAX DEPARTMENT
+      GOVT. OF INDIA
+      SAI PRADYUMNA SAMAL
+      BIBHUTI BHUSAN SAMAL
+      31/10/2005
+      ABCPS1234F
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+      expect(parsed.documentNumber, 'ABCPS1234F');
+      expect(parsed.dateOfBirth, '31/10/2005');
+    });
+
+    test('Parses PAN QR code payload accurately', () {
+      const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: qrPayload,
+      );
+
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+      expect(parsed.documentNumber, 'ABCPS1234F');
+      expect(parsed.dateOfBirth, '31/10/2005');
     });
 
     test('MoRTH Driving License format validation verifies state code and roll', () {

@@ -19,6 +19,9 @@
   <title>ShieldID</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Fast Web QR Decoder (jsQR) -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
   <!-- Tesseract.js for Real-Time On-Device Web OCR -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
@@ -48,19 +51,77 @@
       return false;
     };
 
-    // Client-side Browser OCR on captured document photo
+    // Client-side Browser QR & OCR Scanner on captured document photo
     window.performWebOCR = async function(imageDataUrl) {
+      let qrText = '';
+      let ocrText = '';
+
       try {
-        if (window.Tesseract) {
-          const worker = await Tesseract.createWorker('eng');
-          const ret = await worker.recognize(imageDataUrl);
-          await worker.terminate();
-          return ret.data.text || '';
+        // 1. Load image onto canvas for high-accuracy QR decoding and OCR preprocessing
+        const img = new Image();
+        const loadPromise = new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = (e) => reject(e);
+          img.src = imageDataUrl;
+        });
+        await loadPromise;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        // A. Native Browser BarcodeDetector (Supported in Chrome on Android)
+        if ('BarcodeDetector' in window) {
+          try {
+            const detector = new BarcodeDetector({
+              formats: ['qr_code', 'data_matrix', 'code_128', 'pdf417']
+            });
+            const barcodes = await detector.detect(canvas);
+            if (barcodes && barcodes.length > 0) {
+              qrText = barcodes[0].rawValue || '';
+            }
+          } catch (err) {
+            console.warn('BarcodeDetector error:', err);
+          }
         }
-      } catch (e) {
-        console.error('Web Tesseract OCR failed:', e);
+
+        // B. jsQR fallback if native detector did not find QR
+        if (!qrText && window.jsQR) {
+          try {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const qrCode = jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: 'attemptBoth'
+            });
+            if (qrCode && qrCode.data) {
+              qrText = qrCode.data;
+            }
+          } catch (err) {
+            console.warn('jsQR full-frame scan error:', err);
+          }
+        }
+
+        // C. OCR with Tesseract.js
+        if (window.Tesseract) {
+          try {
+            const worker = await Tesseract.createWorker('eng');
+            const ret = await worker.recognize(canvas);
+            await worker.terminate();
+            ocrText = ret.data.text || '';
+          } catch (e) {
+            console.error('Tesseract OCR failed:', e);
+          }
+        }
+      } catch (err) {
+        console.error('performWebOCR general error:', err);
       }
-      return '';
+
+      // Return structured JSON string containing both QR data and OCR text
+      return JSON.stringify({
+        qr: qrText,
+        ocr: ocrText
+      });
     };
   </script>
 </head>
