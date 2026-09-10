@@ -196,6 +196,52 @@ class DocumentParserService {
     return s.toUpperCase();
   }
 
+  /// Filters out isolated noise particles, single letters, and OCR junk from genuine name words
+  String sanitizeExtractedName(String rawLine, [String panNumber = '']) {
+    final rawCleaned = cleanCandidateName(rawLine);
+    if (isHeaderOrNoiseLine(rawCleaned)) return '';
+
+    // Split into individual tokens
+    final tokens = rawCleaned
+        .split(RegExp(r'\s+'))
+        .map((t) => t.replaceAll(RegExp(r'[^A-Z\.]'), ''))
+        .where((t) => t.isNotEmpty)
+        .toList();
+
+    const noiseWords = {
+      'A', 'AN', 'THE', 'AT', 'IN', 'ON', 'OF', 'BY', 'TO', 'FOR', 'WITH', 'FROM',
+      'IS', 'AS', 'OR', 'IF', 'SO', 'NO', 'DO', 'GO', 'UP', 'MY', 'HE', 'WE', 'ME',
+      'US', 'AM', 'TE', 'WT', 'TGA', 'TCA', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT',
+      'IND', 'ITD', 'INC', 'AYK', 'VIB', 'NUM', 'CARD', 'CRD', 'SIGN', 'HVR',
+      'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT'
+    };
+
+    final genuineWords = <String>[];
+    for (int i = 0; i < tokens.length; i++) {
+      final token = tokens[i];
+      if (noiseWords.contains(token)) continue;
+
+      // Keep single-letter initials only if they are attached to/preceding a long word (e.g. "S K SHARMA")
+      if (token.length == 1) {
+        if (i < tokens.length - 1 && tokens[i + 1].length >= 3 && !noiseWords.contains(tokens[i + 1])) {
+          genuineWords.add(token);
+        }
+        continue;
+      }
+
+      // Check if word has vowels and length >= 2
+      if (token.length >= 2 && RegExp(r'[AEIOUY]').hasMatch(token)) {
+        genuineWords.add(token);
+      }
+    }
+
+    if (genuineWords.isEmpty) return '';
+
+    final result = genuineWords.join(' ');
+    if (result.length < 3) return '';
+    return result;
+  }
+
   /// Strictly validates whether an extracted line constitutes a genuine human name
   bool isValidHumanName(String name) {
     final cleaned = cleanCandidateName(name);
@@ -220,7 +266,7 @@ class DocumentParserService {
     if (validWords.isEmpty) return false;
 
     // Reject known non-name abbreviations
-    const junkWords = {'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM', 'CARD'};
+    const junkWords = {'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM', 'CARD', 'TGA'};
     for (final w in words) {
       if (junkWords.contains(w)) return false;
     }
@@ -398,14 +444,20 @@ class DocumentParserService {
         // Cardholder Name Extraction
         if (fullName.isEmpty) {
           final panNameMatch = RegExp(r'(?:NAME|NAME\s*:)[:\s]*([A-Za-z0-9\s]+)', caseSensitive: false).firstMatch(ocrText);
-          if (panNameMatch != null && isValidHumanName(panNameMatch.group(1)!)) {
-            fullName = cleanCandidateName(panNameMatch.group(1)!.split('\n').first);
-          } else {
-            // Gather all candidate lines that pass strict human name verification
+          if (panNameMatch != null) {
+            final sanitized = sanitizeExtractedName(panNameMatch.group(1)!.split('\n').first, docNumber);
+            if (isValidHumanName(sanitized)) {
+              fullName = sanitized;
+            }
+          }
+
+          if (fullName.isEmpty) {
+            // Gather all candidate lines, sanitize them, and pass strict human name verification
             final candidateNames = <String>[];
             for (final line in lines) {
-              if (isValidHumanName(line)) {
-                candidateNames.add(cleanCandidateName(line));
+              final sanitized = sanitizeExtractedName(line, docNumber);
+              if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
+                candidateNames.add(sanitized);
               }
             }
 
@@ -414,11 +466,11 @@ class DocumentParserService {
               final surnameInitial = (docNumber.length == 10) ? docNumber[4] : '';
               String? bestMatch;
 
-              // Priority 1: Multi-word candidate matching surname initial
-              for (final c in candidateNames) {
-                final words = c.split(' ');
-                if (words.length >= 2) {
-                  if (surnameInitial.isNotEmpty && (words.last.startsWith(surnameInitial) || words.first.startsWith(surnameInitial))) {
+              // Priority 1: Match surname initial (e.g., 'SAMAL' or 'SANJEEB SAMAL' matching 'S' in SFAPS5084D)
+              if (surnameInitial.isNotEmpty) {
+                for (final c in candidateNames) {
+                  final words = c.split(' ');
+                  if (words.any((w) => w.startsWith(surnameInitial))) {
                     bestMatch = c;
                     break;
                   }

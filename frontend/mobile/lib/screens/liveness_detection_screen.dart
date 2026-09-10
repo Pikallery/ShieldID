@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
-import '../models/screening_session.dart';
 import '../services/screening_service.dart';
 import '../widgets/face_mesh_overlay.dart';
-import '../widgets/step_progress_bar.dart';
 import 'ai_processing_screen.dart';
 
 class LivenessDetectionScreen extends StatefulWidget {
@@ -120,9 +118,6 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(
-                currentStage: ScreeningStage.livenessFaceMatch),
-
             // Top Bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -135,6 +130,26 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
                         color: Colors.white,
                         size: 20),
                     onPressed: () => Navigator.pop(context),
+                  ),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    margin: const EdgeInsets.only(left: 4, right: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.shield_rounded,
+                        color: Colors.black87,
+                        size: 17,
+                      ),
+                    ),
                   ),
                   const Spacer(),
                   Container(

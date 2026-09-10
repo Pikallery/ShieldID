@@ -175,9 +175,36 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
       appBar: AppBar(
         backgroundColor: AppTheme.surface,
         elevation: 0,
-        title: const Text(
-          'Document & Identity Information',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.shield_rounded,
+                  color: Colors.black87,
+                  size: 17,
+                ),
+              ),
+            ),
+            const Expanded(
+              child: Text(
+                'Document & Identity Information',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

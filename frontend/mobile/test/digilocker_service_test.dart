@@ -52,6 +52,24 @@ void main() {
       expect(parsed.dateOfBirth, '31/10/2005');
     });
 
+    test('Sanitizes noisy OCR prefix and suffix tags (e.g. A AT SAMAL TGA -> SAMAL)', () {
+      const noisyOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      A AT SAMAL TGA
+      01/01/2000
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.fullName, 'SAMAL');
+      expect(parsed.documentNumber, 'SFAPS5084D');
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 

@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/document_model.dart';
-import '../models/screening_session.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
-import '../widgets/step_progress_bar.dart';
 import 'liveness_detection_screen.dart';
 import '../l10n/app_localizations.dart';
 
@@ -67,7 +65,36 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.antiTamperingHologram),
+        title: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.shield_rounded,
+                  color: Colors.black87,
+                  size: 17,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n.antiTamperingHologram,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
         leading: IconButton(
           tooltip: 'Go back',
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -77,7 +104,6 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
       ),
       body: Column(
         children: [
-          const StepProgressBar(currentStage: ScreeningStage.antiTamperTilt),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

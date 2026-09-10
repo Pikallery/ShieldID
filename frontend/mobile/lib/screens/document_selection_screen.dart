@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/document_model.dart';
-import '../models/screening_session.dart';
 import '../services/screening_service.dart';
-import '../widgets/step_progress_bar.dart';
 import 'document_capture_screen.dart';
 
 class DocumentSelectionScreen extends StatefulWidget {
@@ -23,7 +21,31 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Document'),
+        title: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.shield_rounded,
+                  color: Colors.black87,
+                  size: 17,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('Select Document'),
+          ],
+        ),
         leading: IconButton(
           tooltip: 'Go back',
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -33,7 +55,6 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
       ),
       body: Column(
         children: [
-          const StepProgressBar(currentStage: ScreeningStage.selectDocument),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),

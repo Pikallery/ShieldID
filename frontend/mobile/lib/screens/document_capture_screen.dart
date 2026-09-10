@@ -5,14 +5,12 @@ import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/document_model.dart';
-import '../models/screening_session.dart';
 import '../models/verification_result.dart';
 import '../services/digilocker_service.dart';
 import '../services/document_parser_service.dart';
 import '../services/screening_service.dart';
 import '../services/web_ocr_service.dart';
 import '../widgets/document_scanner_overlay.dart';
-import '../widgets/step_progress_bar.dart';
 import 'document_info_dossier_screen.dart';
 
 class DocumentCaptureScreen extends StatefulWidget {
@@ -393,29 +391,53 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                               color: Colors.white, size: 20),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surface.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.border),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.verified_outlined,
-                                  color: AppTheme.primaryCyan, size: 14),
-                              const SizedBox(width: 6),
-                              Text(
-                                docType.shortName,
-                                style: const TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              margin: const EdgeInsets.only(left: 4, right: 8),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [AppTheme.primaryCyan, AppTheme.accentTeal],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.shield_rounded,
+                                  color: Colors.black87,
+                                  size: 17,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surface.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppTheme.border),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.verified_outlined,
+                                      color: AppTheme.primaryCyan, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    docType.shortName,
+                                    style: const TextStyle(
+                                      color: AppTheme.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                         Row(
                           children: [
@@ -438,12 +460,6 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                           ],
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 6),
-                    StepProgressBar(
-                      currentStage: widget.isBackSide
-                          ? ScreeningStage.captureBack
-                          : ScreeningStage.captureFront,
                     ),
                   ],
                 ),
