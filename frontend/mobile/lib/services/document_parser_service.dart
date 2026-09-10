@@ -150,6 +150,12 @@ class DocumentParserService {
     // Reject anything that looks like a PAN number (e.g. SFAPS5084D or OCR garble of it)
     if (_looksLikePanNumber(u)) return true;
 
+    // Reject date lines (e.g. 31/10/2005 or 01-01-2000) before letter-substitutions
+    if (RegExp(r'\b[0-9]{2}[/-][0-9]{2}[/-][0-9]{4}\b').hasMatch(trimmed) ||
+        RegExp(r'^[0-9/\-\s\.]+$').hasMatch(trimmed)) {
+      return true;
+    }
+
     // Reject Devanagari/Hindi OCR phonetic transliteration artifacts (e.g. "LOSRAM ATT", "SRAM", "FARA")
     if (u.contains('SRAM') || u.contains('BRAM') || u.contains('VRAM') || u.contains('NRAM') ||
         u.contains('LOSRAM') || u.contains('FARA') || u.contains('HIVA') || u.contains('WATE') ||
@@ -255,7 +261,7 @@ class DocumentParserService {
       'FARA', 'HIVA', 'WATE', 'STAE', 'MRZ', 'ID', 'PAN', 'UIDAI', 'GOVT', 'AAT',
       'FAA', 'FRA', 'SRA', 'SRAM', 'BRAM', 'VRAM', 'NRAM', 'QRS', 'XYZ',
       'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
-      'LOSRAM', 'ATT', 'LOS', 'SHAD'
+      'LOSRAM', 'ATT', 'LOS', 'SHAD', 'PAS', 'PSS', 'PAD', 'SEC', 'DOC', 'REG', 'DIV'
     };
 
     final genuineWords = <String>[];
@@ -322,7 +328,7 @@ class DocumentParserService {
     const junkWords = {
       'TE', 'WT', 'DEP', 'DEPT', 'TAX', 'GOV', 'GVT', 'IND', 'ITD', 'NO', 'NUM',
       'CARD', 'TGA', 'CREE', 'CRED', 'CREW', 'CRA', 'CRI', 'CORP', 'LTD', 'PVT', 'SEAL',
-      'LOSRAM', 'ATT', 'LOS', 'SHAD'
+      'LOSRAM', 'ATT', 'LOS', 'SHAD', 'PAS', 'PSS'
     };
     for (final w in words) {
       if (junkWords.contains(w) || w.contains('SRAM')) return false;
@@ -532,11 +538,24 @@ class DocumentParserService {
           // Step 2: scan all lines, skipping lines that look like PAN numbers
           if (fullName.isEmpty) {
             final candidateNames = <String>[];
-            for (final line in lines) {
+            for (int i = 0; i < lines.length; i++) {
+              final line = lines[i];
               if (_looksLikePanNumber(line)) continue;
               final sanitized = sanitizeExtractedName(line, docNumber);
               if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
                 candidateNames.add(sanitized);
+              }
+
+              // Only combine if line i is a single incomplete word (e.g. "SAI" + "PRADYUMNA SAMAL")
+              if (i < lines.length - 1 && sanitized.isNotEmpty && sanitized.split(' ').length == 1) {
+                final nextLine = lines[i + 1];
+                if (!_looksLikePanNumber(nextLine) && !isHeaderOrNoiseLine(nextLine)) {
+                  final combined = '$line $nextLine';
+                  final sanitizedCombined = sanitizeExtractedName(combined, docNumber);
+                  if (sanitizedCombined.isNotEmpty && isValidHumanName(sanitizedCombined)) {
+                    candidateNames.add(sanitizedCombined);
+                  }
+                }
               }
             }
 
@@ -548,7 +567,8 @@ class DocumentParserService {
               // If surnameInitial is known from the PAN number:
               if (surnameInitial.isNotEmpty) {
                 // Tier 1: Multi-word candidate whose surname or any word matches surnameInitial
-                // (e.g. "SAI PRADYUMNA SAMAL" matching 'S' for Samal)
+                // (e.g. "SAI PRADYUMNA SAMAL" matching 'S' for Samal).
+                // The first multi-word candidate matching surname is the cardholder name (subsequent is father's name).
                 for (final c in candidateNames) {
                   final words = c.split(' ');
                   if (words.length >= 2 && words.any((w) => w.startsWith(surnameInitial))) {
@@ -580,8 +600,7 @@ class DocumentParserService {
                   }
                 }
               } else {
-                // When no PAN number is available (unanchored scan), require multi-word name
-                // with genuine name length to prevent picking up phantom header noise
+                // When no PAN number is available (unanchored scan):
                 for (final c in candidateNames) {
                   final words = c.split(' ');
                   if (words.length >= 2 && words.every((w) => w.length >= 3)) {

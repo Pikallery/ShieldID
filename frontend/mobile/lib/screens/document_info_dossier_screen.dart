@@ -8,6 +8,7 @@ import '../models/document_model.dart';
 import '../services/digilocker_service.dart';
 import '../services/screening_service.dart';
 import '../widgets/shield_logo.dart';
+import 'ai_processing_screen.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -140,30 +141,19 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
       screeningService.setFrontImage(widget.imagePath);
       if (widget.docType.requiresBackSide) {
         Navigator.pop(context, true); // Pop back to capture screen for back side
-      } else if (screeningService.requireHologramCheck) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AntiTamperScreen()),
-        );
       } else {
+        // Complete screening directly without biometric selfie
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LivenessDetectionScreen()),
+          MaterialPageRoute(builder: (_) => AiProcessingScreen()),
         );
       }
     } else {
       screeningService.setBackImage(widget.imagePath);
-      if (screeningService.requireHologramCheck) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AntiTamperScreen()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LivenessDetectionScreen()),
-        );
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AiProcessingScreen()),
+      );
     }
   }
 
@@ -847,16 +837,16 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  l10n.proceedToBiometric,
-                  style: const TextStyle(
+                const Text(
+                  'CONFIRM & COMPLETE VERIFICATION',
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_rounded, size: 18),
+                const Icon(Icons.check_circle_rounded, size: 18),
               ],
             ),
           ),

@@ -155,6 +155,43 @@ void main() {
       expect(parsed.fullName, isEmpty);
     });
 
+    test('Strips noise token PAS from name and combines multi-line name correctly', () {
+      const noisyOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      SAI
+      PRADYUMNA SAMAL PAS
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'SAI PRADYUMNA SAMAL');
+    });
+
+    test('Strips trailing PAS token when name is truncated (YUMNA SAMAL PAS -> YUMNA SAMAL)', () {
+      const noisyOcr = '''
+      INCOME TAX DEPARTMENT
+      GOVT OF INDIA
+      YUMNA SAMAL PAS
+      31/10/2005
+      SFAPS5084D
+      ''';
+
+      final parsed = parser.parseRawDocumentText(
+        docType: DocumentType.residencePermit,
+        rawText: noisyOcr,
+      );
+
+      expect(parsed.documentNumber, 'SFAPS5084D');
+      expect(parsed.fullName, 'YUMNA SAMAL');
+    });
+
     test('Parses PAN QR code payload accurately', () {
       const qrPayload = '{"qr":"SAI PRADYUMNA SAMAL^BIBHUTI BHUSAN SAMAL^31/10/2005^ABCPS1234F","ocr":""}';
 

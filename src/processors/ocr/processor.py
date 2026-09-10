@@ -541,22 +541,35 @@ class OCRProcessor(BaseProcessor):
                 "AYAKAR", "VIBHAG", "BHARAT", "SARKAR", "FATHER", "FATHERS",
                 "NAME", "LOSRAM", "ATT", "SRAM", "CREE", "TE", "WT", "TGA", "TCA",
                 "HIVA", "WATE", "STAE", "FARA", "YATE", "BRAM", "NRAM", "VRAM",
-                "HOLDER", "DATE", "BIRTH", "DIGILOCKER"
+                "HOLDER", "DATE", "BIRTH", "DIGILOCKER", "SHAD", "PAS", "PSS", "PAD"
             }
             noise_substrings = ("SRAM", "BRAM", "VRAM", "NRAM", "FARA", "HIVA", "WATE", "STAE", "ATT", "LOSRAM")
 
+            def clean_line_tokens(l_str: str) -> str:
+                toks = [t for t in l_str.split() if t.upper() not in ignore and not any(n in t.upper() for n in noise_substrings)]
+                return " ".join(toks).strip()
+
             candidate_lines = []
-            for line in lines:
-                u_line = line.upper()
-                if any(noise in u_line for noise in noise_substrings):
-                    continue
-                tokens = set(u_line.split())
+            for i, line in enumerate(lines):
+                cleaned = clean_line_tokens(line)
+                u_line = cleaned.upper()
                 if (
-                    re.match(r"^[A-Za-z\s\.]{3,40}$", line)
-                    and not (tokens & ignore)
+                    len(cleaned) >= 3
+                    and re.match(r"^[A-Za-z\s\.]{3,40}$", cleaned)
                     and not re.search(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b", u_line)
                 ):
-                    candidate_lines.append(line.strip())
+                    candidate_lines.append(cleaned)
+
+                # Check consecutive lines combined
+                if i < len(lines) - 1:
+                    comb = clean_line_tokens(f"{line} {lines[i + 1]}")
+                    u_comb = comb.upper()
+                    if (
+                        len(comb) >= 5
+                        and re.match(r"^[A-Za-z\s\.]{5,50}$", comb)
+                        and not re.search(r"\b[A-Z]{5}[0-9]{4}[A-Z]\b", u_comb)
+                    ):
+                        candidate_lines.append(comb)
 
             # 5th letter of PAN represents the cardholder's surname initial
             surname_initial = pan_number[4] if len(pan_number) == 10 and pan_number[4].isalpha() else ""
