@@ -6,70 +6,18 @@
   "deploy": {
     "startCommand": "sh -c 'alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1'",
     "restartPolicyCondition": "on-failure",
-    "restartPolicyMaxRetries": 5
+    "restartPolicyMaxRetries": 5,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 10
   },
-  "plugins": [
-    "postgresql",
-    "redis"
-  ],
-  "variables": {
-    "DATABASE_URL": {
-      "description": "PostgreSQL connection string (auto-linked)",
-      "value": "${{ services.postgres.connectionStringPrivate }}"
-    },
-    "REDIS_URL": {
-      "description": "Redis connection string (auto-linked)",
-      "value": "${{ services.redis.connectionString }}"
-    },
-    "SECRET_KEY": {
-      "description": "JWT secret key for authentication",
-      "value": ""
-    },
-    "MODE": {
-      "description": "Environment mode",
-      "value": "production"
-    },
-    "ALLOWED_ORIGINS": {
-      "description": "Comma-separated list of allowed CORS origins",
-      "value": "https://${{ railway.domain }}"
-    }
-  },
-  "services": {
-    "backend": {
-      "name": "shieldid-backend",
-      "dockerfile": "Dockerfile",
-      "processType": "web",
-      "healthCheck": {
-        "method": "HTTP",
-        "path": "/health",
-        "interval": 30,
-        "timeout": 10
-      }
-    },
-    "postgres": {
-      "name": "shieldid-postgres",
-      "image": "postgres:15-alpine",
+  "environments": {
+    "production": {
       "variables": {
-        "POSTGRES_USER": "shieldid",
-        "POSTGRES_PASSWORD": "${{ secrets.DB_PASSWORD }}",
-        "POSTGRES_DB": "shieldid"
-      },
-      "volumes": [
-        {
-          "mountPath": "/var/lib/postgresql/data",
-          "name": "postgres_data"
-        }
-      ]
-    },
-    "redis": {
-      "name": "shieldid-redis",
-      "image": "redis:7-alpine",
-      "volumes": [
-        {
-          "mountPath": "/data",
-          "name": "redis_data"
-        }
-      ]
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}",
+        "MODE": "production",
+        "ALLOWED_ORIGINS": "https://${{RAILWAY_PUBLIC_DOMAIN}}"
+      }
     }
   }
 }

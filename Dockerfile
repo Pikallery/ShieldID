@@ -13,6 +13,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy alembic config so migrations can run inside the container.
+COPY alembic.ini .
+
 # Copy runtime source and model configuration.
 COPY src/ ./src/
 COPY migrations/ ./migrations/

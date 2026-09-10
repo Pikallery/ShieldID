@@ -1,0 +1,50 @@
+﻿name: Deploy to Railway
+
+on:
+  push:
+    branches: [ "main" ]
+
+# Only allow one deployment at a time; cancel in-progress if a new push arrives.
+concurrency:
+  group: railway-deploy
+  cancel-in-progress: true
+
+jobs:
+  # ── 1. Run CI first ──────────────────────────────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install ruff pytest pytest-asyncio pytest-cov
+
+      - name: Lint with Ruff
+        run: ruff check src/
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=src
+
+  # ── 2. Deploy to Railway (only if tests pass) ────────────────────────────────
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --detach
