@@ -23,6 +23,8 @@ from src.processors.base_processor import BaseProcessor
 from src.processors.ocr.preprocess import load_image
 from src.schemas.verification import CurrencyVerificationResult, SecurityFeatureCheck
 
+from .feature_matching import TemplateMatchResult, compare_templates
+
 logger = logging.getLogger(__name__)
 
 # Standard canonical rectification dimensions (width x height)
@@ -185,6 +187,12 @@ class CurrencyProcessor(BaseProcessor):
         """
         result_dict = self.process(input_data)
         return CurrencyVerificationResult.model_validate(result_dict)
+
+    def compare_with_template(
+        self, reference_image: np.ndarray, query_image: np.ndarray
+    ) -> TemplateMatchResult:
+        """Compare a note region with a trusted denomination template."""
+        return compare_templates(reference_image, query_image)
 
     # ── 1. Boundary Detection ─────────────────────────────────────────────
 

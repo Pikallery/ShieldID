@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 
 from src.processors.base_processor import BaseProcessor
+from src.processors.currency.feature_matching import compare_templates
 from src.processors.currency.processor import (
     CANONICAL_HEIGHT,
     CANONICAL_WIDTH,
@@ -236,3 +237,19 @@ def test_uv_features_check():
     fake_paper_note = _create_synthetic_note(denomination=50, is_fake_paper=True)
     uv_check_fake = processor.check_uv_features(fake_paper_note)
     assert uv_check_fake.is_valid is False
+
+
+def test_template_matching_identical_images():
+    note = _create_synthetic_note()
+
+    result = compare_templates(note, note)
+
+    assert result.ssim_score == 1.0
+    assert result.matched_keypoints >= 4
+    assert result.inlier_matches >= 4
+    assert result.is_similar is True
+
+
+def test_template_matching_rejects_empty_images():
+    with np.testing.assert_raises(ValueError):
+        compare_templates(np.empty((0, 0), dtype=np.uint8), np.zeros((8, 8), dtype=np.uint8))

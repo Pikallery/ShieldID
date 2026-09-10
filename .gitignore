@@ -72,6 +72,12 @@ venv.bak/
 *.swp
 *.swo
 
+# Frontend generated dependencies and builds
+frontend/dashboard/node_modules/
+frontend/dashboard/dist/
+frontend/mobile/.dart_tool/
+frontend/mobile/build/
+
 # OS files
 .DS_Store
 Thumbs.db
