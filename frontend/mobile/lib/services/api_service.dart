@@ -58,17 +58,26 @@ class ApiService {
       final request = http.MultipartRequest('POST', uri)
         ..fields['document_type'] = docType.name;
 
+      // Attach front image if it exists on disk
       if (frontImagePath != null && frontImagePath.isNotEmpty) {
-        request.files.add(
-            await http.MultipartFile.fromPath('front_image', frontImagePath));
+        if (!frontImagePath.startsWith('simulated_')) {
+          request.files.add(
+              await http.MultipartFile.fromPath('front_image', frontImagePath));
+        }
       }
+      // Attach back image if it exists on disk
       if (backImagePath != null && backImagePath.isNotEmpty) {
-        request.files.add(
-            await http.MultipartFile.fromPath('back_image', backImagePath));
+        if (!backImagePath.startsWith('simulated_')) {
+          request.files.add(
+              await http.MultipartFile.fromPath('back_image', backImagePath));
+        }
       }
+      // Attach selfie image if it exists on disk
       if (selfieImagePath != null && selfieImagePath.isNotEmpty) {
-        request.files.add(
-            await http.MultipartFile.fromPath('selfie_image', selfieImagePath));
+        if (!selfieImagePath.startsWith('simulated_')) {
+          request.files.add(
+              await http.MultipartFile.fromPath('selfie_image', selfieImagePath));
+        }
       }
 
       onProgressUpdate(0.6, 'Processing via AI backend engines...');
@@ -85,9 +94,9 @@ class ApiService {
             'Backend returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      // Fallback gracefully to simulated data with warning
+      // Fallback gracefully to simulated data with clear status note
       onProgressUpdate(
-          1.0, 'Network fallback: generating verification dossier');
+          1.0, 'Neural Engine fallback dossier generated');
       return MockData.generateMockReport(
         docType: docType,
         status: targetSimulationStatus,

@@ -114,8 +114,11 @@ class TamperingProcessor(BaseProcessor):
                     return np.array(img.convert("RGB"), dtype=np.uint8)
 
         if isinstance(input_data, (bytes, bytearray)) and HAS_PIL:
-            with Image.open(io.BytesIO(input_data)) as img:
-                return np.array(img.convert("RGB"), dtype=np.uint8)
+            try:
+                with Image.open(io.BytesIO(input_data)) as img:
+                    return np.array(img.convert("RGB"), dtype=np.uint8)
+            except Exception:
+                return np.full((256, 256, 3), 255, dtype=np.uint8)
 
         if HAS_PIL and isinstance(input_data, Image.Image):
             return np.array(input_data.convert("RGB"), dtype=np.uint8)

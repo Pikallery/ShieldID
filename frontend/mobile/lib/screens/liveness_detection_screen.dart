@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/screening_session.dart';
@@ -17,6 +18,7 @@ class LivenessDetectionScreen extends StatefulWidget {
 }
 
 class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
+  CameraController? _cameraController;
   int _challengeIndex = 0;
   double _progress = 0.05;
   Timer? _stepTimer;
@@ -32,11 +34,40 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeFrontCamera();
     _startLivenessSequence();
   }
 
+  Future<void> _initializeFrontCamera() async {
+    try {
+      final cameras = await availableCameras();
+      if (cameras.isEmpty) return;
+
+      // Select front camera for face liveness
+      final frontCamera = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras.first,
+      );
+
+      final controller = CameraController(
+        frontCamera,
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+
+      await controller.initialize();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() => _cameraController = controller);
+    } catch (_) {
+      // Graceful fallback to animated face mesh
+    }
+  }
+
   void _startLivenessSequence() {
-    _stepTimer = Timer.periodic(const Duration(milliseconds: 1200), (timer) {
+    _stepTimer = Timer.periodic(const Duration(milliseconds: 1400), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -54,12 +85,20 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
     });
   }
 
-  void _completeLiveness() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+  Future<void> _completeLiveness() async {
+    String selfiePath = 'simulated_selfie_path.jpg';
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      try {
+        final captured = await _cameraController!.takePicture();
+        selfiePath = captured.path;
+      } catch (_) {}
+    }
+
+    await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
 
     final screeningService = context.read<ScreeningService>();
-    screeningService.setSelfieImage('simulated_selfie_path.jpg');
+    screeningService.setSelfieImage(selfiePath);
 
     Navigator.pushReplacement(
       context,
@@ -70,6 +109,7 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
   @override
   void dispose() {
     _stepTimer?.cancel();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -128,12 +168,22 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
               ),
             ),
 
-            // Oval Viewfinder with Face Mesh
+            // Oval Viewfinder with live Camera preview & Face Mesh
             Expanded(
-              child: FaceMeshOverlay(
-                challengePrompt: _challenges[_challengeIndex],
-                progress: _progress,
-                isFaceDetected: true,
+              child: Stack(
+                children: [
+                  if (_cameraController?.value.isInitialized == true)
+                    Positioned.fill(
+                      child: CameraPreview(_cameraController!),
+                    ),
+                  Positioned.fill(
+                    child: FaceMeshOverlay(
+                      challengePrompt: _challenges[_challengeIndex],
+                      progress: _progress,
+                      isFaceDetected: true,
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -162,9 +212,9 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
     return Row(
       children: [
         Icon(icon,
-            semanticLabel: 'Biometric check',
-            size: 14,
-            color: AppTheme.passGreen),
+          semanticLabel: 'Biometric check',
+          size: 14,
+          color: AppTheme.passGreen),
         const SizedBox(width: 6),
         Text(
           label,
@@ -178,3 +228,4 @@ class _LivenessDetectionScreenState extends State<LivenessDetectionScreen> {
     );
   }
 }
+

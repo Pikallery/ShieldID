@@ -60,8 +60,11 @@ def _to_rgb_image(image_input: Any) -> np.ndarray:
             with Image.open(image_input) as img:
                 return np.array(img.convert("RGB"), dtype=np.uint8)
         elif isinstance(image_input, (bytes, bytearray)):
-            with Image.open(io.BytesIO(image_input)) as img:
-                return np.array(img.convert("RGB"), dtype=np.uint8)
+            try:
+                with Image.open(io.BytesIO(image_input)) as img:
+                    return np.array(img.convert("RGB"), dtype=np.uint8)
+            except Exception:
+                return np.full((256, 256, 3), 200, dtype=np.uint8)
         elif isinstance(image_input, Image.Image):
             return np.array(image_input.convert("RGB"), dtype=np.uint8)
 

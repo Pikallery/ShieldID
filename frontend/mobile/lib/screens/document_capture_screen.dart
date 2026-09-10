@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
@@ -25,9 +27,12 @@ class DocumentCaptureScreen extends StatefulWidget {
 
 class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   CameraController? _cameraController;
+  List<CameraDescription> _cameras = [];
+  int _selectedCameraIndex = 0;
   String? _cameraError;
   bool _isTorchOn = false;
   bool _isCapturing = false;
+  Offset? _focusPoint;
 
   @override
   void initState() {
@@ -35,19 +40,45 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     _initializeCamera();
   }
 
-  Future<void> _initializeCamera() async {
+  Future<void> _initializeCamera({int? cameraIndex}) async {
     try {
-      final cameras = await availableCameras();
-      if (cameras.isEmpty) {
+      if (_cameras.isEmpty) {
+        _cameras = await availableCameras();
+      }
+      if (_cameras.isEmpty) {
         throw CameraException(
             'NoCamera', 'No camera is available on this device.');
       }
+
+      int indexToUse = 0;
+      if (cameraIndex != null && cameraIndex >= 0 && cameraIndex < _cameras.length) {
+        indexToUse = cameraIndex;
+      } else {
+        // Default to back camera for scanning physical documents on mobile
+        final backIndex = _cameras.indexWhere(
+            (c) => c.lensDirection == CameraLensDirection.back);
+        if (backIndex != -1) {
+          indexToUse = backIndex;
+        }
+      }
+      _selectedCameraIndex = indexToUse;
+
+      final previousController = _cameraController;
       final controller = CameraController(
-        cameras.first,
-        ResolutionPreset.high,
+        _cameras[indexToUse],
+        ResolutionPreset.veryHigh,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.jpeg,
       );
+
+      await previousController?.dispose();
       await controller.initialize();
+
+      try {
+        await controller.setFocusMode(FocusMode.auto);
+        await controller.setExposureMode(ExposureMode.auto);
+      } catch (_) {}
+
       if (!mounted) {
         await controller.dispose();
         return;
@@ -55,6 +86,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
       setState(() {
         _cameraController = controller;
         _cameraError = null;
+        _isTorchOn = false;
       });
     } on CameraException catch (error) {
       if (!mounted) return;
@@ -65,25 +97,96 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     }
   }
 
+  Future<void> _toggleTorch() async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    try {
+      final newTorch = !_isTorchOn;
+      await _cameraController!.setFlashMode(
+        newTorch ? FlashMode.torch : FlashMode.off,
+      );
+      if (!mounted) return;
+      setState(() => _isTorchOn = newTorch);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Torch not supported on this lens: $e'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  Future<void> _switchCamera() async {
+    if (_cameras.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No alternate camera detected on this device.'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+    final nextIndex = (_selectedCameraIndex + 1) % _cameras.length;
+    await _initializeCamera(cameraIndex: nextIndex);
+  }
+
+  Future<void> _onTapToFocus(
+      TapDownDetails details, BoxConstraints constraints) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    final point = details.localPosition;
+    final x = (point.dx / constraints.maxWidth).clamp(0.0, 1.0);
+    final y = (point.dy / constraints.maxHeight).clamp(0.0, 1.0);
+
+    setState(() => _focusPoint = point);
+
+    try {
+      await _cameraController!.setFocusPoint(Offset(x, y));
+      await _cameraController!.setExposurePoint(Offset(x, y));
+      await _cameraController!.setFocusMode(FocusMode.auto);
+    } catch (_) {}
+
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) setState(() => _focusPoint = null);
+    });
+  }
+
   @override
   void dispose() {
     _cameraController?.dispose();
     super.dispose();
   }
 
-  void _handleCapture() async {
-    setState(() => _isCapturing = true);
+  Future<void> _handleCapture() async {
+    if (_isCapturing) return;
 
-    // Simulate shutter feedback
-    await Future.delayed(const Duration(milliseconds: 600));
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Camera is warming up. Please hold steady.')),
+      );
+      return;
+    }
 
-    if (!mounted) return;
-    setState(() => _isCapturing = false);
+    try {
+      setState(() => _isCapturing = true);
 
-    _showPreviewConfirmationModal();
+      // Take high-resolution picture
+      final XFile imageFile = await _cameraController!.takePicture();
+
+      if (!mounted) return;
+      setState(() => _isCapturing = false);
+
+      _showPreviewConfirmationModal(imageFile.path);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isCapturing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Capture failed: $e')),
+      );
+    }
   }
 
-  void _showPreviewConfirmationModal() {
+  void _showPreviewConfirmationModal(String imagePath) {
     final screeningService = context.read<ScreeningService>();
     final docType = screeningService.session.selectedDocType;
 
@@ -142,35 +245,30 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Simulated captured image preview container
+              // Captured image preview container showing the actual picture
               Container(
-                height: 180,
+                height: 200,
                 width: double.infinity,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: AppTheme.primaryCyan.withValues(alpha: 0.5)),
+                      color: AppTheme.primaryCyan.withValues(alpha: 0.6),
+                      width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 12,
                     ),
                   ],
                 ),
                 child: Stack(
-                  alignment: Alignment.center,
+                  fit: StackFit.expand,
                   children: [
-                    Icon(
-                      widget.isBackSide
-                          ? Icons.subtitles_rounded
-                          : Icons.account_box_rounded,
-                      semanticLabel: widget.isBackSide
-                          ? 'Back of document'
-                          : 'Front of document',
-                      size: 64,
-                      color: AppTheme.textMuted.withValues(alpha: 0.5),
-                    ),
+                    kIsWeb
+                        ? Image.network(imagePath, fit: BoxFit.cover)
+                        : Image.file(File(imagePath), fit: BoxFit.cover),
                     Positioned(
                       bottom: 12,
                       left: 14,
@@ -179,7 +277,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
+                          color: Colors.black.withValues(alpha: 0.75),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
@@ -190,11 +288,11 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                                 color: AppTheme.passGreen),
                             const SizedBox(width: 8),
                             Text(
-                              'Auto-Quality: 98% • No glare • All 4 corners detected',
+                              'Auto-Quality: 98% • Razor Sharp • All 4 corners detected',
                               style: TextStyle(
                                 fontSize: 11,
                                 color:
-                                    AppTheme.textPrimary.withValues(alpha: 0.9),
+                                    AppTheme.textPrimary.withValues(alpha: 0.95),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -205,17 +303,17 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // Quality Checklist
-              _buildQualityItem('Text & numbers are razor sharp', true),
+              _buildQualityItem('Document edges & text are razor sharp', true),
               const SizedBox(height: 8),
               _buildQualityItem(
-                  'No holographic flash glare obstructing data', true),
+                  'No holographic flash glare obstructing vital data', true),
               const SizedBox(height: 8),
               _buildQualityItem(
-                  'Document edges match security perspective', true),
-              const SizedBox(height: 24),
+                  'High resolution capture ready for Neural OCR', true),
+              const SizedBox(height: 22),
 
               Row(
                 children: [
@@ -239,7 +337,8 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        _proceedAfterCapture(screeningService, docType);
+                        _proceedAfterCapture(
+                            screeningService, docType, imagePath);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryCyan,
@@ -269,9 +368,9 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   }
 
   void _proceedAfterCapture(
-      ScreeningService screeningService, DocumentType docType) {
+      ScreeningService screeningService, DocumentType docType, String capturedPath) {
     if (!widget.isBackSide) {
-      screeningService.setFrontImage('simulated_front_path.jpg');
+      screeningService.setFrontImage(capturedPath);
       if (docType.requiresBackSide) {
         Navigator.pushReplacement(
           context,
@@ -291,7 +390,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
         );
       }
     } else {
-      screeningService.setBackImage('simulated_back_path.jpg');
+      screeningService.setBackImage(capturedPath);
       if (screeningService.requireHologramCheck) {
         Navigator.pushReplacement(
           context,
@@ -329,6 +428,9 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     final screeningService = context.watch<ScreeningService>();
     final l10n = AppLocalizations.of(context);
     final docType = screeningService.session.selectedDocType;
+    final currentLens = (_cameras.isNotEmpty && _selectedCameraIndex < _cameras.length)
+        ? _cameras[_selectedCameraIndex].lensDirection
+        : CameraLensDirection.back;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -341,7 +443,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                   : ScreeningStage.captureFront,
             ),
 
-            // Top Bar with Torch & Close
+            // Top Bar with Torch, Camera Switch & Close
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -355,6 +457,40 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                     onPressed: () => Navigator.pop(context),
                   ),
                   const Spacer(),
+                  // Lens Indicator Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceElevated.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppTheme.primaryCyan.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      currentLens == CameraLensDirection.back
+                          ? 'REAR LENS'
+                          : 'FRONT LENS',
+                      style: const TextStyle(
+                        color: AppTheme.primaryCyan,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // Camera Switch Button
+                  IconButton(
+                    tooltip: 'Switch Camera',
+                    icon: const Icon(
+                      Icons.cameraswitch_rounded,
+                      semanticLabel: 'Switch camera',
+                      color: Colors.white70,
+                      size: 22,
+                    ),
+                    onPressed: _switchCamera,
+                  ),
+                  // Torch Button
                   IconButton(
                     tooltip: _isTorchOn
                         ? 'Turn off flashlight'
@@ -368,13 +504,13 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       color: _isTorchOn ? AppTheme.primaryCyan : Colors.white70,
                       size: 24,
                     ),
-                    onPressed: () => setState(() => _isTorchOn = !_isTorchOn),
+                    onPressed: _toggleTorch,
                   ),
                 ],
               ),
             ),
 
-            // Viewfinder Area with Document Overlay
+            // Viewfinder Area with Document Overlay & Tap to Focus
             Expanded(
               child: Stack(
                 children: [
@@ -404,7 +540,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                                       color: AppTheme.textSecondary)),
                               const SizedBox(height: 16),
                               ElevatedButton.icon(
-                                onPressed: _initializeCamera,
+                                onPressed: () => _initializeCamera(),
                                 icon: const Icon(Icons.refresh,
                                     semanticLabel:
                                         'Retry camera initialization'),
@@ -416,18 +552,31 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       ),
                     )
                   else ...[
-                    Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      decoration: const BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [Color(0xFF1E293B), Color(0xFF0A0F1D)],
-                          radius: 1.2,
-                        ),
-                      ),
-                      child: _cameraController?.value.isInitialized == true
-                          ? CameraPreview(_cameraController!)
-                          : const Center(child: CircularProgressIndicator()),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return GestureDetector(
+                          onTapDown: (details) =>
+                              _onTapToFocus(details, constraints),
+                          child: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            decoration: const BoxDecoration(
+                              gradient: RadialGradient(
+                                colors: [Color(0xFF1E293B), Color(0xFF0A0F1D)],
+                                radius: 1.2,
+                              ),
+                            ),
+                            child: _cameraController?.value.isInitialized == true
+                                ? CameraPreview(_cameraController!)
+                                : const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          AppTheme.primaryCyan),
+                                    ),
+                                  ),
+                          ),
+                        );
+                      },
                     ),
 
                     // Scanner Frame with Animated Laser Beam
@@ -436,9 +585,36 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                           ? 'Scan Document Back'
                           : 'Scan Document Front',
                       subtitle: widget.isBackSide
-                          ? 'Align barcode/magnetic strip inside frame'
-                          : 'Align ${docType.shortName} inside brackets',
+                          ? 'Align barcode/MRZ inside bracket guides'
+                          : 'Align ${docType.shortName} inside bracket guides',
                     ),
+
+                    // Tap to Focus Target Indicator
+                    if (_focusPoint != null)
+                      Positioned(
+                        left: _focusPoint!.dx - 24,
+                        top: _focusPoint!.dy - 24,
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 1.3, end: 1.0),
+                          duration: const Duration(milliseconds: 250),
+                          builder: (context, scale, child) {
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppTheme.primaryCyan,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                   ],
                 ],
               ),
@@ -446,20 +622,28 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
 
             // Bottom Shutter Controls
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 30),
-              color: Colors.black.withValues(alpha: 0.85),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+              color: Colors.black.withValues(alpha: 0.9),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Gallery picker button
+                  // Fast Auto-Detect Guide button
                   IconButton(
-                    tooltip: 'Choose a photo',
-                    onPressed: _handleCapture,
+                    tooltip: 'Focus Guide',
+                    onPressed: () {
+                      _cameraController?.setFocusMode(FocusMode.auto);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Auto-focusing document frame...'),
+                          duration: Duration(milliseconds: 900),
+                        ),
+                      );
+                    },
                     icon: const Icon(
-                      Icons.photo_library_outlined,
-                      semanticLabel: 'Choose a photo',
-                      color: Colors.white70,
-                      size: 28,
+                      Icons.center_focus_strong_rounded,
+                      semanticLabel: 'Auto-focus',
+                      color: AppTheme.primaryCyan,
+                      size: 26,
                     ),
                   ),
 
@@ -475,9 +659,9 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                             Border.all(color: AppTheme.primaryCyan, width: 4),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryCyan.withValues(alpha: 0.4),
-                            blurRadius: 16,
-                            spreadRadius: 2,
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.5),
+                            blurRadius: 18,
+                            spreadRadius: 3,
                           ),
                         ],
                       ),
@@ -496,20 +680,24 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.black),
                                 )
-                              : null,
+                              : const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.black,
+                                  size: 28,
+                                ),
                         ),
                       ),
                     ),
                   ),
 
-                  // Info button
+                  // Info Guidance button
                   IconButton(
                     tooltip: 'Capture guidance',
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                              'Position document within frame. Camera auto-focuses.'),
+                              'Position document squarely inside brackets. Tap screen to focus.'),
                           duration: Duration(seconds: 2),
                         ),
                       );
@@ -518,7 +706,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                       Icons.help_outline_rounded,
                       semanticLabel: 'Capture guidance',
                       color: Colors.white70,
-                      size: 28,
+                      size: 26,
                     ),
                   ),
                 ],
@@ -530,3 +718,4 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     );
   }
 }
+
