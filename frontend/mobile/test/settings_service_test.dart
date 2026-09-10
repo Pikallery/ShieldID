@@ -19,7 +19,7 @@ void main() {
       expect(service.themeMode, ThemeMode.dark);
       expect(service.isDarkMode, isTrue);
       expect(service.language, 'en');
-      expect(service.currentLanguageLabel, 'English');
+      expect(service.currentLanguageLabel, 'English (India)');
     });
 
     test('Toggling theme updates state, notifies listeners, and persists',
@@ -53,26 +53,26 @@ void main() {
       bool listenerNotified = false;
       service.addListener(() => listenerNotified = true);
 
-      await service.setLanguage('es');
-      expect(service.language, 'es');
-      expect(service.currentLanguageLabel, 'Español (Spanish)');
+      await service.setLanguage('hi');
+      expect(service.language, 'hi');
+      expect(service.currentLanguageLabel, 'हिन्दी (Hindi)');
       expect(listenerNotified, isTrue);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('shield_id_language'), 'es');
+      expect(prefs.getString('shield_id_language'), 'hi');
     });
 
     test('Pre-existing preferences are restored upon initialization', () async {
       SharedPreferences.setMockInitialValues({
         'shield_id_theme_mode': 'light',
-        'shield_id_language': 'fr',
+        'shield_id_language': 'or',
       });
 
       final service = await SettingsService.init();
       expect(service.themeMode, ThemeMode.light);
       expect(service.isDarkMode, isFalse);
-      expect(service.language, 'fr');
-      expect(service.currentLanguageLabel, 'Français (French)');
+      expect(service.language, 'or');
+      expect(service.currentLanguageLabel, 'ଓଡ଼ିଆ (Odia)');
     });
   });
 

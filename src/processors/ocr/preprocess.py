@@ -48,8 +48,8 @@ def load_image(input_data: np.ndarray | bytes | str | Path) -> np.ndarray:
                             (0, 0, 0),
                             2,
                         )
-            except Exception:
-                pass
+            except (ValueError, UnicodeDecodeError, cv2.error):
+                return canvas
             return canvas
         return img
 

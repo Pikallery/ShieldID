@@ -17,19 +17,7 @@ class DocumentSelectionScreen extends StatefulWidget {
 
 class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
   DocumentType _selectedType = DocumentType.passport;
-  String _selectedCountry = 'United States';
-
-  final List<String> _countries = [
-    'United States',
-    'United Kingdom',
-    'Canada',
-    'Germany',
-    'France',
-    'India',
-    'Singapore',
-    'Australia',
-    'Japan',
-  ];
+  final String _selectedCountry = 'India';
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +41,7 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Issuing Country / Territory',
+                    'Issuing Country / Jurisdiction',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -62,50 +50,65 @@ class _DocumentSelectionScreenState extends State<DocumentSelectionScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Country Selection Container
+                  // Country Selection Container - Republic of India
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: AppTheme.glassCardDecoration(),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCountry,
-                        isExpanded: true,
-                        dropdownColor: AppTheme.surfaceElevated,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          semanticLabel: 'Open country list',
-                          color: AppTheme.primaryCyan,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            '🇮🇳',
+                            style: TextStyle(fontSize: 22),
+                          ),
                         ),
-                        items: _countries.map((country) {
-                          return DropdownMenuItem<String>(
-                            value: country,
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.public_rounded,
-                                  semanticLabel: 'Issuing country',
-                                  size: 18,
-                                  color: AppTheme.primaryCyan,
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Republic of India (भारत)',
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  country,
-                                  style: const TextStyle(
-                                    color: AppTheme.textPrimary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'UIDAI • ICAO IND • MoRTH • Income Tax Dept',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 11,
                                 ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.passGreen.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'ACTIVE',
+                            style: TextStyle(
+                              color: AppTheme.passGreen,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedCountry = val);
-                          }
-                        },
-                      ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),

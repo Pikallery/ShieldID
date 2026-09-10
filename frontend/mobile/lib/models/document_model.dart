@@ -9,26 +9,26 @@ enum DocumentType {
   String get displayName {
     switch (this) {
       case DocumentType.passport:
-        return 'Passport (ICAO 9303)';
+        return 'Indian Passport (ICAO 9303)';
       case DocumentType.nationalId:
-        return 'National Identity Card';
+        return 'Aadhaar Card (UIDAI)';
       case DocumentType.driversLicense:
-        return "Driver's License";
+        return "Driver's License (MoRTH)";
       case DocumentType.residencePermit:
-        return 'Residence Permit';
+        return 'PAN Card / Voter ID (Income Tax / ECI)';
     }
   }
 
   String get shortName {
     switch (this) {
       case DocumentType.passport:
-        return 'Passport';
+        return 'Indian Passport';
       case DocumentType.nationalId:
-        return 'National ID';
+        return 'Aadhaar Card';
       case DocumentType.driversLicense:
         return "Driver's License";
       case DocumentType.residencePermit:
-        return 'Residence Permit';
+        return 'PAN Card';
     }
   }
 
@@ -59,13 +59,13 @@ enum DocumentType {
   String get guidanceText {
     switch (this) {
       case DocumentType.passport:
-        return 'Open your passport photo page and align it within the frame. Ensure the two-line MRZ at the bottom is clear.';
+        return 'Open your Indian passport photo page and align it within the frame. Ensure the two-line MRZ (P<IND...) is clear.';
       case DocumentType.nationalId:
-        return 'Place your national ID on a flat, dark surface with minimal light reflection.';
+        return 'Place your Aadhaar card on a flat surface with minimal glare. Ensure 12-digit UID & QR code are visible.';
       case DocumentType.driversLicense:
-        return "Align both edges of your driver's license inside the viewfinder borders.";
+        return "Align both edges of your Indian Driver's License inside the viewfinder borders.";
       case DocumentType.residencePermit:
-        return 'Position the front of your residence card squarely in the frame.';
+        return 'Position your PAN Card or Voter ID squarely in the frame with clear PAN / EPIC number.';
     }
   }
 }

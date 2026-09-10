@@ -117,7 +117,7 @@ class TamperingProcessor(BaseProcessor):
             try:
                 with Image.open(io.BytesIO(input_data)) as img:
                     return np.array(img.convert("RGB"), dtype=np.uint8)
-            except Exception:
+            except (OSError, ValueError, TypeError):
                 return np.full((256, 256, 3), 255, dtype=np.uint8)
 
         if HAS_PIL and isinstance(input_data, Image.Image):

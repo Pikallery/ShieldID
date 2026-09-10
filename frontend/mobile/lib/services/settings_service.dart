@@ -6,9 +6,17 @@ class SettingsService extends ChangeNotifier {
   static const _languageKey = 'shield_id_language';
 
   static const supportedLanguages = {
-    'en': 'English',
-    'es': 'Español (Spanish)',
-    'fr': 'Français (French)',
+    'en': 'English (India)',
+    'hi': 'हिन्दी (Hindi)',
+    'bn': 'বাংলা (Bengali)',
+    'te': 'తెలుగు (Telugu)',
+    'ta': 'தமிழ் (Tamil)',
+    'mr': 'मराठी (Marathi)',
+    'gu': 'ગુજરાતી (Gujarati)',
+    'kn': 'ಕನ್ನಡ (Kannada)',
+    'ml': 'മലയാളം (Malayalam)',
+    'pa': 'ਪੰਜਾਬੀ (Punjabi)',
+    'or': 'ଓଡ଼ିଆ (Odia)',
   };
 
   final SharedPreferences? _preferences;

@@ -1,14 +1,9 @@
-# pyrefly: ignore [missing-import]
-# src/services/verification_service.py
+from typing import Any
+
 from src.processors.face.processor import FaceProcessor
 from src.processors.ocr.processor import OCRProcessor
 from src.processors.tampering.processor import TamperingProcessor
-from src.schemas import (
-    FaceVerificationResult,
-    OCRResult,
-    RiskScoreResult,
-    TamperingResult,
-)
+from src.schemas import RiskScoreResult
 
 
 class VerificationService:

@@ -1,7 +1,9 @@
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
 from typing import Any
-from fastapi import APIRouter, File, Form, UploadFile
+
+from fastapi import APIRouter, Form, UploadFile
+
 from src.services.verification_service import VerificationService
 
 router = APIRouter()
@@ -159,11 +161,11 @@ def _format_verification_response(
 
 @router.post("/full-screening")
 async def full_screening(
-    front_image: UploadFile | None = File(None),
-    back_image: UploadFile | None = File(None),
-    selfie_image: UploadFile | None = File(None),
-    document: UploadFile | None = File(None),
-    selfie: UploadFile | None = File(None),
+    front_image: UploadFile | None = None,
+    back_image: UploadFile | None = None,
+    selfie_image: UploadFile | None = None,
+    document: UploadFile | None = None,
+    selfie: UploadFile | None = None,
     document_type: str = Form("passport"),
 ):
     """Full multimodal document screening with OCR, tamper detection, and facial biometrics."""
