@@ -5,6 +5,7 @@ import '../constants/theme.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
 import 'verification_result_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -20,6 +21,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
+    final l10n = AppLocalizations.of(context);
     final allHistory = screeningService.history;
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
 
@@ -41,7 +43,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Audit History & Logs'),
+        title: Text(l10n.auditHistory),
       ),
       body: Column(
         children: [
@@ -52,11 +54,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               onChanged: (val) => setState(() => _searchQuery = val),
               style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
               decoration: InputDecoration(
-                hintText: 'Search by applicant name, ID, or doc #...',
+                hintText: l10n.searchHistoryHint,
                 hintStyle:
                     const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                 prefixIcon: const Icon(Icons.search_rounded,
-                    color: AppTheme.primaryCyan, size: 20),
+                    semanticLabel: 'Search history',
+                    color: AppTheme.primaryCyan,
+                    size: 20),
                 filled: true,
                 fillColor: AppTheme.surfaceElevated,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
@@ -82,13 +86,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                _buildFilterChip('All Statuses', null),
+                _buildFilterChip(l10n.allStatuses, null),
                 const SizedBox(width: 8),
-                _buildFilterChip('Passed', VerificationStatus.pass),
+                _buildFilterChip(l10n.passed, VerificationStatus.pass),
                 const SizedBox(width: 8),
-                _buildFilterChip('Review', VerificationStatus.review),
+                _buildFilterChip(l10n.review, VerificationStatus.review),
                 const SizedBox(width: 8),
-                _buildFilterChip('Rejected', VerificationStatus.reject),
+                _buildFilterChip(l10n.rejected, VerificationStatus.reject),
               ],
             ),
           ),
@@ -97,16 +101,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
           // Records List
           Expanded(
             child: filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off_rounded,
-                            size: 48, color: AppTheme.textMuted),
-                        SizedBox(height: 12),
+                        const Icon(Icons.search_off_rounded,
+                            semanticLabel: 'No matching records',
+                            size: 48,
+                            color: AppTheme.textMuted),
+                        const SizedBox(height: 12),
                         Text(
-                          'No screening records match your query',
-                          style: TextStyle(
+                          l10n.noMatchingRecords,
+                          style: const TextStyle(
                               color: AppTheme.textSecondary, fontSize: 14),
                         ),
                       ],
@@ -133,7 +139,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: AppTheme.glassCardDecoration(
-                            borderColor: item.status.color.withOpacity(0.35),
+                            borderColor:
+                                item.status.color.withValues(alpha: 0.35),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,12 +150,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color:
-                                          item.status.color.withOpacity(0.12),
+                                      color: item.status.color
+                                          .withValues(alpha: 0.12),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       item.status.icon,
+                                      semanticLabel: item.status.label,
                                       size: 16,
                                       color: item.status.color,
                                     ),
@@ -195,7 +203,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: item.status.color
-                                              .withOpacity(0.15),
+                                              .withValues(alpha: 0.15),
                                           borderRadius:
                                               BorderRadius.circular(6),
                                         ),

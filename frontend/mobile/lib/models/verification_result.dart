@@ -84,9 +84,29 @@ class FaceMatchResult {
       livenessPassed: true,
       livenessScore: 0.992,
       antiSpoofPassed: true,
-      notes: 'Biometric landmarks match with 98.4% confidence. No replay, mask or digital presentation attack detected.',
+      notes:
+          'Biometric landmarks match with 98.4% confidence. No replay, mask or digital presentation attack detected.',
     );
   }
+
+  factory FaceMatchResult.fromJson(Map<String, dynamic> json) =>
+      FaceMatchResult(
+        similarityScore: (json['similarity_score'] as num).toDouble(),
+        isMatch: json['is_match'] as bool,
+        livenessPassed: json['liveness_passed'] as bool,
+        livenessScore: (json['liveness_score'] as num).toDouble(),
+        antiSpoofPassed: json['anti_spoof_passed'] as bool,
+        notes: json['notes'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'similarity_score': similarityScore,
+        'is_match': isMatch,
+        'liveness_passed': livenessPassed,
+        'liveness_score': livenessScore,
+        'anti_spoof_passed': antiSpoofPassed,
+        'notes': notes,
+      };
 }
 
 class TamperingResult {
@@ -136,6 +156,28 @@ class TamperingResult {
       ],
     );
   }
+
+  factory TamperingResult.fromJson(Map<String, dynamic> json) =>
+      TamperingResult(
+        isTampered: json['is_tampered'] as bool,
+        tamperingScore: (json['tampering_score'] as num).toDouble(),
+        edgeIntegrityScore: (json['edge_integrity_score'] as num).toDouble(),
+        fontConsistencyScore:
+            (json['font_consistency_score'] as num).toDouble(),
+        compressionArtifactScore:
+            (json['compression_artifact_score'] as num).toDouble(),
+        detectedAnomalies:
+            List<String>.from(json['detected_anomalies'] as List),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'is_tampered': isTampered,
+        'tampering_score': tamperingScore,
+        'edge_integrity_score': edgeIntegrityScore,
+        'font_consistency_score': fontConsistencyScore,
+        'compression_artifact_score': compressionArtifactScore,
+        'detected_anomalies': detectedAnomalies,
+      };
 }
 
 class PredictiveRiskResult {
@@ -163,6 +205,21 @@ class PredictiveRiskResult {
       recommendation: 'Automated approval recommended. Identity authenticated.',
     );
   }
+
+  factory PredictiveRiskResult.fromJson(Map<String, dynamic> json) =>
+      PredictiveRiskResult(
+        riskScore: (json['risk_score'] as num).toDouble(),
+        riskTier: RiskTier.values.byName(json['risk_tier'] as String),
+        riskFactors: List<String>.from(json['risk_factors'] as List),
+        recommendation: json['recommendation'] as String,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'risk_score': riskScore,
+        'risk_tier': riskTier.name,
+        'risk_factors': riskFactors,
+        'recommendation': recommendation,
+      };
 }
 
 class VerificationReport {
@@ -189,4 +246,42 @@ class VerificationReport {
     required this.status,
     required this.overallConfidence,
   });
+
+  factory VerificationReport.fromJson(Map<String, dynamic> json) =>
+      VerificationReport(
+        id: json['id'] as String,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        documentType:
+            DocumentType.values.byName(json['document_type'] as String),
+        documentData: ExtractedDocumentData.fromJson(
+          Map<String, dynamic>.from(json['document_data'] as Map),
+        ),
+        faceMatch: FaceMatchResult.fromJson(
+          Map<String, dynamic>.from(json['face_match'] as Map),
+        ),
+        tampering: TamperingResult.fromJson(
+          Map<String, dynamic>.from(json['tampering'] as Map),
+        ),
+        predictiveRisk: PredictiveRiskResult.fromJson(
+          Map<String, dynamic>.from(json['predictive_risk'] as Map),
+        ),
+        securityFeatures: SecurityFeatures.fromJson(
+          Map<String, dynamic>.from(json['security_features'] as Map),
+        ),
+        status: VerificationStatus.values.byName(json['status'] as String),
+        overallConfidence: (json['overall_confidence'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'document_type': documentType.name,
+        'document_data': documentData.toJson(),
+        'face_match': faceMatch.toJson(),
+        'tampering': tampering.toJson(),
+        'predictive_risk': predictiveRisk.toJson(),
+        'security_features': securityFeatures.toJson(),
+        'status': status.name,
+        'overall_confidence': overallConfidence,
+      };
 }

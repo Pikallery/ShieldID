@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
+import '../services/settings_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -30,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
+    final settingsService = context.watch<SettingsService>();
 
     return Scaffold(
       appBar: AppBar(
@@ -40,6 +42,112 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Appearance & Preferences Section
+            const Text(
+              'Appearance & Preferences',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryCyan,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: AppTheme.glassCardDecoration(),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(
+                      settingsService.isDarkMode
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
+                      semanticLabel: 'Theme mode',
+                      color: AppTheme.primaryCyan,
+                    ),
+                    title: const Text(
+                      'Dark Theme',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      settingsService.isDarkMode
+                          ? 'Sleek dark interface active'
+                          : 'High-contrast light interface active',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                    value: settingsService.isDarkMode,
+                    activeThumbColor: AppTheme.primaryCyan,
+                    onChanged: (val) => settingsService.toggleTheme(val),
+                  ),
+                  const Divider(color: AppTheme.border, height: 20),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.language_rounded,
+                        semanticLabel: 'Language settings',
+                        color: AppTheme.primaryCyan,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Interface Language',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Choose your preferred locale',
+                              style: TextStyle(
+                                  fontSize: 12, color: AppTheme.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: settingsService.language,
+                        dropdownColor: AppTheme.surfaceElevated,
+                        underline: const SizedBox.shrink(),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                            semanticLabel: 'Open language list',
+                            color: AppTheme.primaryCyan),
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onChanged: (newLang) {
+                          if (newLang != null) {
+                            settingsService.setLanguage(newLang);
+                          }
+                        },
+                        items: SettingsService.supportedLanguages.entries
+                            .map((entry) => DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Backend Connectivity Section
             const Text(
               'Backend AI Service',
@@ -90,9 +198,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       hintStyle: const TextStyle(
                           color: AppTheme.textMuted, fontSize: 12),
                       prefixIcon: const Icon(Icons.dns_rounded,
-                          color: AppTheme.primaryCyan, size: 18),
+                          semanticLabel: 'Server address',
+                          color: AppTheme.primaryCyan,
+                          size: 18),
                       suffixIcon: IconButton(
+                        tooltip: 'Save server address',
                         icon: const Icon(Icons.check_rounded,
+                            semanticLabel: 'Save server address',
                             color: AppTheme.passGreen),
                         onPressed: () {
                           screeningService
@@ -247,9 +359,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceElevated.withOpacity(0.5),
+                color: AppTheme.surfaceElevated.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border.withOpacity(0.5)),
+                border:
+                    Border.all(color: AppTheme.border.withValues(alpha: 0.5)),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +413,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onSelected: (val) {
         if (val) service.setTargetSimulationStatus(status);
       },
-      selectedColor: status.color.withOpacity(0.25),
+      selectedColor: status.color.withValues(alpha: 0.25),
       backgroundColor: AppTheme.surfaceElevated,
       labelStyle: TextStyle(
         fontSize: 12,

@@ -168,4 +168,23 @@ class SecurityFeatures {
       substrateScore: 0.94,
     );
   }
+
+  factory SecurityFeatures.fromJson(Map<String, dynamic> json) =>
+      SecurityFeatures(
+        hologramDetected: json['hologram_detected'] as bool,
+        hologramConfidence: (json['hologram_confidence'] as num).toDouble(),
+        opticalVariableInkChecked: json['optical_variable_ink_checked'] as bool,
+        microprintValid: json['microprint_valid'] as bool,
+        uvPatternVerified: json['uv_pattern_verified'] as bool,
+        substrateScore: (json['substrate_score'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'hologram_detected': hologramDetected,
+        'hologram_confidence': hologramConfidence,
+        'optical_variable_ink_checked': opticalVariableInkChecked,
+        'microprint_valid': microprintValid,
+        'uv_pattern_verified': uvPatternVerified,
+        'substrate_score': substrateScore,
+      };
 }

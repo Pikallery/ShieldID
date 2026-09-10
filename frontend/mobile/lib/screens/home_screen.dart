@@ -30,9 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: pages[_currentNavIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surface.withOpacity(0.95),
+          color: AppTheme.surface.withValues(alpha: 0.95),
           border: Border(
-            top: BorderSide(color: AppTheme.border.withOpacity(0.6)),
+            top: BorderSide(color: AppTheme.border.withValues(alpha: 0.6)),
           ),
         ),
         child: BottomNavigationBar(
@@ -47,18 +47,22 @@ class _HomeScreenState extends State<HomeScreen> {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.shield_outlined),
-              activeIcon: Icon(Icons.shield_rounded),
+              icon: Icon(Icons.shield_outlined, semanticLabel: 'Screening tab'),
+              activeIcon: Icon(Icons.shield_rounded,
+                  semanticLabel: 'Screening tab selected'),
               label: 'Screening',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded),
-              activeIcon: Icon(Icons.manage_search_rounded),
+              icon: Icon(Icons.history_rounded,
+                  semanticLabel: 'Audit history tab'),
+              activeIcon: Icon(Icons.manage_search_rounded,
+                  semanticLabel: 'Audit history tab selected'),
               label: 'Audit History',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.tune_rounded),
-              activeIcon: Icon(Icons.settings_rounded),
+              icon: Icon(Icons.tune_rounded, semanticLabel: 'Settings tab'),
+              activeIcon: Icon(Icons.settings_rounded,
+                  semanticLabel: 'Settings tab selected'),
               label: 'Settings',
             ),
           ],
@@ -92,7 +96,7 @@ class _HomeDashboardTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryCyan.withOpacity(0.35),
+                        color: AppTheme.primaryCyan.withValues(alpha: 0.35),
                         blurRadius: 12,
                       ),
                     ],
@@ -141,6 +145,7 @@ class _HomeDashboardTab extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
+                  tooltip: 'Open settings',
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -171,12 +176,12 @@ class _HomeDashboardTab extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: AppTheme.primaryCyan.withOpacity(0.4),
+                  color: AppTheme.primaryCyan.withValues(alpha: 0.4),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryCyan.withOpacity(0.12),
+                    color: AppTheme.primaryCyan.withValues(alpha: 0.12),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
@@ -191,10 +196,10 @@ class _HomeDashboardTab extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryCyan.withOpacity(0.15),
+                          color: AppTheme.primaryCyan.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: AppTheme.primaryCyan.withOpacity(0.4),
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.4),
                           ),
                         ),
                         child: const Text(
@@ -414,7 +419,7 @@ class _MetricTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.12),
+              color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 18, color: accentColor),
@@ -471,10 +476,10 @@ class _HistoryCardItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: report.status.color.withOpacity(0.12),
+                color: report.status.color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: report.status.color.withOpacity(0.4),
+                  color: report.status.color.withValues(alpha: 0.4),
                 ),
               ),
               child: Icon(

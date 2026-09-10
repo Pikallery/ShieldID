@@ -2,10 +2,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
+import '../models/document_model.dart';
 import '../models/screening_session.dart';
+import '../models/verification_result.dart';
 import '../services/screening_service.dart';
 import '../widgets/step_progress_bar.dart';
 import 'liveness_detection_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class AntiTamperScreen extends StatefulWidget {
   const AntiTamperScreen({super.key});
@@ -57,12 +60,18 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
   @override
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
+    final l10n = AppLocalizations.of(context);
+    final report = screeningService.session.report;
+    final extracted = report?.documentData;
+    final verdict = report?.status ?? VerificationStatus.review;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Anti-Tampering & Hologram'),
+        title: Text(l10n.antiTamperingHologram),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          tooltip: 'Go back',
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              semanticLabel: 'Go back', size: 18),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -74,14 +83,36 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: verdict.color.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: verdict.color),
+                      ),
+                      child: Text(
+                        l10n.verdict(verdict.label),
+                        style: TextStyle(
+                            color: verdict.color, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildExtractedFields(context, extracted),
+                  const SizedBox(height: 16),
+                  _buildSecurityChips(report),
+                  const SizedBox(height: 24),
                   // Status & Instruction Pill
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: _hologramVerified
-                          ? AppTheme.passGreen.withOpacity(0.15)
-                          : AppTheme.primaryCyan.withOpacity(0.12),
+                          ? AppTheme.passGreen.withValues(alpha: 0.15)
+                          : AppTheme.primaryCyan.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _hologramVerified
@@ -93,6 +124,9 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
+                          semanticLabel: _hologramVerified
+                              ? 'Hologram verified'
+                              : 'Tilt instruction',
                           _hologramVerified
                               ? Icons.verified_rounded
                               : Icons.screen_rotation_rounded,
@@ -137,12 +171,12 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppTheme.primaryCyan.withOpacity(0.6),
+                          color: AppTheme.primaryCyan.withValues(alpha: 0.6),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primaryCyan.withOpacity(0.2),
+                            color: AppTheme.primaryCyan.withValues(alpha: 0.2),
                             blurRadius: 20,
                             spreadRadius: 2,
                           ),
@@ -158,6 +192,7 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                               children: [
                                 Icon(
                                   Icons.badge_rounded,
+                                  semanticLabel: 'Identity credential',
                                   color: AppTheme.textMuted,
                                   size: 28,
                                 ),
@@ -199,9 +234,10 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                                   end: Alignment(1.0 + (_tiltAngle * 5), 1.0),
                                   colors: [
                                     Colors.transparent,
-                                    Colors.purpleAccent.withOpacity(0.25),
-                                    AppTheme.primaryCyan.withOpacity(0.35),
-                                    Colors.amberAccent.withOpacity(0.25),
+                                    Colors.purpleAccent.withValues(alpha: 0.25),
+                                    AppTheme.primaryCyan
+                                        .withValues(alpha: 0.35),
+                                    Colors.amberAccent.withValues(alpha: 0.25),
                                     Colors.transparent,
                                   ],
                                   stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
@@ -218,18 +254,20 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.amberAccent.withOpacity(0.8),
+                                  color:
+                                      Colors.amberAccent.withValues(alpha: 0.8),
                                   width: 2,
                                 ),
                                 gradient: RadialGradient(
                                   colors: [
-                                    Colors.amberAccent.withOpacity(0.4),
+                                    Colors.amberAccent.withValues(alpha: 0.4),
                                     Colors.transparent,
                                   ],
                                 ),
                               ),
                               child: const Icon(
                                 Icons.shield_rounded,
+                                semanticLabel: 'Security shield',
                                 color: Colors.amberAccent,
                                 size: 36,
                               ),
@@ -245,6 +283,7 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                               children: [
                                 Icon(
                                   Icons.check_circle_rounded,
+                                  semanticLabel: 'Hologram check status',
                                   size: 16,
                                   color: _hologramVerified
                                       ? AppTheme.passGreen
@@ -317,16 +356,18 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: AppTheme.surface.withOpacity(0.95),
+              color: AppTheme.surface.withValues(alpha: 0.95),
               border: Border(
-                top: BorderSide(color: AppTheme.border.withOpacity(0.6)),
+                top: BorderSide(color: AppTheme.border.withValues(alpha: 0.6)),
               ),
             ),
             child: Row(
               children: [
                 IconButton(
+                  tooltip: 'Restart hologram verification',
                   onPressed: _restartVerification,
                   icon: const Icon(Icons.refresh_rounded,
+                      semanticLabel: 'Restart hologram verification',
                       color: AppTheme.textSecondary),
                 ),
                 const SizedBox(width: 8),
@@ -351,7 +392,8 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    icon: const Icon(Icons.face_rounded, size: 20),
+                    icon: const Icon(Icons.face_rounded,
+                        semanticLabel: 'Proceed to biometric selfie', size: 20),
                     label: const Text(
                       'PROCEED TO BIOMETRIC SELFIE',
                       style: TextStyle(
@@ -378,7 +420,7 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: isPassed
-                ? AppTheme.passGreen.withOpacity(0.2)
+                ? AppTheme.passGreen.withValues(alpha: 0.2)
                 : AppTheme.surfaceElevated,
             shape: BoxShape.circle,
           ),
@@ -386,6 +428,8 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
             isPassed
                 ? Icons.check_circle_rounded
                 : Icons.radio_button_unchecked_rounded,
+            semanticLabel:
+                isPassed ? 'Security check passed' : 'Security check pending',
             size: 18,
             color: isPassed ? AppTheme.passGreen : AppTheme.textMuted,
           ),
@@ -414,6 +458,104 @@ class _AntiTamperScreenState extends State<AntiTamperScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExtractedFields(
+      BuildContext context, ExtractedDocumentData? data) {
+    final l10n = AppLocalizations.of(context);
+    final fields = <String, String>{
+      'Full name': data?.fullName ?? 'Pending OCR',
+      'Document number': data?.documentNumber ?? 'Pending OCR',
+      'Date of birth': data?.dateOfBirth ?? 'Pending OCR',
+      'Date of expiry': data?.dateOfExpiry ?? 'Pending OCR',
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(l10n.extractedOcrFields,
+              style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary)),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          childAspectRatio: 2.2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          children: fields.entries.map((entry) {
+            final confidence = data?.fieldConfidences[entry.key] ?? 0.0;
+            return Container(
+              padding: const EdgeInsets.all(10),
+              decoration: AppTheme.glassCardDecoration(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.key,
+                      style: const TextStyle(
+                          fontSize: 10, color: AppTheme.textMuted)),
+                  Text(entry.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  LinearProgressIndicator(
+                      value: confidence == 0 ? null : confidence,
+                      minHeight: 3,
+                      backgroundColor: AppTheme.surfaceElevated,
+                      valueColor: AlwaysStoppedAnimation(confidence > 0.8
+                          ? AppTheme.passGreen
+                          : AppTheme.reviewAmber)),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityChips(VerificationReport? report) {
+    final checks = <String, bool>{
+      'Hologram':
+          report?.securityFeatures.hologramDetected ?? _hologramVerified,
+      'Font': report != null && report.tampering.fontConsistencyScore >= 0.8,
+      'Tamper': report?.tampering.isTampered == false,
+      'MRZ':
+          report?.documentData.fieldConfidences.containsKey('MRZ Checksum') ??
+              false,
+    };
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: checks.entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Chip(
+              avatar: Icon(
+                  entry.value
+                      ? Icons.check_circle
+                      : Icons.warning_amber_rounded,
+                  semanticLabel: entry.value
+                      ? '${entry.key} passed'
+                      : '${entry.key} needs review',
+                  color:
+                      entry.value ? AppTheme.passGreen : AppTheme.reviewAmber,
+                  size: 18),
+              label: Text(entry.key),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

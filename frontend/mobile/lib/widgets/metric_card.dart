@@ -21,7 +21,10 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = accentColor ?? (score >= 0.85 ? AppTheme.passGreen : (score >= 0.6 ? AppTheme.reviewAmber : AppTheme.rejectRed));
+    final color = accentColor ??
+        (score >= 0.85
+            ? AppTheme.passGreen
+            : (score >= 0.6 ? AppTheme.reviewAmber : AppTheme.rejectRed));
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -34,9 +37,9 @@ class MetricCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Icon(icon, size: 20, color: color),
               ),

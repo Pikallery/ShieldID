@@ -1,0 +1,22 @@
+{
+  "appTitle": "ShieldID",
+  "antiTamperingHologram": "Anti-tampering and hologram check",
+  "extractedOcrFields": "Extracted OCR fields",
+  "cameraInitializationFailed": "Camera initialization failed",
+  "retry": "Retry",
+  "auditHistory": "Audit history",
+  "searchHistoryHint": "Search history",
+  "allStatuses": "All statuses",
+  "passed": "Passed",
+  "review": "Review",
+  "rejected": "Rejected",
+  "noMatchingRecords": "No matching records",
+  "verdict": "{status}",
+  "@verdict": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  }
+}

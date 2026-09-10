@@ -20,12 +20,17 @@ class VerificationResultScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Screening Dossier'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          tooltip: 'Go back',
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              semanticLabel: 'Go back', size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined, color: AppTheme.primaryCyan),
+            tooltip: 'Share verification result',
+            icon: const Icon(Icons.share_outlined,
+                semanticLabel: 'Share verification result',
+                color: AppTheme.primaryCyan),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -47,7 +52,7 @@ class VerificationResultScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: AppTheme.glassCardDecoration(
-                borderColor: report.status.color.withOpacity(0.5),
+                borderColor: report.status.color.withValues(alpha: 0.5),
                 glow: report.status == VerificationStatus.pass,
               ),
               child: Column(
@@ -81,14 +86,16 @@ class VerificationResultScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: report.status.color.withOpacity(0.15),
+                          color: report.status.color.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: report.status.color),
                         ),
                         child: Row(
                           children: [
                             Icon(report.status.icon,
-                                size: 14, color: report.status.color),
+                                semanticLabel: report.status.label,
+                                size: 14,
+                                color: report.status.color),
                             const SizedBox(width: 6),
                             Text(
                               report.status.label,
@@ -159,8 +166,8 @@ class VerificationResultScreen extends StatelessWidget {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: report.faceMatch.isMatch
-                                  ? AppTheme.passGreen.withOpacity(0.15)
-                                  : AppTheme.rejectRed.withOpacity(0.15),
+                                  ? AppTheme.passGreen.withValues(alpha: 0.15)
+                                  : AppTheme.rejectRed.withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -368,7 +375,8 @@ class VerificationResultScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+                icon: const Icon(Icons.qr_code_scanner_rounded,
+                    semanticLabel: 'Start another screening', size: 20),
                 label: const Text(
                   'SCREEN ANOTHER IDENTITY',
                   style: TextStyle(fontWeight: FontWeight.w800),
@@ -396,7 +404,8 @@ class VerificationResultScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                icon: const Icon(Icons.download_rounded, size: 18),
+                icon: const Icon(Icons.download_rounded,
+                    semanticLabel: 'Download report', size: 18),
                 label: const Text('DOWNLOAD AUDIT REPORT (PDF)'),
               ),
             ),
@@ -421,7 +430,10 @@ class VerificationResultScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 40, color: AppTheme.primaryCyan),
+              Icon(icon,
+                  semanticLabel: 'Verification metric',
+                  size: 40,
+                  color: AppTheme.primaryCyan),
               const SizedBox(height: 6),
               Text(
                 subtitle,
@@ -448,8 +460,8 @@ class VerificationResultScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: ok
-            ? AppTheme.passGreen.withOpacity(0.12)
-            : AppTheme.rejectRed.withOpacity(0.12),
+            ? AppTheme.passGreen.withValues(alpha: 0.12)
+            : AppTheme.rejectRed.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
             color: ok ? AppTheme.passGreen : AppTheme.rejectRed, width: 0.8),
@@ -490,7 +502,9 @@ class VerificationResultScreen extends StatelessWidget {
         Row(
           children: [
             const Icon(Icons.check_circle_rounded,
-                size: 14, color: AppTheme.passGreen),
+                semanticLabel: 'Check passed',
+                size: 14,
+                color: AppTheme.passGreen),
             const SizedBox(width: 4),
             Text(
               '${(confidence * 100).toInt()}%',

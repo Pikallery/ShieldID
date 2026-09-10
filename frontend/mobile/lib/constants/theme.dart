@@ -74,21 +74,21 @@ class AppTheme {
     bool glow = false,
   }) {
     return BoxDecoration(
-      color: surface.withOpacity(0.85),
+      color: surface.withValues(alpha: 0.85),
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? border.withOpacity(0.7),
+        color: borderColor ?? border.withValues(alpha: 0.7),
         width: 1.2,
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.4),
+          color: Colors.black.withValues(alpha: 0.4),
           blurRadius: 16,
           offset: const Offset(0, 8),
         ),
         if (glow)
           BoxShadow(
-            color: (borderColor ?? primaryCyan).withOpacity(0.2),
+            color: (borderColor ?? primaryCyan).withValues(alpha: 0.2),
             blurRadius: 20,
             spreadRadius: 1,
           ),
@@ -149,7 +149,7 @@ class AppTheme {
             ),
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: background.withOpacity(0.9),
+        backgroundColor: background.withValues(alpha: 0.9),
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.outfit(
@@ -172,6 +172,102 @@ class AppTheme {
           backgroundColor: primaryCyan,
           foregroundColor: Colors.black,
           elevation: 4,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get lightTheme {
+    const lightBg = Color(0xFFF8FAFC);
+    const lightSurface = Color(0xFFFFFFFF);
+    const lightBorder = Color(0xFFE2E8F0);
+    const lightTextPrimary = Color(0xFF0F172A);
+    const lightTextSecondary = Color(0xFF475569);
+    const lightTextMuted = Color(0xFF94A3B8);
+
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBg,
+      primaryColor: primaryBlue,
+      colorScheme: const ColorScheme.light(
+        primary: primaryBlue,
+        secondary: accentTeal,
+        surface: lightSurface,
+        error: rejectRed,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: lightTextPrimary,
+      ),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.light().textTheme.copyWith(
+              displayLarge: GoogleFonts.outfit(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: lightTextPrimary,
+                letterSpacing: -0.5,
+              ),
+              displayMedium: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: lightTextPrimary,
+              ),
+              titleLarge: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: lightTextPrimary,
+              ),
+              titleMedium: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: lightTextPrimary,
+              ),
+              bodyLarge: GoogleFonts.inter(
+                fontSize: 16,
+                color: lightTextPrimary,
+              ),
+              bodyMedium: GoogleFonts.inter(
+                fontSize: 14,
+                color: lightTextSecondary,
+              ),
+              bodySmall: GoogleFonts.inter(
+                fontSize: 12,
+                color: lightTextMuted,
+              ),
+            ),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: lightBg,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: lightTextPrimary,
+        ),
+        iconTheme: const IconThemeData(color: lightTextPrimary),
+      ),
+      cardTheme: CardThemeData(
+        color: lightSurface,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: lightBorder, width: 1),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryBlue,
+          foregroundColor: Colors.white,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
