@@ -599,7 +599,6 @@ class DocumentParserService {
               if (surnameInitial.isNotEmpty) {
                 // Tier 1: Multi-word candidate whose LAST word (the surname) starts with surnameInitial
                 // (e.g. "SAI PRADYUMNA SAMAL" matching 'S' for Samal).
-                // If multiple match, prefer the one with highest word count (most complete name).
                 final tier1Matches = <String>[];
                 for (final c in candidateNames) {
                   final words = c.split(' ');
@@ -627,8 +626,7 @@ class DocumentParserService {
                   }
                 }
 
-                // Tier 2: Single-word candidate matching surnameInitial (MUST be >= 5 chars, e.g. "SAMAL")
-                // Never pick 3-4 char noise like "SHAD", "SEAL", "SIGN"
+                // Tier 3: Single-word candidate matching surnameInitial (MUST be >= 5 chars, e.g. "SAMAL")
                 if (bestMatch == null) {
                   for (final c in candidateNames) {
                     final words = c.split(' ');
@@ -639,11 +637,13 @@ class DocumentParserService {
                   }
                 }
 
-                // Tier 3: Any multi-word candidate (>= 2 words, each >= 3 chars)
+                // Tier 4: Only accept multi-word candidate if ALL words strictly pass human name validation
+                // and none match known header / noise fragments
                 if (bestMatch == null) {
                   for (final c in candidateNames) {
                     final words = c.split(' ');
-                    if (words.length >= 2 && words.every((w) => w.length >= 3)) {
+                    if (words.length >= 2 &&
+                        words.every((w) => w.length >= 3 && !isHeaderOrNoiseLine(w) && isValidHumanName(w))) {
                       bestMatch = c;
                       break;
                     }
@@ -651,16 +651,22 @@ class DocumentParserService {
                 }
               } else {
                 // When no PAN number is available (unanchored scan):
+                // Strictly require multi-word names where all words pass human name validation
                 for (final c in candidateNames) {
                   final words = c.split(' ');
-                  if (words.length >= 2 && words.every((w) => w.length >= 3)) {
+                  if (words.length >= 2 &&
+                      words.every((w) => w.length >= 3 && !isHeaderOrNoiseLine(w) && isValidHumanName(w))) {
                     bestMatch = c;
                     break;
                   }
                 }
 
                 if (bestMatch == null) {
-                  final viable = candidateNames.where((c) => c.contains(' ') || c.length >= 5).toList();
+                  final viable = candidateNames.where((c) =>
+                      c.contains(' ') &&
+                      c.length >= 6 &&
+                      !isHeaderOrNoiseLine(c) &&
+                      isValidHumanName(c)).toList();
                   if (viable.isNotEmpty) {
                     bestMatch = viable.reduce((a, b) => a.length >= b.length ? a : b);
                   }
