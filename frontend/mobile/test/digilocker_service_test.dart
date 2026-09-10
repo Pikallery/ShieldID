@@ -1,48 +1,86 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shield_id_mobile/models/document_model.dart';
 import 'package:shield_id_mobile/services/digilocker_service.dart';
+import 'package:shield_id_mobile/services/document_parser_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('DigiLocker Issuer API v1.13 Verification Tests', () {
+  group('DigiLocker Issuer API v1.13 Verification & Checksum Tests', () {
     late DigiLockerService service;
+    late DocumentParserService parser;
 
     setUp(() {
       service = DigiLockerService();
+      parser = DocumentParserService();
     });
 
-    test('Authentic document verification produces Valid Person with Green Tick data', () async {
+    test('Verhoeff Checksum correctly validates genuine 12-digit Aadhaar', () {
+      // Known valid Verhoeff Aadhaar format (check digit 4)
+      expect(parser.validateAadhaarVerhoeff('234567890124'), isTrue);
+      // Altered last digit
+      expect(parser.validateAadhaarVerhoeff('234567890129'), isFalse);
+    });
+
+    test('PAN format validation verifies 10-char alphanumeric structure', () {
+      expect(parser.validatePanFormat('ABCPS1234F'), isTrue);
+      expect(parser.validatePanFormat('ABCD1234F'), isFalse);
+      expect(parser.validatePanFormat('12345ABCDE'), isFalse);
+    });
+
+    test('MoRTH Driving License format validation verifies state code and roll', () {
+      expect(parser.validateDrivingLicenseFormat('DL-0420180054321'), isTrue);
+      expect(parser.validateDrivingLicenseFormat('XX-0000000000000'), isFalse);
+    });
+
+    test('Authentic extracted document produces Valid Genuine Document with Green Tick', () async {
+      const extracted = ExtractedDocumentData(
+        documentNumber: '2345 6789 0124',
+        fullName: 'Rajesh K. Patel',
+        dateOfBirth: '12/05/1988',
+        dateOfExpiry: '',
+        dateOfIssue: '01/01/2016',
+        nationality: 'Indian',
+        issuingCountry: 'India',
+        gender: 'Male',
+      );
+
       final result = await service.verifyDocumentAndPullRecords(
         docType: DocumentType.nationalId,
-        rawScannedData: 'SAMPLE_UIDAI_QR',
-        simulateFakeOrExpired: false,
+        extractedData: extracted,
+        imagePath: 'test_image.jpg',
       );
 
       expect(result.isValidPerson, isTrue);
       expect(result.responseStatus, '1');
-      expect(result.personName, 'Aarav Sharma');
-      expect(result.nativeName, 'आरव शर्मा');
+      expect(result.personName, 'Rajesh K. Patel');
+      expect(result.primaryDocNumber, '2345 6789 0124');
       expect(result.digitalSignatureValid, isTrue);
       expect(result.identityMatchConfidence, greaterThan(0.95));
-      expect(result.registeredDocuments.length, greaterThanOrEqualTo(4));
       expect(result.rawXmlPayload, contains('PullURIResponse'));
-      expect(result.rawXmlPayload, contains('VERIFIED_GOV_ROOT_CA'));
     });
 
-    test('Fake or expired document verification produces Invalid Person with Red Cross and anomalies', () async {
+    test('Unreadable or missing document number produces Unverified status with Red Cross', () async {
+      const extracted = ExtractedDocumentData(
+        documentNumber: '',
+        fullName: '',
+        dateOfBirth: '',
+        dateOfExpiry: '',
+        dateOfIssue: '',
+        nationality: 'Indian',
+        issuingCountry: 'India',
+        gender: '',
+      );
+
       final result = await service.verifyDocumentAndPullRecords(
-        docType: DocumentType.driversLicense,
-        rawScannedData: 'SAMPLE_TAMPERED_QR',
-        simulateFakeOrExpired: true,
+        docType: DocumentType.nationalId,
+        extractedData: extracted,
+        imagePath: 'blurry_image.jpg',
       );
 
       expect(result.isValidPerson, isFalse);
       expect(result.responseStatus, '0');
-      expect(result.digitalSignatureValid, isFalse);
-      expect(result.identityMatchConfidence, lessThan(0.5));
       expect(result.verificationAnomalies, isNotEmpty);
-      expect(result.rawXmlPayload, contains('DL_404_NOT_FOUND'));
     });
   });
 }

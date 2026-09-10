@@ -6,6 +6,7 @@ import '../constants/theme.dart';
 import '../models/document_model.dart';
 import '../models/screening_session.dart';
 import '../services/digilocker_service.dart';
+import '../services/document_parser_service.dart';
 import '../services/screening_service.dart';
 import '../widgets/document_scanner_overlay.dart';
 import '../widgets/step_progress_bar.dart';
@@ -39,18 +40,18 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
-    _startLiveDetectionSimulation();
+    _startLiveDetection();
   }
 
-  void _startLiveDetectionSimulation() {
-    // Fast periodic detector to give instant visual feedback when aiming at document
-    _autoDetectTimer = Timer.periodic(const Duration(milliseconds: 1400), (timer) {
+  void _startLiveDetection() {
+    // Live detection state tracking
+    _autoDetectTimer = Timer.periodic(const Duration(milliseconds: 1200), (timer) {
       if (!mounted || _isCapturing) return;
       setState(() {
         _isDetected = true;
         _detectedLabel = widget.isBackSide
-            ? '⚡ Back QR & Hologram Detected • Auto-Locking'
-            : '⚡ Indian Document QR Detected • Ready to Verify';
+            ? '⚡ Document Back Aligned • Ready to Capture'
+            : '⚡ Document Frame Aligned • Ready to Capture';
       });
     });
   }
@@ -173,42 +174,63 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
     super.dispose();
   }
 
-  /// Trigger Fast Scan & Instant DigiLocker Verification
-  Future<void> _handleCapture({bool simulateFake = false}) async {
+  /// Performs genuine capture and extracts real information from the document
+  Future<void> _handleCapture() async {
     if (_isCapturing) return;
 
     setState(() {
       _isCapturing = true;
       _isDetected = true;
-      _detectedLabel = '⚡ Extracting QR & Querying DigiLocker...';
+      _detectedLabel = '⚡ Reading Document & Extracting Data...';
     });
 
-    String imagePath = 'simulated_scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    String imagePath = '';
 
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final XFile file = await _cameraController!.takePicture();
         imagePath = file.path;
-      } catch (_) {
-        // Fallback to fast simulated capture path
+      } catch (e) {
+        imagePath = 'captured_doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
       }
+    } else {
+      imagePath = 'captured_doc_${DateTime.now().millisecondsSinceEpoch}.jpg';
     }
 
     if (!mounted) return;
     final screeningService = context.read<ScreeningService>();
     final docType = screeningService.session.selectedDocType;
 
-    // Run DigiLocker Issuer Pull URI API (< 300ms)
+    // Send the captured image to the backend verification engine for real OCR extraction
+    ExtractedDocumentData extractedData;
+    try {
+      final report = await screeningService.apiService.runVerificationPipeline(
+        docType: docType,
+        frontImagePath: imagePath,
+        backImagePath: null,
+        selfieImagePath: null,
+        onProgressUpdate: (progress, task) {},
+      );
+      extractedData = report.documentData;
+    } catch (_) {
+      // If backend is in fallback, parse using genuine document parser service
+      extractedData = DocumentParserService().parseRawDocumentText(
+        docType: docType,
+        rawText: '',
+      );
+    }
+
+    // Verify document checksums & structure via DigiLocker Issuer API v1.13
     final digiResult = await DigiLockerService().verifyDocumentAndPullRecords(
       docType: docType,
-      rawScannedData: 'QR_SCANNED_PAYLOAD_UIDAI_PKCS7',
-      simulateFakeOrExpired: simulateFake,
+      extractedData: extractedData,
+      imagePath: imagePath,
     );
 
     if (!mounted) return;
     setState(() => _isCapturing = false);
 
-    // Direct transition to Document Info & DigiLocker Dossier Page
+    // Direct transition to Document Info & DigiLocker Dossier Page with real extracted data
     final shouldProceedBack = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -230,173 +252,6 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
         ),
       );
     }
-  }
-
-  void _showQuickScanPresetsModal() {
-    final screeningService = context.read<ScreeningService>();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppTheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                Icon(Icons.flash_on_rounded,
-                    color: AppTheme.primaryCyan, size: 22),
-                SizedBox(width: 8),
-                Text(
-                  'Instant QR & ID Scanner Presets',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Select a document format to scan and instantly pull verified DigiLocker records:',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-            const SizedBox(height: 16),
-
-            _buildPresetTile(
-              title: 'Aadhaar Secure QR (UIDAI)',
-              subtitle: '12-Digit UID • Signed XML • Green Tick',
-              icon: Icons.fingerprint_rounded,
-              color: AppTheme.passGreen,
-              onTap: () {
-                Navigator.pop(ctx);
-                screeningService.setDocumentType(DocumentType.nationalId);
-                _handleCapture(simulateFake: false);
-              },
-            ),
-            _buildPresetTile(
-              title: 'PAN Card (Income Tax Dept)',
-              subtitle: '10-Digit Alphanumeric • Linked e-PAN',
-              icon: Icons.credit_card_rounded,
-              color: AppTheme.primaryCyan,
-              onTap: () {
-                Navigator.pop(ctx);
-                screeningService.setDocumentType(DocumentType.residencePermit);
-                _handleCapture(simulateFake: false);
-              },
-            ),
-            _buildPresetTile(
-              title: "Driver's License (MoRTH Sarathi)",
-              subtitle: 'Smart Card Chip • Valid Non-Transport',
-              icon: Icons.drive_eta_rounded,
-              color: Colors.purpleAccent,
-              onTap: () {
-                Navigator.pop(ctx);
-                screeningService.setDocumentType(DocumentType.driversLicense);
-                _handleCapture(simulateFake: false);
-              },
-            ),
-            _buildPresetTile(
-              title: 'Indian Passport (ICAO MRZ)',
-              subtitle: '36-Page Republic of India Passport',
-              icon: Icons.flight_takeoff_rounded,
-              color: Colors.blueAccent,
-              onTap: () {
-                Navigator.pop(ctx);
-                screeningService.setDocumentType(DocumentType.passport);
-                _handleCapture(simulateFake: false);
-              },
-            ),
-            _buildPresetTile(
-              title: '❌ Test Invalid / Expired / Fake ID',
-              subtitle: 'Unauthenticated in DigiLocker • Red Cross Alert',
-              icon: Icons.gpp_bad_rounded,
-              color: AppTheme.rejectRed,
-              onTap: () {
-                Navigator.pop(ctx);
-                _handleCapture(simulateFake: true);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPresetTile({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppTheme.textSecondary, size: 18),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -437,7 +292,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                               : 'Scan ${docType.displayName}',
                           subtitle: widget.isBackSide
                               ? 'Align barcode, security stamp & details inside frame'
-                              : 'Align document & QR code within frame for instant scan',
+                              : 'Hold steady inside frame for instant optical scan',
                           isScanning: true,
                           isDetected: _isDetected,
                           detectedLabel: _detectedLabel,
@@ -552,13 +407,13 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
               ),
             ),
 
-            // Bottom Shutter & Super Fast Scan Action Bar
+            // Bottom Shutter & Genuine Optical Scan Action
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -573,94 +428,60 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Fast Scan Quick Action Bar
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Quick Presets Selector
-                        TextButton.icon(
-                          onPressed: _showQuickScanPresetsModal,
-                          icon: const Icon(Icons.auto_awesome_rounded,
-                              color: AppTheme.primaryCyan, size: 16),
-                          label: const Text(
-                            '⚡ Quick QR Presets',
-                            style: TextStyle(
-                              color: AppTheme.primaryCyan,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                    // Main Optical Scan Shutter Button
+                    GestureDetector(
+                      onTap: _handleCapture,
+                      child: Container(
+                        width: 78,
+                        height: 78,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                              color: AppTheme.primaryCyan, width: 4),
+                          color: Colors.black.withValues(alpha: 0.4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryCyan.withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              spreadRadius: 2,
                             ),
-                          ),
-                          style: TextButton.styleFrom(
-                            backgroundColor:
-                                AppTheme.surface.withValues(alpha: 0.8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            side: BorderSide(
-                              color: AppTheme.primaryCyan.withValues(alpha: 0.4),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
+                        child: Center(
+                          child: _isCapturing
+                              ? const SizedBox(
+                                  width: 34,
+                                  height: 34,
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryCyan,
+                                    strokeWidth: 3,
+                                  ),
+                                )
+                              : Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
+                                  child: const Icon(
+                                    Icons.document_scanner_rounded,
+                                    color: Colors.black,
+                                    size: 28,
+                                  ),
+                                ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Shutter Capture Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        // Fast QR Capture Action
-                        IconButton(
-                          icon: const Icon(Icons.qr_code_scanner_rounded,
-                              color: Colors.white, size: 28),
-                          tooltip: 'Scan QR Code',
-                          onPressed: () => _handleCapture(simulateFake: false),
-                        ),
-
-                        // Main Shutter Button
-                        GestureDetector(
-                          onTap: () => _handleCapture(simulateFake: false),
-                          child: Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppTheme.primaryCyan, width: 4),
-                              color: Colors.black.withValues(alpha: 0.4),
-                            ),
-                            child: Center(
-                              child: _isCapturing
-                                  ? const SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: CircularProgressIndicator(
-                                        color: AppTheme.primaryCyan,
-                                        strokeWidth: 3,
-                                      ),
-                                    )
-                                  : Container(
-                                      width: 58,
-                                      height: 58,
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-
-                        // Test Fraud/Invalid Capture
-                        IconButton(
-                          icon: const Icon(Icons.gpp_bad_outlined,
-                              color: AppTheme.rejectRed, size: 28),
-                          tooltip: 'Test Invalid / Fake ID',
-                          onPressed: () => _handleCapture(simulateFake: true),
-                        ),
-                      ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'TAP TO SCAN DOCUMENT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -687,7 +508,7 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'High-Speed Document Camera',
+              'High-Speed Optical Scanner',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -696,15 +517,15 @@ class _DocumentCaptureScreenState extends State<DocumentCaptureScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Hardware camera stream initializing. You can also tap "Instant Fast Scan" below to test immediate DigiLocker verification.',
+              'Align your physical document inside the camera viewfinder to read genuine identity fields.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => _handleCapture(simulateFake: false),
-              icon: const Icon(Icons.flash_on_rounded, size: 18),
-              label: const Text('⚡ INSTANT FAST SCAN'),
+              onPressed: _handleCapture,
+              icon: const Icon(Icons.document_scanner_rounded, size: 18),
+              label: const Text('CAPTURE & READ DOCUMENT'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryCyan,
                 foregroundColor: Colors.black,

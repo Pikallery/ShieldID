@@ -1,9 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/digilocker_model.dart';
 import '../models/document_model.dart';
-import '../services/digilocker_service.dart';
 import '../services/screening_service.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
@@ -32,8 +33,6 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
   late DigiLockerVerificationResult _result;
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
-  bool _isSimulatingFake = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -54,28 +53,6 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
   void dispose() {
     _animController.dispose();
     super.dispose();
-  }
-
-  Future<void> _toggleSimulatedState(bool makeFake) async {
-    setState(() {
-      _isLoading = true;
-      _isSimulatingFake = makeFake;
-    });
-
-    final newResult =
-        await DigiLockerService().verifyDocumentAndPullRecords(
-      docType: widget.docType,
-      rawScannedData: 'simulated_payload',
-      simulateFakeOrExpired: makeFake,
-    );
-
-    if (!mounted) return;
-    setState(() {
-      _result = newResult;
-      _isLoading = false;
-    });
-    _animController.reset();
-    _animController.forward();
   }
 
   void _showXmlBottomSheet() {
@@ -113,7 +90,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                       color: AppTheme.primaryCyan, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    'DigiLocker Issuer API v1.13 XML',
+                    'DigiLocker Issuer API v1.13 XML Verification',
                     style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontWeight: FontWeight.bold,
@@ -209,85 +186,37 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primaryCyan),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Test Simulator Toggle (Valid vs Invalid/Fake)
-                  _buildTestModeToggle(),
-                  const SizedBox(height: 14),
-
-                  // Big Prominent Green Tick / Red Cross Marker Header
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: _buildValidityHeader(isValid, primaryColor),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // Person Details Card
-                  _buildPersonDetailsCard(isValid, primaryColor),
-                  const SizedBox(height: 18),
-
-                  // DigiLocker Registered Documents Card
-                  _buildDigiLockerCrossRegistryCard(),
-                  const SizedBox(height: 18),
-
-                  // Anomalies / Security Notes if any
-                  if (_result.verificationAnomalies.isNotEmpty) ...[
-                    _buildAnomaliesCard(),
-                    const SizedBox(height: 18),
-                  ],
-
-                  // Action Buttons
-                  _buildActionButtons(isValid),
-                  const SizedBox(height: 24),
-                ],
-              ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Big Prominent Green Tick / Red Cross Marker Header
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: _buildValidityHeader(isValid, primaryColor),
             ),
-    );
-  }
+            const SizedBox(height: 18),
 
-  Widget _buildTestModeToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.tune_rounded, size: 16, color: AppTheme.textSecondary),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Test Verification Simulation:',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-          ),
-          ChoiceChip(
-            label: const Text('Valid 🇮🇳', style: TextStyle(fontSize: 11)),
-            selected: !_isSimulatingFake,
-            selectedColor: AppTheme.passGreen.withValues(alpha: 0.25),
-            onSelected: (val) {
-              if (val) _toggleSimulatedState(false);
-            },
-          ),
-          const SizedBox(width: 6),
-          ChoiceChip(
-            label: const Text('Fake / Expired ⚠️', style: TextStyle(fontSize: 11)),
-            selected: _isSimulatingFake,
-            selectedColor: AppTheme.rejectRed.withValues(alpha: 0.25),
-            onSelected: (val) {
-              if (val) _toggleSimulatedState(true);
-            },
-          ),
-        ],
+            // Person Details Card with actual captured image & extracted data
+            _buildPersonDetailsCard(isValid, primaryColor),
+            const SizedBox(height: 18),
+
+            // DigiLocker Registered Documents Card
+            _buildDigiLockerCrossRegistryCard(),
+            const SizedBox(height: 18),
+
+            // Anomalies / Discrepancies if any
+            if (_result.verificationAnomalies.isNotEmpty) ...[
+              _buildAnomaliesCard(),
+              const SizedBox(height: 18),
+            ],
+
+            // Action Buttons
+            _buildActionButtons(isValid),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -344,10 +273,10 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           const SizedBox(height: 12),
           Text(
             isValid
-                ? 'VALID & VERIFIED PERSON'
-                : 'INVALID / FAKE / EXPIRED ID',
+                ? 'GENUINE & VERIFIED DOCUMENT'
+                : 'DOCUMENT UNVERIFIED / UNREADABLE',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
               color: primaryColor,
               letterSpacing: 0.8,
@@ -356,8 +285,8 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           const SizedBox(height: 6),
           Text(
             isValid
-                ? 'Authenticated via DigiLocker Issuer API v1.13 • UIDAI PKCS#7 Verified'
-                : 'DigiLocker Pull API Verification Failed • Unauthenticated Credentials',
+                ? 'Structure & Checksums Verified • DigiLocker Issuer API v1.13 Authenticated'
+                : 'Document details could not be authenticated against Central Registry standards',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,
@@ -383,10 +312,11 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Person Photo Thumbnail
+              // Real Document Capture Preview Thumbnail
               Container(
-                width: 70,
-                height: 85,
+                width: 80,
+                height: 95,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
                   borderRadius: BorderRadius.circular(10),
@@ -394,21 +324,31 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                       color: primaryColor.withValues(alpha: 0.6), width: 1.5),
                 ),
                 child: Stack(
-                  alignment: Alignment.center,
+                  fit: StackFit.expand,
                   children: [
-                    const Icon(Icons.person_rounded,
-                        size: 46, color: AppTheme.textSecondary),
+                    if (widget.imagePath.isNotEmpty && !widget.imagePath.startsWith('simulated_'))
+                      (kIsWeb
+                          ? Image.network(widget.imagePath, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.document_scanner_rounded, size: 40, color: AppTheme.textSecondary))
+                          : Image.file(File(widget.imagePath), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.document_scanner_rounded, size: 40, color: AppTheme.textSecondary)))
+                    else
+                      const Center(
+                        child: Icon(Icons.document_scanner_rounded,
+                            size: 40, color: AppTheme.textSecondary),
+                      ),
                     Positioned(
                       bottom: 4,
+                      left: 4,
+                      right: 4,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                            horizontal: 4, vertical: 2),
                         decoration: BoxDecoration(
                           color: primaryColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          isValid ? 'LIVE' : 'FLAG',
+                          isValid ? 'GENUINE' : 'FLAGGED',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.bold,
@@ -422,32 +362,17 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
               ),
               const SizedBox(width: 14),
 
-              // Name, Native Name & Primary ID
+              // Name & Primary Document Number
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _result.personName,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
                     Text(
-                      _result.nativeName,
+                      _result.personName,
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.primaryCyan,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -465,7 +390,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textPrimary,
-                          letterSpacing: 1.0,
+                          letterSpacing: 0.8,
                         ),
                       ),
                     ),
@@ -478,20 +403,18 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           const Divider(color: AppTheme.border, height: 1),
           const SizedBox(height: 14),
 
-          // Detail Grid Items
+          // Real Document Fields
           _buildDetailRow('Document Type', _result.primaryDocType),
           const SizedBox(height: 8),
           _buildDetailRow('Date of Birth', _result.dateOfBirth),
           const SizedBox(height: 8),
           _buildDetailRow('Gender', _result.gender),
           const SizedBox(height: 8),
-          _buildDetailRow('Address', _result.address),
-          const SizedBox(height: 8),
           _buildDetailRow('DigiLocker ID', _result.digiLockerId),
           const SizedBox(height: 8),
           _buildDetailRow(
-            'Digital Signature',
-            _result.digitalSignatureValid ? 'VALID (Govt Root CA)' : 'INVALID / CORRUPTED',
+            'Cryptographic Signature',
+            _result.digitalSignatureValid ? 'VALID (Govt Root CA)' : 'UNVERIFIED / UNREADABLE',
             customColor: _result.digitalSignatureValid
                 ? AppTheme.passGreen
                 : AppTheme.rejectRed,
@@ -506,7 +429,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 110,
+          width: 120,
           child: Text(
             label,
             style: const TextStyle(
@@ -576,7 +499,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
           ),
           const SizedBox(height: 6),
           const Text(
-            'Official credentials linked to this individual across Central & State registries:',
+            'Official government registries cross-referenced for this genuine cardholder:',
             style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 14),
@@ -637,7 +560,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
-                        doc.isValid ? 'MATCH' : 'MISMATCH',
+                        doc.isValid ? 'MATCH' : 'UNMATCHED',
                         style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
@@ -690,7 +613,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                   color: AppTheme.rejectRed, size: 18),
               SizedBox(width: 8),
               Text(
-                'Identified Discrepancies & Fraud Indicators',
+                'Verification Notice & Discrepancies',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -752,7 +675,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                 Text(
                   isValid
                       ? 'PROCEED TO BIOMETRIC VERIFICATION'
-                      : 'PROCEED WITH FRAUD LOGGING',
+                      : 'PROCEED TO MANUAL INSPECTION',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -779,7 +702,7 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
               ),
             ),
             child: const Text(
-              'SCAN ANOTHER DOCUMENT',
+              'RE-SCAN DOCUMENT',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
