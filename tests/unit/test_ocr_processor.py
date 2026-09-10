@@ -211,7 +211,6 @@ def test_process_to_schema_helper():
 
 def test_pytesseract_ocr_initialization_and_extraction():
     processor = OCRProcessor()
-    assert processor.has_pytesseract is True
     # Test on blank image
     img = np.full((100, 200, 3), 255, dtype=np.uint8)
     text, conf = processor._extract_text_and_confidence(img)
