@@ -274,17 +274,17 @@
         // 3. Multi-Zone jsQR Scanning fallback
         if (!qrText) qrText = scanCanvasForQR(canvas);
 
-        // 4. Fast Card Crop OCR with persistent worker
+        // 4. Comprehensive Dual-Pass OCR (Card Crop + Full Canvas)
         if (window.Tesseract) {
-          ocrText = await runOCR(cardCanvas);
-
-          // If card crop did not detect sufficient text, try full canvas
-          if (!ocrText || ocrText.trim().length < 12) {
-            const fullText = await runOCR(canvas);
-            if (fullText && fullText.trim().length > (ocrText ? ocrText.trim().length : 0)) {
-              ocrText = fullText;
-            }
+          const cropText = await runOCR(cardCanvas);
+          let fullText = '';
+          const hasPan = /[A-Za-z0-9]{5}\s*[A-Za-z0-9]{4}\s*[A-Za-z0-9]/.test(cropText);
+          if (!hasPan || cropText.length < 30) {
+            try {
+              fullText = await runOCR(canvas);
+            } catch (e) {}
           }
+          ocrText = (cropText + '\n' + fullText).trim();
         }
       } catch (err) {
         console.error('performWebOCR general error:', err);
@@ -292,6 +292,15 @@
 
       return JSON.stringify({ qr: qrText, ocr: ocrText });
     };
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let r of registrations) {
+          r.unregister();
+        }
+      });
+    }
   </script>
 </head>
 <body>
