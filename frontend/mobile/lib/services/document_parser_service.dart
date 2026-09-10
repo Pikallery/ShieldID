@@ -510,16 +510,31 @@ class DocumentParserService {
             }
 
             if (docNumber.isEmpty) {
-              // Check for fuzzy character substitutions in candidate tokens
-              final tokens = upper.split(RegExp(r'[\s,:\/\-]+'));
-              for (final token in tokens) {
-                if (token.length == 10) {
-                  final fixed = tryFixPanSubstitutions(token);
-                  if (fixed != null) {
-                    docNumber = fixed;
-                    break;
+              // Check for spaced characters like "S F A P S 5 0 8 4 D"
+              final spacedLetters = RegExp(r'([A-Z0-9]\s+){9}[A-Z0-9]').firstMatch(upper);
+              if (spacedLetters != null) {
+                final condensed = spacedLetters.group(0)!.replaceAll(RegExp(r'\s+'), '');
+                final fixed = tryFixPanSubstitutions(condensed);
+                if (fixed != null) docNumber = fixed;
+              }
+            }
+
+            if (docNumber.isEmpty) {
+              // Sliding 10-character window across any alphanumeric sequence in the OCR text
+              final cleanedStream = upper.replaceAll(RegExp(r'[^A-Z0-9]'), ' ');
+              final words = cleanedStream.split(RegExp(r'\s+'));
+              for (final word in words) {
+                if (word.length >= 10) {
+                  for (int i = 0; i <= word.length - 10; i++) {
+                    final sub = word.substring(i, i + 10);
+                    final fixed = tryFixPanSubstitutions(sub);
+                    if (fixed != null) {
+                      docNumber = fixed;
+                      break;
+                    }
                   }
                 }
+                if (docNumber.isNotEmpty) break;
               }
             }
           }
@@ -537,7 +552,21 @@ class DocumentParserService {
         if (fullName.isEmpty) {
           final candidateNames = <String>[];
 
-          // Priority candidate: look immediately after "Name" / "NAME :" label (without "Father")
+          // Priority Candidate 1: Line directly PRECEDING "Father" / "Father's Name"
+          for (int i = 1; i < lines.length; i++) {
+            final lineUpper = lines[i].toUpperCase();
+            if (lineUpper.contains('FATHER') || lineUpper.contains('FATHERS')) {
+              final prevLine = lines[i - 1];
+              if (!_looksLikePanNumber(prevLine) && !isHeaderOrNoiseLine(prevLine)) {
+                final sanitized = sanitizeExtractedName(prevLine, docNumber);
+                if (sanitized.isNotEmpty && isValidHumanName(sanitized)) {
+                  candidateNames.insert(0, sanitized);
+                }
+              }
+            }
+          }
+
+          // Priority Candidate 2: look immediately after "Name" / "NAME :" label (without "Father")
           final panNameMatch = RegExp(
             r'(?:^|\n)\s*(?<!Father[\x27s\s]*)(?:Name|NAME)\s*[:.]?\s*([A-Za-z][A-Za-z\s\.]{2,40})',
             caseSensitive: false, multiLine: true,

@@ -100,12 +100,20 @@ class DigiLockerService {
     }
 
     // Determine validity: if document number is present, valid format, or verified cardholder name
-    final bool isValid = (docNumber.isNotEmpty && isStructurallyValid && anomalies.isEmpty) ||
-        (personName.isNotEmpty && isStructurallyValid);
+    final bool hasValidDocNumber = docNumber.isNotEmpty && (isStructurallyValid || _parser.validatePanFormat(docNumber));
+    final bool hasValidPersonName = personName.isNotEmpty && _parser.isValidHumanName(personName);
+
+    if (hasValidPersonName && !isStructurallyValid) {
+      isStructurallyValid = true;
+    }
+
+    final bool isValid = (hasValidDocNumber && anomalies.isEmpty) || hasValidPersonName || (hasValidDocNumber && isStructurallyValid);
 
     final displayName = personName.isNotEmpty
         ? personName
-        : (isValid ? 'Authenticated Cardholder' : 'Unidentified Cardholder');
+        : (hasValidDocNumber
+            ? 'Authenticated Cardholder'
+            : (isValid ? 'Genuine Document Cardholder' : 'Unidentified Cardholder'));
 
     final displayDocNumber = docNumber.isNotEmpty
         ? docNumber

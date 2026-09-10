@@ -713,7 +713,9 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
 
   void _showManualEntryModal() {
     final nameCtrl = TextEditingController(
-      text: _result.personName == 'Unidentified Cardholder' || _result.personName == 'Authenticated Cardholder'
+      text: _result.personName == 'Unidentified Cardholder' ||
+              _result.personName == 'Authenticated Cardholder' ||
+              _result.personName == 'Genuine Document Cardholder'
           ? ''
           : _result.personName,
     );
