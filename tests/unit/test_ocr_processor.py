@@ -207,3 +207,14 @@ def test_process_to_schema_helper():
     img = np.full((150, 300, 3), 240, dtype=np.uint8)
     schema_res = processor.process_to_schema(img)
     assert isinstance(schema_res, OCRResult)
+
+
+def test_pytesseract_ocr_initialization_and_extraction():
+    processor = OCRProcessor()
+    assert processor.has_pytesseract is True
+    # Test on blank image
+    img = np.full((100, 200, 3), 255, dtype=np.uint8)
+    text, conf = processor._extract_text_and_confidence(img)
+    assert isinstance(text, str)
+    assert isinstance(conf, float)
+

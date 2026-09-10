@@ -11,7 +11,9 @@ and specialized heuristic/regex parsing for:
 """
 
 import logging
+import os
 import re
+import shutil
 from datetime import date
 from typing import Any
 
@@ -48,12 +50,40 @@ class OCRProcessor(BaseProcessor):
         self.languages = languages or ["en", "hi"]
         self.gpu = gpu
         self.reader = None
+        self.has_pytesseract = False
+        self._init_pytesseract()
+
+    def _init_pytesseract(self):
+        """Configure pytesseract binary path if available."""
+        try:
+            import pytesseract
+
+            # Auto-detect Tesseract executable on Windows or Linux
+            if not shutil.which("tesseract"):
+                common_paths = [
+                    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+                    os.path.expanduser(r"~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"),
+                    "/usr/bin/tesseract",
+                    "/usr/local/bin/tesseract",
+                ]
+                for path in common_paths:
+                    if os.path.exists(path):
+                        pytesseract.pytesseract.tesseract_cmd = path
+                        break
+
+            self.has_pytesseract = True
+            logger.info("PyTesseract OCR engine initialized successfully.")
+        except (ImportError, OSError, RuntimeError) as e:
+            logger.warning(f"PyTesseract not available: {e}")
+            self.has_pytesseract = False
 
     def load_model(self):
         """
-        Load EasyOCR reader model from disk / models directory.
-        Falls back gracefully if easyocr or torch is not installed in the environment.
+        Load OCR engines (PyTesseract & EasyOCR).
+        Falls back gracefully if an engine is not installed in the environment.
         """
+        self.is_loaded = True
         try:
             import easyocr
 
@@ -67,16 +97,14 @@ class OCRProcessor(BaseProcessor):
                 download_enabled=True,
             )
             self.model = self.reader
-            self.is_loaded = True
             logger.info("EasyOCR Reader loaded successfully.")
         except ImportError as e:
             logger.warning(
                 f"EasyOCR or PyTorch not available in current environment: {e}. "
-                "Running in fallback text-parser mode."
+                "PyTesseract will be used for optical recognition."
             )
             self.reader = None
             self.model = None
-            self.is_loaded = True
 
     def preprocess(self, input_data: Any) -> np.ndarray:
         """
@@ -107,25 +135,72 @@ class OCRProcessor(BaseProcessor):
 
     def _extract_text_and_confidence(self, image: np.ndarray) -> tuple[str, float]:
         """
-        Run EasyOCR Reader if available; otherwise return placeholder / inspect image.
+        Run PyTesseract as primary OCR engine; fallback to EasyOCR if needed.
         """
+        # 1. Primary Engine: PyTesseract
+        if self.has_pytesseract:
+            try:
+                import pytesseract
+                from PIL import Image
+
+                if isinstance(image, np.ndarray):
+                    # Convert BGR/Grayscale OpenCV image to RGB PIL Image
+                    if len(image.shape) == 2:
+                        pil_img = Image.fromarray(image).convert("RGB")
+                    elif len(image.shape) == 3 and image.shape[2] == 3:
+                        import cv2
+                        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                        pil_img = Image.fromarray(rgb)
+                    else:
+                        pil_img = Image.fromarray(image)
+                elif isinstance(image, Image.Image):
+                    pil_img = image
+                else:
+                    pil_img = None
+
+                if pil_img is not None:
+                    # Extract structured word data with confidence scores
+                    data = pytesseract.image_to_data(
+                        pil_img, output_type=pytesseract.Output.DICT
+                    )
+                    words = []
+                    conf_scores = []
+                    for text, conf in zip(data["text"], data["conf"], strict=False):
+                        text_str = str(text).strip()
+                        conf_val = float(conf)
+                        if text_str and conf_val > 0:
+                            words.append(text_str)
+                            conf_scores.append(conf_val / 100.0)
+
+                    # Also fetch full string layout
+                    full_text = pytesseract.image_to_string(pil_img).strip()
+                    raw_text = full_text if full_text else " ".join(words)
+                    avg_conf = float(np.mean(conf_scores)) if conf_scores else 0.90
+                    if raw_text:
+                        return raw_text, round(avg_conf, 4)
+            except (ImportError, OSError, RuntimeError, ValueError, KeyError) as e:
+                logger.warning(f"PyTesseract extraction exception: {e}")
+
+        # 2. Secondary Engine: EasyOCR
         if self.reader is not None:
-            results = self.reader.readtext(image)
-            # results is list of (bbox, text, prob)
-            lines = []
-            scores = []
-            for item in results:
-                text = item[1].strip()
-                prob = float(item[2])
-                if text:
-                    lines.append(text)
-                    scores.append(prob)
+            try:
+                results = self.reader.readtext(image)
+                lines = []
+                scores = []
+                for item in results:
+                    text = item[1].strip()
+                    prob = float(item[2])
+                    if text:
+                        lines.append(text)
+                        scores.append(prob)
 
-            raw_text = "\n".join(lines)
-            avg_score = float(np.mean(scores)) if scores else 0.0
-            return raw_text, round(avg_score, 4)
+                raw_text = "\n".join(lines)
+                avg_score = float(np.mean(scores)) if scores else 0.0
+                return raw_text, round(avg_score, 4)
+            except (ImportError, OSError, RuntimeError, ValueError, KeyError) as e:
+                logger.warning(f"EasyOCR extraction exception: {e}")
 
-        # Fallback if EasyOCR is not installed in local environment
+        # Fallback if engines return empty
         return "", 0.0
 
     # ── Document Parsing & Classification ────────────────────────────────
