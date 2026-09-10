@@ -4,206 +4,204 @@
 
 <h1 align="center">ShieldID</h1>
 
-<p align="center"><strong>AI-powered identity verification and document fraud screening</strong></p>
-
-<p align="center">Scan documents, validate identity, detect tampering, and make safer KYC decisions from one connected platform.</p>
-
 <p align="center">
-	<a href="https://github.com/Pikallery/ShieldID/actions">CI</a> ·
-	<a href="docs/API_SPEC.md">API specification</a> ·
-	<a href="docs/DEPLOYMENT_GUIDE.md">Deployment guide</a>
+  <strong>AI-Powered Identity Verification, Tamper Detection & Fraud Screening Platform</strong>
 </p>
 
-## What ShieldID Does
+<p align="center">
+  Scan documents, validate biometric liveness, detect digital tampering, and automate real-time KYC risk decisions.
+</p>
 
-ShieldID combines document intelligence, face verification, liveness checks, tamper analysis, risk scoring, and KYC workflows for identity screening across Indian identity documents such as Aadhaar, passport, PAN, driving licence, and voter ID.
+<p align="center">
+  <a href="https://shieldid-api.onrender.com/health"><img src="https://img.shields.io/badge/Render-API%20Live-brightgreen?style=for-the-badge&logo=render" alt="Render API Status"></a>
+  <a href="https://shieldid-api.onrender.com/api/docs"><img src="https://img.shields.io/badge/Swagger%20UI-Interactive%20Docs-009688?style=for-the-badge&logo=swagger" alt="API Docs"></a>
+  <a href="https://github.com/Pikallery/ShieldID/actions"><img src="https://img.shields.io/badge/Tests-163%2F163%20Passing-success?style=for-the-badge&logo=pytest" alt="Test Status"></a>
+  <a href="https://flutter.dev"><img src="https://img.shields.io/badge/Flutter%20Web-Mobile%20Ready-02569B?style=for-the-badge&logo=flutter" alt="Flutter Ready"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License MIT"></a>
+</p>
 
-The system is designed for three real-world surfaces:
+---
 
-| Surface | Purpose | Entry point |
-| --- | --- | --- |
-| Desktop dashboard | Review screening activity, risk signals, and verification results | `/` |
-| Verification kiosk | Guided self-service capture flow for a counter or reception device | `/kiosk.html` |
-| Mobile app | Capture documents and biometrics from a phone | `/mobile/` or the installed Flutter app |
+## 🚀 Live Deployments & Quick Access
 
-## Demo Routing
+ShieldID is deployed across scalable cloud infrastructure. All services and client interfaces are accessible below:
 
-When the hosted root URL is opened, the web entry point selects the experience automatically:
+| Surface / Service | Platform | Purpose | Live Link |
+|---|---|---|---|
+| **Backend REST API** | ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=black) | Production FastAPI async engine & PostgreSQL | [`shieldid-api.onrender.com`](https://shieldid-api.onrender.com/health) |
+| **Interactive API Documentation** | ![Swagger](https://img.shields.io/badge/Swagger_UI-85EA2D?style=flat-square&logo=swagger&logoColor=black) | Test live endpoints & verify schemas in browser | [`/api/docs`](https://shieldid-api.onrender.com/api/docs) |
+| **Alternative API Reference** | ![ReDoc](https://img.shields.io/badge/ReDoc-FF6154?style=flat-square&logo=redoc&logoColor=white) | Clean, production-ready technical specification | [`/api/redoc`](https://shieldid-api.onrender.com/api/redoc) |
+| **Admin Screening Dashboard** | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white) | Desktop compliance dashboard, analytics & manual review | [Open Dashboard (`/`)](#-web--mobile-routing) |
+| **Mobile Web Scanner** | ![Flutter](https://img.shields.io/badge/Flutter_Web-02569B?style=flat-square&logo=flutter&logoColor=white) | Cross-platform document & biometric camera scanner | [Open Mobile App (`/mobile/`)](#-web--mobile-routing) |
+| **Verification Kiosk Flow** | ![Web](https://img.shields.io/badge/Kiosk_Mode-182421?style=flat-square&logo=googlechrome&logoColor=white) | Self-service kiosk interface for reception devices | [Open Kiosk (`/kiosk.html`)](#-web--mobile-routing) |
 
-- Phones and tablets are redirected from `/` to `/mobile/`.
-- Desktop browsers stay on the React dashboard at `/`.
-- The dashboard opens the kiosk flow at `/kiosk.html`.
-- `/?mobile=1` forces the mobile route for testing.
-- `/?desktop=1` forces the desktop dashboard for testing.
+---
 
-All three experiences can use the same domain. The Flutter web build must be deployed under `/mobile/` for phone routing to work.
+## 📱 Web & Mobile Routing
 
-## Core Capabilities
+The frontend features **intelligent client routing** from a single unified deployment:
 
-- **Document verification:** OCR extraction, document classification, confidence scoring, and structured identity data.
-- **Tamper analysis:** Detection signals for copy-move edits, photo swaps, altered text, forged stamps, and suspicious document structure.
-- **Face verification:** Face matching, liveness challenges, facial landmark overlays, and similarity scoring.
-- **Risk decisions:** Pass, review, or reject outcomes with explainable signals and a visual risk gauge.
-- **KYC workflows:** Consent-driven verification, QR tokens, status polling, and audit-ready results.
-- **Currency screening:** A processor path for checking banknote authenticity features.
-- **Fraud reporting:** Structured fraud reports and downstream case information.
-- **Modular processing:** Shared processor abstractions make OCR, face, tampering, currency, and predictive modules extensible.
-
-## Architecture
-
-```text
-										+-----------------------------+
-										|        ShieldID API         |
-										| FastAPI + verification flow |
-										+-------------+---------------+
-																	|
-			 +--------------------------+--------------------------+
-			 |                          |                          |
-	React dashboard            Kiosk web flow             Flutter mobile
-			 |                          |                          |
-			 +--------------------------+--------------------------+
-																	|
-							OCR | face | liveness | tampering | risk
-																	|
-								 PostgreSQL + Redis + model artifacts
+```mermaid
+graph TD
+    A[Visitor Enters Frontend Domain] --> B{Device Type?}
+    B -->|Mobile / Tablet Browser| C["📱 /mobile/ (Flutter Web App)"]
+    B -->|Desktop Browser| D["💻 / (React Screening Dashboard)"]
+    D --> E["🖥️ /kiosk.html (Self-Service Kiosk)"]
+    D --> F["📖 /docs.html (Embedded API Specs)"]
 ```
 
-## Technology Stack
+- **Smart Device Detection**: Visiting the root URL on a smartphone automatically routes to the native **Flutter Mobile Experience** (`/mobile/`).
+- **Desktop Override**: Append `?desktop=1` to force the Desktop Dashboard on any device.
+- **Mobile Override**: Append `?mobile=1` to preview the Mobile Flutter UI on desktop.
 
-| Area | Technologies |
-| --- | --- |
-| API | FastAPI, Uvicorn, Pydantic v2 |
-| Data | PostgreSQL, SQLAlchemy, asyncpg, Redis |
-| AI processing | OpenCV, NumPy, Pillow, model artifacts in `models/` |
-| Desktop and kiosk web | React, Vite, HTML, CSS, JavaScript |
-| Mobile | Flutter and Dart |
-| Delivery | Docker, Docker Compose, Kubernetes manifests, GitHub Actions |
+---
 
-## Repository Layout
+## ⚡ Core Capabilities
+
+- **Document Verification**: OCR extraction, document classification (Aadhaar, Passport, PAN, Driving Licence, Voter ID), MRZ parsing, and structured identity data.
+- **Tamper Analysis**: Error Level Analysis (ELA), digital splice detection, text font inconsistencies, stamp copy-move, and edge geometry verification.
+- **Face Verification & Liveness**: 1:1 facial embedding matching, 3D landmark analysis, blink detection, and anti-spoofing challenges.
+- **Explainable Risk Engine**: Automated `PASS`, `REVIEW`, or `REJECT` recommendations with weighted risk scores and visual breakdown.
+- **KYC Sessions**: QR token workflows, status polling, and encrypted audit trail logging.
+- **Currency Authenticity**: Banknote security thread, watermark, and microprinting verification.
+- **Fraud Reporting**: Instant FIR dispatch logging with geographical coordinates.
+
+---
+
+## 🏗️ System Architecture
+
+```text
+                                  +-----------------------------+
+                                  |     ShieldID Backend API    |
+                                  |    FastAPI + Uvicorn + DB   |
+                                  +--------------+--------------+
+                                                 |
+                   +-----------------------------+-----------------------------+
+                   |                             |                             |
+      +------------v------------+   +------------v------------+   +------------v------------+
+      |  React Admin Dashboard  |   |  Self-Service Kiosk UI  |   |  Flutter Mobile Web App |
+      |     Desktop Surface     |   |      Counter Device     |   |     Camera & Capture    |
+      +-------------------------+   +-------------------------+   +-------------------------+
+                   |                             |                             |
+                   +-----------------------------+-----------------------------+
+                                                 |
+                        +------------------------v------------------------+
+                        |   Async AI Pipeline: OCR | Face | Tampering    |
+                        |     PostgreSQL (Asyncpg) + Redis + Alembic      |
+                        +-------------------------------------------------+
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Stack |
+|---|---|
+| **Backend API** | FastAPI, Uvicorn, Pydantic v2, Python 3.10+ |
+| **Database & Cache** | PostgreSQL, SQLAlchemy 2.0 (Async), Asyncpg, Alembic, Redis |
+| **Computer Vision & AI** | OpenCV, NumPy, Pillow, Scikit-Image, DeepFace |
+| **Desktop Web & Kiosk** | React 18, Vite, Vanilla CSS, HTML5 Canvas |
+| **Mobile Client** | Flutter 3.x, Dart, Material Design 3, Camera Plugin |
+| **Hosting & CI/CD** | Render (Docker Web Service & Managed Postgres), Vercel (Frontend SPA & Flutter Web), GitHub Actions |
+
+---
+
+## 📂 Repository Layout
 
 ```text
 ShieldID/
-├── src/                         FastAPI application, processors, schemas, services
-├── tests/                       Unit and integration tests
-├── models/                      AI model artifacts and processor configuration
-├── migrations/                  Alembic database migrations
+├── src/                         FastAPI backend application
+│   ├── api/v1/                  API route handlers (verify, kyc, report, analytics)
+│   ├── core/                    Config, database engines, security, logging
+│   ├── models/                  SQLAlchemy ORM models
+│   ├── processors/              AI modules (OCR, face matching, ELA tampering, currency)
+│   ├── schemas/                 Pydantic request/response validation models
+│   └── services/                Business logic and database orchestration
 ├── frontend/
-│   ├── dashboard/               React dashboard, kiosk page, and API docs page
-│   └── mobile/                  Flutter app, web shell, icons, and widget tests
-├── docs/                        API, database, and deployment documentation
-├── deployment/                  Docker and Kubernetes deployment files
-├── docker-compose.yml           API, PostgreSQL, and Redis development stack
-├── requirements.txt             Python dependencies
-└── README.md
+│   ├── dashboard/               React dashboard, kiosk flow & Vercel deployment shell
+│   │   ├── public/mobile/       Pre-compiled Flutter Web distribution
+│   │   └── vercel.json          SPA & multi-surface routing configuration
+│   └── mobile/                  Flutter mobile source code (Dart, widgets, themes)
+├── tests/                       Full test suite (163 passing tests)
+│   ├── integration/             API endpoints & database integration tests
+│   └── unit/                    Processor, schema & config unit tests
+├── Dockerfile                   Production Docker container definition
+├── start.sh                     Container entrypoint for migrations & Uvicorn startup
+└── requirements.txt             Backend Python dependencies
 ```
 
-## Quick Start
+---
 
-### Prerequisites
+## 💻 Local Development Setup
 
-- Python 3.10 or newer
-- Git
-- Node.js 18 or newer for the dashboard
-- Flutter 3.x for the mobile app
-- Docker Desktop for PostgreSQL and Redis
+### 1. Prerequisites
+- Python 3.10+
+- Node.js 18+
+- Flutter SDK (optional, for mobile app development)
+- Docker Desktop (optional, for local Postgres/Redis)
 
-### Backend
-
+### 2. Backend Setup
 ```bash
+# Clone the repository
 git clone https://github.com/Pikallery/ShieldID.git
 cd ShieldID
 
+# Create and activate virtual environment
 python -m venv venv
+venv\Scripts\activate   # Windows
+# source venv/bin/activate # macOS/Linux
 
-# Windows
-venv\Scripts\activate
-
-# Linux/macOS
-source venv/bin/activate
-
+# Install dependencies
 pip install -r requirements.txt
+
+# Start database services with Docker (or use external Postgres)
 docker compose up -d db redis
+
+# Run FastAPI dev server
 uvicorn src.main:app --reload --port 8080
 ```
+- API Health: [`http://localhost:8080/health`](http://localhost:8080/health)
+- API Docs: [`http://localhost:8080/api/docs`](http://localhost:8080/api/docs)
 
-API documentation: [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
-
-To run the complete backend stack in containers:
-
-```bash
-docker compose up --build
-```
-
-### React dashboard and kiosk
-
+### 3. Frontend Dashboard Setup
 ```bash
 cd frontend/dashboard
 npm install
 npm run dev
 ```
+Open `http://localhost:5173/` in your browser.
 
-Open the Vite URL shown in the terminal. The dashboard is at `/`, the kiosk is at `/kiosk.html`, and API documentation is at `/docs.html`.
-
-### Flutter mobile app
-
+### 4. Flutter Mobile Setup
 ```bash
 cd frontend/mobile
 flutter pub get
-flutter run
+flutter run -d chrome    # Run in browser
+# flutter run            # Run on connected Android / iOS device
 ```
 
-For a hosted mobile web build:
+---
+
+## 🧪 Testing & Verification
+
+Run the full automated test suite:
 
 ```bash
-flutter build web --release --base-href /mobile/
+# Run all 163 backend unit and integration tests
+pytest
+
+# Check code linting and formatting
+ruff check src tests
+ruff format --check src tests
+
+# Test frontend dashboard production build
+npm --prefix frontend/dashboard run build
+
+# Run Flutter static analysis & tests
+cd frontend/mobile && flutter analyze && flutter test
 ```
 
-Deploy the contents of `frontend/mobile/build/web` under the `/mobile/` path of the same host as the dashboard.
+---
 
-## API Surface
+## 📄 License
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/` | Service status |
-| `GET` | `/health` | Health check |
-| `POST` | `/api/v1/verify/document` | Verify a document and optional selfie |
-| `GET` | `/api/v1/verify/status/{id}` | Poll verification status |
-| `POST` | `/api/v1/kyc/instant` | Start an instant KYC flow |
-| `POST` | `/api/v1/report/fake` | Submit a fraudulent-document report |
-
-Interactive API references are available at `/api/docs` and `/api/redoc` when the backend is running.
-
-## Verification and Tests
-
-Run backend checks from the repository root:
-
-```bash
-ruff check src/
-pytest tests/ -v --cov=src
-```
-
-Run dashboard checks:
-
-```bash
-cd frontend/dashboard
-npm run build
-```
-
-Run Flutter checks:
-
-```bash
-cd frontend/mobile
-flutter test
-flutter analyze
-```
-
-## Documentation
-
-- [API specification](docs/API_SPEC.md)
-- [Database schema](docs/DATABASE_SCHEMA.md)
-- [Deployment guide](docs/DEPLOYMENT_GUIDE.md)
-- [Mobile app guide](frontend/mobile/README.md)
-
-## License
-
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
