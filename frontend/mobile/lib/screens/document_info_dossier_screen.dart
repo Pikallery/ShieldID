@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/digilocker_model.dart';
 import '../models/document_model.dart';
+import '../services/digilocker_service.dart';
 import '../services/screening_service.dart';
 import 'anti_tamper_screen.dart';
 import 'liveness_detection_screen.dart';
@@ -652,6 +653,142 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
     );
   }
 
+  void _showManualEntryModal() {
+    final nameCtrl = TextEditingController(
+      text: _result.personName == 'Unidentified Cardholder' || _result.personName == 'Authenticated Cardholder'
+          ? ''
+          : _result.personName,
+    );
+    final numCtrl = TextEditingController(
+      text: _result.primaryDocNumber == 'Scan Incomplete / Unreadable'
+          ? ''
+          : _result.primaryDocNumber,
+    );
+    final dobCtrl = TextEditingController(
+      text: _result.dateOfBirth == 'On File with Issuer'
+          ? ''
+          : _result.dateOfBirth,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceElevated,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.edit_note_rounded,
+                    color: AppTheme.primaryCyan, size: 24),
+                const SizedBox(width: 8),
+                const Text(
+                  'Confirm / Enter Document Details',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close,
+                      color: AppTheme.textSecondary, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: nameCtrl,
+              textCapitalization: TextCapitalization.words,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
+                labelText: 'Full Name (as printed on card)',
+                hintText: 'e.g. SAI PRADYUMNA SAMAL',
+                prefixIcon: Icon(Icons.person_outline_rounded,
+                    color: AppTheme.primaryCyan),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: numCtrl,
+              textCapitalization: TextCapitalization.characters,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                labelText: '${widget.docType.shortName} Number',
+                hintText: widget.docType == DocumentType.residencePermit
+                    ? 'e.g. ABCPS1234F'
+                    : '12-digit UID or ID number',
+                prefixIcon: const Icon(Icons.badge_outlined,
+                    color: AppTheme.primaryCyan),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: dobCtrl,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: const InputDecoration(
+                labelText: 'Date of Birth (DD/MM/YYYY)',
+                hintText: 'e.g. 31/10/2005',
+                prefixIcon:
+                    Icon(Icons.cake_outlined, color: AppTheme.primaryCyan),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final manualData = ExtractedDocumentData(
+                    documentNumber: numCtrl.text.trim().toUpperCase(),
+                    fullName: nameCtrl.text.trim().toUpperCase(),
+                    dateOfBirth: dobCtrl.text.trim(),
+                    dateOfExpiry: '',
+                    dateOfIssue: '',
+                    gender: 'Specified in Registry',
+                    nationality: 'Indian',
+                    issuingCountry: 'India',
+                  );
+                  final updatedResult =
+                      await DigiLockerService().verifyDocumentAndPullRecords(
+                    docType: widget.docType,
+                    extractedData: manualData,
+                    imagePath: widget.imagePath,
+                  );
+                  setState(() {
+                    _result = updatedResult;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryCyan,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('AUTHENTICATE WITH DIGILOCKER',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(bool isValid) {
     return Column(
       children: [
@@ -685,6 +822,30 @@ class _DocumentInfoDossierScreenState extends State<DocumentInfoDossierScreen>
                 const SizedBox(width: 8),
                 const Icon(Icons.arrow_forward_rounded, size: 18),
               ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _showManualEntryModal,
+            icon: const Icon(Icons.edit_note_rounded,
+                color: AppTheme.primaryCyan, size: 18),
+            label: const Text(
+              'CONFIRM / EDIT DETAILS MANUALLY',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: AppTheme.primaryCyan,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppTheme.primaryCyan),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ),

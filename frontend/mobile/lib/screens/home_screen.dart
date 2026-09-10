@@ -8,6 +8,8 @@ import 'history_screen.dart';
 import 'settings_screen.dart';
 import 'verification_result_screen.dart';
 
+import '../l10n/app_localizations.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final pages = [
       const _HomeDashboardTab(),
       const HistoryScreen(),
@@ -45,25 +48,25 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedFontSize: 12,
           unselectedFontSize: 11,
           type: BottomNavigationBarType.fixed,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.shield_outlined, semanticLabel: 'Screening tab'),
-              activeIcon: Icon(Icons.shield_rounded,
+              icon: const Icon(Icons.shield_outlined, semanticLabel: 'Screening tab'),
+              activeIcon: const Icon(Icons.shield_rounded,
                   semanticLabel: 'Screening tab selected'),
-              label: 'Screening',
+              label: l10n.screeningTab,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_rounded,
+              icon: const Icon(Icons.history_rounded,
                   semanticLabel: 'Audit history tab'),
-              activeIcon: Icon(Icons.manage_search_rounded,
+              activeIcon: const Icon(Icons.manage_search_rounded,
                   semanticLabel: 'Audit history tab selected'),
-              label: 'Audit History',
+              label: l10n.auditHistoryTab,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.tune_rounded, semanticLabel: 'Settings tab'),
-              activeIcon: Icon(Icons.settings_rounded,
+              icon: const Icon(Icons.tune_rounded, semanticLabel: 'Settings tab'),
+              activeIcon: const Icon(Icons.settings_rounded,
                   semanticLabel: 'Settings tab selected'),
-              label: 'Settings',
+              label: l10n.settingsTab,
             ),
           ],
         ),

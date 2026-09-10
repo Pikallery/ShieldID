@@ -45,6 +45,84 @@ class AppLocalizationsMr extends AppLocalizations {
   String get noMatchingRecords => 'कोणतीही जुळणी सापडली नाही';
 
   @override
+  String get screeningTab => 'Screening';
+
+  @override
+  String get auditHistoryTab => 'Audit History';
+
+  @override
+  String get settingsTab => 'Settings';
+
+  @override
+  String get startScreening => 'Start Document Screening';
+
+  @override
+  String get systemConfiguration => 'System Configuration';
+
+  @override
+  String get appearancePreferences => 'Appearance & Preferences';
+
+  @override
+  String get darkTheme => 'Dark Theme';
+
+  @override
+  String get darkThemeSubtitle => 'Sleek dark interface active';
+
+  @override
+  String get lightThemeSubtitle => 'High-contrast light interface active';
+
+  @override
+  String get interfaceLanguage => 'Interface Language';
+
+  @override
+  String get chooseLocale => 'Choose your preferred locale';
+
+  @override
+  String get backendService => 'Backend AI Service';
+
+  @override
+  String get selectDocumentType => 'Select Document Type';
+
+  @override
+  String get nationalIdAadhaar => 'Aadhaar Card';
+
+  @override
+  String get panCard => 'PAN Card';
+
+  @override
+  String get drivingLicense => 'Driving License';
+
+  @override
+  String get passport => 'Passport';
+
+  @override
+  String get voterId => 'Voter ID';
+
+  @override
+  String get verifiedCardholder => 'Authenticated Cardholder';
+
+  @override
+  String get unverifiedCardholder => 'Unidentified Cardholder';
+
+  @override
+  String get documentVerified => 'GENUINE DOCUMENT VERIFIED';
+
+  @override
+  String get documentUnverified => 'DOCUMENT UNVERIFIED / UNREADABLE';
+
+  @override
+  String get editDetailsManually => 'Edit / Enter Details Manually';
+
+  @override
+  String get crossRegisteredDocs => 'Cross-Registered Documents in DigiLocker';
+
+  @override
+  String get proceedToBiometrics => 'Proceed to Biometrics';
+
+  @override
+  String get reScanDocument => 'Re-Scan Document';
+
+  @override
   String verdict(String status) {
     return '$status';
   }

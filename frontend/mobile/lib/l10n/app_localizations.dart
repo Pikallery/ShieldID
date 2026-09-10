@@ -188,6 +188,162 @@ abstract class AppLocalizations {
   /// **'No matching records'**
   String get noMatchingRecords;
 
+  /// No description provided for @screeningTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Screening'**
+  String get screeningTab;
+
+  /// No description provided for @auditHistoryTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit History'**
+  String get auditHistoryTab;
+
+  /// No description provided for @settingsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTab;
+
+  /// No description provided for @startScreening.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Document Screening'**
+  String get startScreening;
+
+  /// No description provided for @systemConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'System Configuration'**
+  String get systemConfiguration;
+
+  /// No description provided for @appearancePreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance & Preferences'**
+  String get appearancePreferences;
+
+  /// No description provided for @darkTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Theme'**
+  String get darkTheme;
+
+  /// No description provided for @darkThemeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleek dark interface active'**
+  String get darkThemeSubtitle;
+
+  /// No description provided for @lightThemeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'High-contrast light interface active'**
+  String get lightThemeSubtitle;
+
+  /// No description provided for @interfaceLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface Language'**
+  String get interfaceLanguage;
+
+  /// No description provided for @chooseLocale.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your preferred locale'**
+  String get chooseLocale;
+
+  /// No description provided for @backendService.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend AI Service'**
+  String get backendService;
+
+  /// No description provided for @selectDocumentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Document Type'**
+  String get selectDocumentType;
+
+  /// No description provided for @nationalIdAadhaar.
+  ///
+  /// In en, this message translates to:
+  /// **'Aadhaar Card'**
+  String get nationalIdAadhaar;
+
+  /// No description provided for @panCard.
+  ///
+  /// In en, this message translates to:
+  /// **'PAN Card'**
+  String get panCard;
+
+  /// No description provided for @drivingLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Driving License'**
+  String get drivingLicense;
+
+  /// No description provided for @passport.
+  ///
+  /// In en, this message translates to:
+  /// **'Passport'**
+  String get passport;
+
+  /// No description provided for @voterId.
+  ///
+  /// In en, this message translates to:
+  /// **'Voter ID'**
+  String get voterId;
+
+  /// No description provided for @verifiedCardholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticated Cardholder'**
+  String get verifiedCardholder;
+
+  /// No description provided for @unverifiedCardholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Unidentified Cardholder'**
+  String get unverifiedCardholder;
+
+  /// No description provided for @documentVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'GENUINE DOCUMENT VERIFIED'**
+  String get documentVerified;
+
+  /// No description provided for @documentUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'DOCUMENT UNVERIFIED / UNREADABLE'**
+  String get documentUnverified;
+
+  /// No description provided for @editDetailsManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit / Enter Details Manually'**
+  String get editDetailsManually;
+
+  /// No description provided for @crossRegisteredDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Cross-Registered Documents in DigiLocker'**
+  String get crossRegisteredDocs;
+
+  /// No description provided for @proceedToBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed to Biometrics'**
+  String get proceedToBiometrics;
+
+  /// No description provided for @reScanDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-Scan Document'**
+  String get reScanDocument;
+
   /// No description provided for @verdict.
   ///
   /// In en, this message translates to:

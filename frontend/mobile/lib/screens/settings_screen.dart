@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
+import '../l10n/app_localizations.dart';
 import '../models/verification_result.dart';
 import '../services/screening_service.dart';
 import '../services/settings_service.dart';
@@ -32,10 +33,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final screeningService = context.watch<ScreeningService>();
     final settingsService = context.watch<SettingsService>();
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('System Configuration'),
+        title: Text(l10n.systemConfiguration),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -43,9 +45,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Appearance & Preferences Section
-            const Text(
-              'Appearance & Preferences',
-              style: TextStyle(
+            Text(
+              l10n.appearancePreferences,
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.primaryCyan,
@@ -67,9 +69,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       semanticLabel: 'Theme mode',
                       color: AppTheme.primaryCyan,
                     ),
-                    title: const Text(
-                      'Dark Theme',
-                      style: TextStyle(
+                    title: Text(
+                      l10n.darkTheme,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary,
@@ -77,8 +79,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: Text(
                       settingsService.isDarkMode
-                          ? 'Sleek dark interface active'
-                          : 'High-contrast light interface active',
+                          ? l10n.darkThemeSubtitle
+                          : l10n.lightThemeSubtitle,
                       style: const TextStyle(
                           fontSize: 12, color: AppTheme.textSecondary),
                     ),
@@ -96,22 +98,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         size: 24,
                       ),
                       const SizedBox(width: 16),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Interface Language',
-                              style: TextStyle(
+                              l10n.interfaceLanguage,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Choose your preferred locale',
-                              style: TextStyle(
+                              l10n.chooseLocale,
+                              style: const TextStyle(
                                   fontSize: 12, color: AppTheme.textSecondary),
                             ),
                           ],
