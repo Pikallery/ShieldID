@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import ScreeningDashboard from "../components/ScreeningDashboard";
+import { oauthService } from "../utils/oauthService";
 
 // Helper to compute regular pointy-topped hexagon SVG points
 function hexPoints(cx, cy, r) {
@@ -9,7 +10,11 @@ function hexPoints(cx, cy, r) {
 }
 
 export default function Dashboard() {
-  const [showLoading, setShowLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(() => {
+    const hasSession = Boolean(oauthService.getCurrentSession());
+    const hasDeepLink = window.location.hash && !["#", "#/", "#/login"].includes(window.location.hash);
+    return !hasSession && !hasDeepLink;
+  });
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [authStatus, setAuthStatus] = useState("idle"); // idle | ready
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   recentScreenings,
   riskSignals,
@@ -6,6 +6,7 @@ import {
   screeningStats,
 } from "../utils/screeningData";
 import { verifyDocument } from "../utils/verificationApi";
+import { oauthService } from "../utils/oauthService";
 import "./ScreeningDashboard.css";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
@@ -20,6 +21,34 @@ import AuditHistory from "./AuditHistory";
 import SystemSettings from "./SystemSettings";
 import BulkManifestScanner from "./BulkManifestScanner";
 import NfcChipInspector from "./NfcChipInspector";
+
+const ROUTE_TO_NAV = {
+  "/overview": "Overview",
+  "/scanner": "Identity Scanner",
+  "/manifest": "Bulk Manifest",
+  "/chip": "e-Passport Chip",
+  "/studio": "Anti-Tamper Studio",
+  "/audit": "Audit History",
+  "/reports": "Reports",
+  "/settings": "Settings",
+  "/help": "Help center",
+  "/docs": "Live documentation",
+  "/kiosk": "Verification kiosk",
+};
+
+const NAV_TO_ROUTE = {
+  "Overview": "/overview",
+  "Identity Scanner": "/scanner",
+  "Bulk Manifest": "/manifest",
+  "e-Passport Chip": "/chip",
+  "Anti-Tamper Studio": "/studio",
+  "Audit History": "/audit",
+  "Reports": "/reports",
+  "Settings": "/settings",
+  "Help center": "/help",
+  "Live documentation": "/docs",
+  "Verification kiosk": "/kiosk",
+};
 
 const icon = (name) => {
   const icons = {
@@ -67,12 +96,134 @@ function ScreeningDashboard() {
   const [latestResult, setLatestResult] = useState(screeningResult);
   const [activeDossier, setActiveDossier] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [session, setSession] = useState(null);
   const [authView, setAuthView] = useState("login");
   const [profileName, setProfileName] = useState("Guest workspace");
   const [profileEmail, setProfileEmail] = useState("Not signed in");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNightMode, setIsNightMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const dossierCache = useRef(null);
+
+  // Synchronize hash with application state and listen to browser Back / Forward events
+  useEffect(() => {
+    // Check for existing OAuth / officer session
+    const savedSession = oauthService.getCurrentSession();
+    if (savedSession) {
+      setIsAuthenticated(true);
+      setSession(savedSession);
+      setProfileName(savedSession.fullName || displayNameFromEmail(savedSession.email));
+      setProfileEmail(savedSession.email);
+    }
+
+    const parseRouteFromHash = () => {
+      const hash = window.location.hash.replace(/^#\/?/, "");
+      const segments = hash.split("/").filter(Boolean);
+      const rootPath = segments[0] || "";
+
+      // Auth routes
+      if (rootPath === "login") {
+        setAuthView("login");
+        return;
+      }
+      if (rootPath === "register") {
+        setAuthView("register");
+        return;
+      }
+      if (rootPath === "forgot") {
+        setAuthView("forgot");
+        return;
+      }
+
+      // Dossier inspection route
+      if (rootPath === "dossier") {
+        if (!activeDossier && dossierCache.current) {
+          setActiveDossier(dossierCache.current);
+        }
+        return;
+      }
+
+      // Normal tab routes
+      const tabRoute = "/" + (rootPath || "overview");
+      if (ROUTE_TO_NAV[tabRoute]) {
+        setActiveNav(ROUTE_TO_NAV[tabRoute]);
+        setActiveDossier(null);
+      } else {
+        setActiveNav("Overview");
+        setActiveDossier(null);
+      }
+    };
+
+    // Ensure initial hash exists so browser back has a defined origin
+    if (!window.location.hash || window.location.hash === "#" || window.location.hash === "#/") {
+      const defaultHash = savedSession ? "#/overview" : "#/login";
+      window.history.replaceState({ route: defaultHash }, "", defaultHash);
+    }
+
+    parseRouteFromHash();
+
+    window.addEventListener("hashchange", parseRouteFromHash);
+    window.addEventListener("popstate", parseRouteFromHash);
+
+    return () => {
+      window.removeEventListener("hashchange", parseRouteFromHash);
+      window.removeEventListener("popstate", parseRouteFromHash);
+    };
+  }, []);
+
+  // Intentional navigation that pushes history
+  const navigateTo = (tabName, replace = false) => {
+    setActiveDossier(null);
+    setActiveNav(tabName);
+    const route = NAV_TO_ROUTE[tabName] || "/overview";
+    const targetHash = `#${route}`;
+    if (window.location.hash !== targetHash) {
+      if (replace) {
+        window.history.replaceState({ tab: tabName }, "", targetHash);
+      } else {
+        window.location.hash = targetHash;
+      }
+    }
+  };
+
+  const openDossier = (report) => {
+    dossierCache.current = report;
+    setActiveDossier(report);
+    const dossierId = report.id || "inspection";
+    const targetHash = `#/dossier/${dossierId}`;
+    if (window.location.hash !== targetHash) {
+      window.location.hash = targetHash;
+    }
+  };
+
+  const closeDossier = () => {
+    if (window.location.hash.startsWith("#/dossier")) {
+      window.history.back();
+    } else {
+      setActiveDossier(null);
+      navigateTo(activeNav, true);
+    }
+  };
+
+  const handleLogin = (sessionData) => {
+    const ses = sessionData.token ? sessionData : oauthService.saveSession(sessionData);
+    setProfileName(ses.fullName || displayNameFromEmail(ses.email));
+    setProfileEmail(ses.email);
+    setSession(ses);
+    setIsAuthenticated(true);
+    navigateTo("Overview");
+  };
+
+  const handleLogout = () => {
+    oauthService.signOut();
+    setIsAuthenticated(false);
+    setSession(null);
+    setProfileName("Guest workspace");
+    setProfileEmail("Not signed in");
+    setIsProfileOpen(false);
+    window.location.hash = "#/login";
+  };
 
   const handleFile = (event) => {
     const file = event.target.files?.[0];
@@ -97,7 +248,7 @@ function ScreeningDashboard() {
   };
 
   const handleCompleteVerification = (newReport) => {
-    setActiveDossier(newReport);
+    openDossier(newReport);
     setLatestResult({
       status: newReport.status,
       risk_score: newReport.riskScore,
@@ -111,22 +262,39 @@ function ScreeningDashboard() {
 
   if (!isAuthenticated) {
     if (authView === "forgot") {
-      return <ForgotPasswordPage onGoToLogin={() => setAuthView("login")} />;
+      return (
+        <ForgotPasswordPage
+          onGoToLogin={() => {
+            setAuthView("login");
+            window.location.hash = "#/login";
+          }}
+        />
+      );
     }
 
     if (authView === "register") {
-      return <RegisterPage onGoToLogin={() => setAuthView("login")} />;
+      return (
+        <RegisterPage
+          onGoToLogin={() => {
+            setAuthView("login");
+            window.location.hash = "#/login";
+          }}
+          onRegister={handleLogin}
+        />
+      );
     }
 
     return (
       <LoginPage
-        onLogin={({ email }) => {
-          setProfileName(displayNameFromEmail(email));
-          setProfileEmail(email);
-          setIsAuthenticated(true);
+        onLogin={handleLogin}
+        onGoToRegister={() => {
+          setAuthView("register");
+          window.location.hash = "#/register";
         }}
-        onGoToRegister={() => setAuthView("register")}
-        onForgotPassword={() => setAuthView("forgot")}
+        onForgotPassword={() => {
+          setAuthView("forgot");
+          window.location.hash = "#/forgot";
+        }}
       />
     );
   }
@@ -158,10 +326,7 @@ function ScreeningDashboard() {
               className={`nav-item ${activeNav === item.label && !activeDossier ? "is-active" : ""}`}
               key={item.label}
               title={item.label}
-              onClick={() => {
-                setActiveDossier(null);
-                setActiveNav(item.label);
-              }}
+              onClick={() => navigateTo(item.label)}
             >
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
@@ -175,10 +340,7 @@ function ScreeningDashboard() {
               className={`nav-item ${activeNav === item.label && !activeDossier ? "is-active" : ""}`}
               key={item.label}
               title={item.label}
-              onClick={() => {
-                setActiveDossier(null);
-                setActiveNav(item.label);
-              }}
+              onClick={() => navigateTo(item.label)}
             >
               <span className="nav-icon">{icon(item.icon)}</span>{item.label}
             </button>
@@ -284,19 +446,23 @@ function ScreeningDashboard() {
             </button>
             {isProfileOpen && (
               <ProfileAuthPanel
-                isAuthenticated={profileName !== "Guest workspace"}
+                isAuthenticated={isAuthenticated}
                 profileName={profileName}
                 profileEmail={profileEmail}
+                session={session}
                 onClose={() => setIsProfileOpen(false)}
+                onLogout={handleLogout}
                 onLogin={() => {
                   setAuthView("login");
                   setIsAuthenticated(false);
                   setIsProfileOpen(false);
+                  window.location.hash = "#/login";
                 }}
                 onRegister={() => {
                   setAuthView("register");
                   setIsAuthenticated(false);
                   setIsProfileOpen(false);
+                  window.location.hash = "#/register";
                 }}
               />
             )}
@@ -308,10 +474,10 @@ function ScreeningDashboard() {
           {activeDossier ? (
             <VerificationDossier
               report={activeDossier}
-              onClose={() => setActiveDossier(null)}
+              onClose={closeDossier}
               onScreenAnother={() => {
                 setActiveDossier(null);
-                setActiveNav("Identity Scanner");
+                navigateTo("Identity Scanner");
               }}
             />
           ) : (
@@ -327,7 +493,7 @@ function ScreeningDashboard() {
                     </div>
                     <button
                       className="primary-button"
-                      onClick={() => setActiveNav("Identity Scanner")}
+                      onClick={() => navigateTo("Identity Scanner")}
                     >
                       <span>{icon("scan")}</span> Start Identity Scanner
                     </button>
@@ -369,7 +535,7 @@ function ScreeningDashboard() {
                         <div style={{ display: "flex", gap: "8px" }}>
                           <button
                             className="secondary-btn"
-                            onClick={() => setActiveNav("Identity Scanner")}
+                            onClick={() => navigateTo("Identity Scanner")}
                           >
                             Open Camera Scanner ⌁
                           </button>
@@ -416,7 +582,7 @@ function ScreeningDashboard() {
                       <button
                         className="text-button"
                         onClick={() => {
-                          setActiveDossier({
+                          openDossier({
                             id: "SH-2841",
                             status: latestResult.status || "pass",
                             riskScore: latestResult.risk_score,
@@ -468,7 +634,7 @@ function ScreeningDashboard() {
                         <p className="eyebrow">ACTIVITY LOG</p>
                         <h2>Recent screenings</h2>
                       </div>
-                      <button className="filter-button" onClick={() => setActiveNav("Audit History")}>
+                      <button className="filter-button" onClick={() => navigateTo("Audit History")}>
                         View all audit logs <span>→</span>
                       </button>
                     </div>
@@ -490,7 +656,7 @@ function ScreeningDashboard() {
                               key={item.id}
                               className="clickable-row"
                               onClick={() => {
-                                setActiveDossier({
+                                openDossier({
                                   id: item.id,
                                   status: item.status,
                                   riskScore: item.risk,
@@ -554,7 +720,7 @@ function ScreeningDashboard() {
 
               {/* VIEW: BULK MANIFEST */}
               {activeNav === "Bulk Manifest" && (
-                <BulkManifestScanner onSelectDossier={(report) => setActiveDossier(report)} />
+                <BulkManifestScanner onSelectDossier={(report) => openDossier(report)} />
               )}
 
               {/* VIEW: E-PASSPORT CHIP */}
@@ -569,7 +735,7 @@ function ScreeningDashboard() {
 
               {/* VIEW: AUDIT HISTORY */}
               {activeNav === "Audit History" && (
-                <AuditHistory onSelectDossier={(report) => setActiveDossier(report)} />
+                <AuditHistory onSelectDossier={(report) => openDossier(report)} />
               )}
 
               {/* VIEW: REPORTS */}
