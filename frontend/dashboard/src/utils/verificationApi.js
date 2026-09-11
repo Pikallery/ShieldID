@@ -11,16 +11,24 @@ export async function extractTesseractOcr(imageFileOrBlob, documentType = "passp
   formData.append("document", imageFileOrBlob);
   formData.append("document_type", documentType);
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/verify/ocr`, {
-    method: "POST",
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-  if (!response.ok) {
-    throw new Error(`PyTesseract OCR failed with status ${response.status}`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/verify/ocr`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`PyTesseract OCR failed with status ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 /**

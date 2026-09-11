@@ -16,6 +16,22 @@
       "destination": "/mobile/index.html"
     },
     {
+      "source": "/docs",
+      "destination": "/docs.html"
+    },
+    {
+      "source": "/kiosk",
+      "destination": "/kiosk.html"
+    },
+    {
+      "source": "/docs.html",
+      "destination": "/docs.html"
+    },
+    {
+      "source": "/kiosk.html",
+      "destination": "/kiosk.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -118,11 +118,16 @@ export async function runFullVerificationPipeline({
 
   if (frontImage) {
     try {
-      geminiResult = await analyzeDocumentWithGemini({
-        imageBase64: frontImage,
-        docType: docType,
-        apiKey: settings.geminiApiKey || null,
-      });
+      geminiResult = await Promise.race([
+        analyzeDocumentWithGemini({
+          imageBase64: frontImage,
+          docType: docType,
+          apiKey: settings.geminiApiKey || null,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Gemini analysis timed out")), 3500)
+        ),
+      ]);
 
       if (geminiResult && geminiResult.documentData) {
         extractedData = {
@@ -133,7 +138,7 @@ export async function runFullVerificationPipeline({
         };
       }
     } catch (err) {
-      console.warn("Gemini Vision AI fallback:", err);
+      console.warn("Gemini Vision AI fallback to algorithmic forensics:", err.message || err);
     }
   }
 

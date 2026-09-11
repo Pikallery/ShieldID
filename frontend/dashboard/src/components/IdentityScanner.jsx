@@ -73,6 +73,8 @@ export default function IdentityScanner({ onCompleteVerification }) {
   const [pipelineProgress, setPipelineProgress] = useState(0);
   const [currentPipelineStep, setCurrentPipelineStep] = useState(0);
 
+  const [cameraError, setCameraError] = useState(null);
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
@@ -85,17 +87,51 @@ export default function IdentityScanner({ onCompleteVerification }) {
 
   const startCamera = async (mode = "doc") => {
     setCameraMode(mode);
-    setCameraActive(true);
+    setCameraError(null);
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraError("Camera API is not supported in this browser. Please upload an image or load a test sample.");
+      setCameraActive(false);
+      return;
+    }
+
+    let stream = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode === "selfie" ? "user" : "environment" },
+      // 1. Try mobile-friendly facingMode
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: mode === "selfie" ? "user" : "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+    } catch (e1) {
+      console.warn("Camera facingMode error, attempting default camera constraint:", e1);
+      try {
+        // 2. Fallback to basic { video: true } (resolves OverconstrainedError on Windows/Desktop webcams)
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      } catch (e2) {
+        console.warn("Standard webcam access failed:", e2);
+        setCameraActive(false);
+        const isPerm = e2.name === "NotAllowedError" || e2.name === "PermissionDeniedError";
+        setCameraError(
+          isPerm
+            ? "Camera permission blocked. Please enable camera in your browser address bar, or use a sample document below."
+            : `Webcam hardware is unavailable or in use (${e2.name || "Error"}). You can upload a photo or load a sample document.`
+        );
+        return;
       }
-    } catch (err) {
-      console.warn("Camera access failed:", err);
+    }
+
+    if (stream) {
+      streamRef.current = stream;
+      setCameraActive(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => console.warn("Video play interrupted:", e));
+        }
+      }, 60);
     }
   };
 
@@ -138,6 +174,162 @@ export default function IdentityScanner({ onCompleteVerification }) {
       else setSelfieImage(event.target.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const loadSampleDocument = (docId = "passport") => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 800;
+    canvas.height = 500;
+    const ctx = canvas.getContext("2d");
+
+    if (docId === "passport") {
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(0, 0, 800, 500);
+
+      ctx.fillStyle = "#fefae0";
+      ctx.fillRect(20, 20, 760, 460);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 22px sans-serif";
+      ctx.fillText("REPUBLIC OF INDIA / PASSPORT", 260, 65);
+
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillRect(50, 100, 160, 200);
+      ctx.fillStyle = "#475569";
+      ctx.beginPath();
+      ctx.arc(130, 180, 45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(130, 260, 60, 40, 0, 0, Math.PI);
+      ctx.fill();
+
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Type: P", 250, 120);
+      ctx.fillText("Code: IND", 400, 120);
+      ctx.fillText("Passport No: M4819204", 550, 120);
+
+      ctx.fillText("Given Name(s):", 250, 160);
+      ctx.font = "bold 16px sans-serif";
+      ctx.fillText("RAHUL", 250, 180);
+
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Surname:", 250, 210);
+      ctx.font = "bold 16px sans-serif";
+      ctx.fillText("SHARMA", 250, 230);
+
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Nationality: INDIAN", 250, 270);
+      ctx.fillText("Date of Birth: 14/08/1996", 450, 270);
+      ctx.fillText("Date of Expiry: 12/05/2034", 450, 300);
+
+      ctx.fillStyle = "#f1f5f9";
+      ctx.fillRect(40, 360, 720, 90);
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 18px monospace";
+      ctx.fillText("P<INDSHARMA<<RAHUL<<<<<<<<<<<<<<<<<<<<<<<", 60, 395);
+      ctx.fillText("M4819204<2IND9608144M3405125<<<<<<<<<<<4", 60, 430);
+    } else if (docId === "pan") {
+      ctx.fillStyle = "#e0f2fe";
+      ctx.fillRect(0, 0, 800, 500);
+      ctx.fillStyle = "#0369a1";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillText("INCOME TAX DEPARTMENT · GOVT. OF INDIA", 150, 60);
+
+      ctx.fillStyle = "#bae6fd";
+      ctx.fillRect(50, 100, 160, 200);
+      ctx.fillStyle = "#0284c7";
+      ctx.beginPath();
+      ctx.arc(130, 180, 45, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Permanent Account Number Card", 250, 110);
+      ctx.font = "bold 28px monospace";
+      ctx.fillStyle = "#0369a1";
+      ctx.fillText("SFAPS5084D", 250, 155);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Name:", 250, 200);
+      ctx.font = "bold 16px sans-serif";
+      ctx.fillText("SAI PRADYUMNA SAMAL", 250, 220);
+
+      ctx.font = "14px sans-serif";
+      ctx.fillText("Date of Birth: 14/08/2000", 250, 260);
+    } else {
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, 800, 500);
+      ctx.fillStyle = "#ea580c";
+      ctx.fillRect(0, 0, 800, 20);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 22px sans-serif";
+      ctx.fillText("Unique Identification Authority of India", 180, 60);
+
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillRect(50, 100, 160, 200);
+      ctx.fillStyle = "#475569";
+      ctx.beginPath();
+      ctx.arc(130, 180, 45, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "16px sans-serif";
+      ctx.fillText("To: PRIYA VERMA", 250, 130);
+      ctx.fillText("DOB: 19/09/1995", 250, 170);
+      ctx.fillText("Gender: Female", 250, 200);
+
+      ctx.font = "bold 32px monospace";
+      ctx.fillStyle = "#ea580c";
+      ctx.fillText("8921 4056 9182", 250, 280);
+      ctx.font = "bold 16px sans-serif";
+      ctx.fillStyle = "#0f172a";
+      ctx.fillText("मेरा आधार, मेरी पहचान", 250, 320);
+    }
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    setFrontImage(dataUrl);
+    setCameraError(null);
+    stopCamera();
+  };
+
+  const loadSampleSelfie = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(0, 0, 400, 400);
+
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath();
+    ctx.arc(200, 180, 90, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(170, 160, 10, 0, Math.PI * 2);
+    ctx.arc(230, 160, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(200, 190, 40, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+
+    ctx.fillStyle = "#3b82f6";
+    ctx.beginPath();
+    ctx.ellipse(200, 360, 120, 80, 0, 0, Math.PI);
+    ctx.fill();
+
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+    setSelfieImage(dataUrl);
+    setCameraError(null);
+    stopCamera();
   };
 
   const [voiceCode, setVoiceCode] = useState("8 - 4 - 2 - 9");
@@ -382,7 +574,48 @@ export default function IdentityScanner({ onCompleteVerification }) {
                     <div className="capture-icon-wrap">📄</div>
                     <h3>No {activeSide} image captured yet</h3>
                     <p>Use your device camera or upload a clear photo/scan.</p>
-                    <div className="capture-options-buttons">
+
+                    {cameraError && (
+                      <div
+                        style={{
+                          background: "rgba(239, 68, 68, 0.12)",
+                          border: "1px solid rgba(239, 68, 68, 0.35)",
+                          borderRadius: "8px",
+                          padding: "10px 14px",
+                          color: "#fca5a5",
+                          fontSize: "12px",
+                          marginBottom: "14px",
+                          textAlign: "left",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "10px",
+                          width: "100%",
+                          maxWidth: "480px",
+                        }}
+                      >
+                        <span>⚠️ {cameraError}</span>
+                        <button
+                          type="button"
+                          onClick={() => loadSampleDocument(selectedDoc.id)}
+                          style={{
+                            background: "#2563eb",
+                            color: "#fff",
+                            border: "none",
+                            padding: "6px 10px",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Use Test Sample ↗
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="capture-options-buttons" style={{ flexWrap: "wrap", justifyContent: "center" }}>
                       <button className="primary-button" onClick={() => startCamera("doc")}>
                         <span>📷</span> Open Live Camera
                       </button>
@@ -395,6 +628,14 @@ export default function IdentityScanner({ onCompleteVerification }) {
                           onChange={(e) => handleFileUpload(e, activeSide)}
                         />
                       </label>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => loadSampleDocument(selectedDoc.id)}
+                        style={{ background: "rgba(59, 130, 246, 0.15)", color: "#93c5fd", borderColor: "rgba(59, 130, 246, 0.3)" }}
+                      >
+                        <span>🧪</span> Load Test {selectedDoc.name}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -464,7 +705,48 @@ export default function IdentityScanner({ onCompleteVerification }) {
                 <div className="capture-icon-wrap">🤳</div>
                 <h3>Live Face Liveness Check</h3>
                 <p>We need to verify that you are a live human present in front of the screen.</p>
-                <div className="capture-options-buttons">
+
+                {cameraError && (
+                  <div
+                    style={{
+                      background: "rgba(239, 68, 68, 0.12)",
+                      border: "1px solid rgba(239, 68, 68, 0.35)",
+                      borderRadius: "8px",
+                      padding: "10px 14px",
+                      color: "#fca5a5",
+                      fontSize: "12px",
+                      marginBottom: "14px",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "10px",
+                      width: "100%",
+                      maxWidth: "480px",
+                    }}
+                  >
+                    <span>⚠️ {cameraError}</span>
+                    <button
+                      type="button"
+                      onClick={loadSampleSelfie}
+                      style={{
+                        background: "#2563eb",
+                        color: "#fff",
+                        border: "none",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Use Test Selfie ↗
+                    </button>
+                  </div>
+                )}
+
+                <div className="capture-options-buttons" style={{ flexWrap: "wrap", justifyContent: "center" }}>
                   <button className="primary-button" onClick={startLivenessChallenge}>
                     <span>📷</span> Start Live Liveness Test
                   </button>
@@ -477,6 +759,14 @@ export default function IdentityScanner({ onCompleteVerification }) {
                       onChange={(e) => handleFileUpload(e, "selfie")}
                     />
                   </label>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={loadSampleSelfie}
+                    style={{ background: "rgba(59, 130, 246, 0.15)", color: "#93c5fd", borderColor: "rgba(59, 130, 246, 0.3)" }}
+                  >
+                    <span>🧪</span> Load Test Selfie
+                  </button>
                 </div>
               </div>
             )}

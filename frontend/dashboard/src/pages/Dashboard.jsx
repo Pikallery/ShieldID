@@ -79,7 +79,7 @@ export default function Dashboard() {
       </div>
 
       {/* Floating Loading Screen Overlay */}
-      {showLoading ? (
+      {showLoading && (
         <div className={`shield-loading-viewport ${isFadingOut ? "is-fading-out" : ""}`}>
           <style>{`
             @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800;900&display=swap');
@@ -688,42 +688,6 @@ export default function Dashboard() {
             {/* FLOATING SHADOW BENEATH */}
             <div className="floating-circle-shadow" />
           </div>
-        </div>
-      ) : (
-        <div className="app-reveal-in" style={{ position: "relative" }}>
-          {/* Subtle floating replay button in dashboard */}
-          <button
-            onClick={() => {
-              setAuthStatus("idle");
-              setIsFadingOut(false);
-              setShowLoading(true);
-            }}
-            style={{
-              position: "fixed",
-              bottom: "20px",
-              left: "20px",
-              zIndex: 9999,
-              background: "rgba(11, 31, 58, 0.85)",
-              color: "#82B1FF",
-              border: "1px solid rgba(130, 177, 255, 0.4)",
-              borderRadius: "20px",
-              padding: "6px 14px",
-              fontSize: "11px",
-              fontFamily: "'DM Mono', monospace",
-              cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              backdropFilter: "blur(8px)",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.2s ease",
-            }}
-            title="Replay authenticating loading animation"
-          >
-            <span>↺</span>
-            <span>View Loading Screen</span>
-          </button>
-          <ScreeningDashboard />
         </div>
       )}
       {isFadingOut && <div className="app-scan-sweep" aria-hidden="true" />}
