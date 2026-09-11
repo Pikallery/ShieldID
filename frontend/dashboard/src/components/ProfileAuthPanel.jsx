@@ -39,14 +39,14 @@ export default function ProfileAuthPanel({
           <div className="profile-detail-group">
             <p>Role & Clearance</p>
             <strong>{session?.role || "Screening administrator"}</strong>
-            <small style={{ color: "#93c5fd" }}>Badge: {session?.badgeId || "SHIELD-OPS-1"}</small>
+            <span className="profile-detail-badge">Badge: {session?.badgeId || "SHIELD-OPS-1"}</span>
           </div>
           <div className="profile-detail-group">
             <p>Session Security</p>
             <strong>OAuth 2.0 PKCE Verified</strong>
-            <small style={{ color: "#a5b4c4", fontFamily: "monospace", fontSize: "10px" }}>
-              Token: {session?.token ? `${session.token.slice(0, 18)}...` : "Active"}
-            </small>
+            <span className="profile-token-preview">
+              Token: {session?.token ? `${session.token.slice(0, 24)}...` : "Active"}
+            </span>
           </div>
 
           <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
