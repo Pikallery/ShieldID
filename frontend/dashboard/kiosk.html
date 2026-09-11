@@ -555,6 +555,76 @@
       flex-wrap: wrap;
     }
 
+    .chart-card {
+      background: rgba(7, 21, 39, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 18px 14px;
+      margin-bottom: 24px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    .chart-header strong {
+      color: var(--success);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .chart-bars {
+      display: grid;
+      gap: 14px;
+    }
+
+    .chart-bar {
+      display: grid;
+      grid-template-columns: 150px 1fr 52px;
+      gap: 12px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .chart-track {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      overflow: hidden;
+    }
+
+    .chart-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      box-shadow: 0 0 12px rgba(130, 177, 255, 0.4);
+    }
+
+    .chart-fill--amber {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
+    .chart-fill--danger {
+      background: linear-gradient(90deg, #f87171, #ef4444);
+    }
+
+    .chart-value {
+      text-align: right;
+      color: #fff;
+      font-weight: 700;
+      font-family: 'DM Mono', monospace;
+    }
+
     .metric-chip {
       flex: 1;
       min-width: 180px;
@@ -911,6 +981,30 @@
             </div>
           </div>
 
+          <div class="chart-card">
+            <div class="chart-header">
+              <span>Verification analytics</span>
+              <strong id="res-status-label">Low risk</strong>
+            </div>
+            <div class="chart-bars" aria-label="Verification result analytics">
+              <div class="chart-bar">
+                <span>Document integrity</span>
+                <div class="chart-track"><div class="chart-fill" id="chart-doc-integrity" style="width:92%"></div></div>
+                <span class="chart-value" id="chart-doc-integrity-value">92%</span>
+              </div>
+              <div class="chart-bar">
+                <span>Face match</span>
+                <div class="chart-track"><div class="chart-fill chart-fill--amber" id="chart-face-match" style="width:98%"></div></div>
+                <span class="chart-value" id="chart-face-match-value">98%</span>
+              </div>
+              <div class="chart-bar">
+                <span>Liveness</span>
+                <div class="chart-track"><div class="chart-fill chart-fill--danger" id="chart-liveness" style="width:95%"></div></div>
+                <span class="chart-value" id="chart-liveness-value">95%</span>
+              </div>
+            </div>
+          </div>
+
           <div class="kyc-qr-wrap">
             <img id="res-qr-img" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=SHIELDID-VERIFIED-TOKEN-9481" alt="KYC QR Token">
             <div class="kyc-qr-text">
@@ -934,6 +1028,21 @@
     let documentFile = null;
     let selfieFile = null;
     let webcamStream = null;
+
+    function getLoggedInUserName() {
+      const storedName = localStorage.getItem('shieldid-profile-name') || sessionStorage.getItem('shieldid-profile-name');
+      const fallbackName = storedName && storedName !== 'Guest workspace' ? storedName : 'Guest user';
+      return fallbackName;
+    }
+
+    function getVerificationEndpoints() {
+      const origin = window.location.origin || 'http://localhost:4173';
+      return [
+        `${origin}/api/v1/verify/document`,
+        'http://localhost:8080/api/v1/verify/document',
+        'http://127.0.0.1:8080/api/v1/verify/document'
+      ];
+    }
 
     const docLabels = {
       aadhaar: 'Aadhaar Card',
@@ -1024,22 +1133,29 @@
     async function startAIAnalysis() {
       goToStep(4);
 
-      // Stop camera if running
       if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
         webcamStream = null;
       }
 
       const steps = ['proc-1', 'proc-2', 'proc-3', 'proc-4', 'proc-5'];
-      for (let i = 0; i < steps.length; i++) {
-        await new Promise(r => setTimeout(r, 600));
-        document.getElementById(steps[i]).classList.add('done');
-        if (i + 1 < steps.length) {
-          document.getElementById(steps[i + 1]).classList.add('active');
+      steps.forEach((id, index) => {
+        const element = document.getElementById(id);
+        if (!element) return;
+        if (index === 0) element.classList.add('active');
+        if (index > 0) {
+          const previous = document.getElementById(steps[index - 1]);
+          if (previous) previous.classList.add('done');
+          element.classList.add('active');
         }
+      });
+
+      for (let i = 0; i < steps.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        const current = document.getElementById(steps[i]);
+        if (current) current.classList.add('done');
       }
 
-      // Real API Call with smooth fallback
       let resultData = null;
       if (documentFile) {
         try {
@@ -1047,15 +1163,29 @@
           formData.append('document', documentFile);
           if (selfieFile) formData.append('selfie', selfieFile);
 
-          const res = await fetch('http://localhost:8080/api/v1/verify/document', {
-            method: 'POST',
-            body: formData
-          });
-          if (res.ok) {
-            resultData = await res.json();
+          const endpoints = getVerificationEndpoints();
+          let lastError = null;
+          for (const endpoint of endpoints) {
+            try {
+              const res = await fetch(endpoint, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+              });
+              if (res.ok) {
+                resultData = await res.json();
+                break;
+              }
+              lastError = new Error(`HTTP ${res.status}`);
+            } catch (error) {
+              lastError = error;
+            }
           }
-        } catch (e) {
-          console.log('Live backend unavailable, falling back to simulated verification data');
+          if (!resultData && lastError) {
+            console.warn('Verification backend unavailable; using kiosk fallback.', lastError);
+          }
+        } catch (error) {
+          console.warn('Live backend unavailable, falling back to simulated verification data', error);
         }
       }
 
@@ -1063,26 +1193,48 @@
       goToStep(5);
     }
 
+    function updateGraphStats(riskScore, faceScore, tamperProbability) {
+      const docIntegrity = Math.max(72, Math.min(99, 100 - Number(riskScore || 12)));
+      const faceMatch = Math.max(82, Math.min(99, Number(faceScore || 97.8)));
+      const liveness = Math.max(74, Math.min(99, 100 - Number(tamperProbability || 2.1)));
+
+      const applyStat = (id, value, fallbackClass) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.width = `${Math.min(100, value)}%`;
+        el.className = `chart-fill ${fallbackClass}`;
+      };
+
+      applyStat('chart-doc-integrity', docIntegrity, '');
+      applyStat('chart-face-match', faceMatch, 'chart-fill--amber');
+      applyStat('chart-liveness', liveness, 'chart-fill--danger');
+
+      document.getElementById('chart-doc-integrity-value').innerText = `${Math.round(docIntegrity)}%`;
+      document.getElementById('chart-face-match-value').innerText = `${Math.round(faceMatch)}%`;
+      document.getElementById('chart-liveness-value').innerText = `${Math.round(liveness)}%`;
+    }
+
     function populateResults(data) {
       document.getElementById('res-doc-type').innerText = docLabels[selectedDoc] || 'Indian Identity';
       document.getElementById('res-token').innerText = 'SHIELD-KSK-2026-' + Math.floor(1000 + Math.random() * 9000);
 
-      if (data && data.name) {
-        document.getElementById('res-name').innerText = data.name;
-      } else {
-        const sampleNames = {
-          aadhaar: 'Rahul Sharma',
-          passport: 'Priya Venkatesh',
-          pan: 'Aditya Roy',
-          driving_license: 'Vikramaditya Rao',
-          voter_id: 'Sunita Mehra'
-        };
-        document.getElementById('res-name').innerText = sampleNames[selectedDoc] || 'Aarav Kapoor';
-      }
+      const currentName = (data && data.name) || getLoggedInUserName() || 'Guest user';
+      document.getElementById('res-name').innerText = currentName;
 
-      if (data && data.risk_score !== undefined) {
-        document.getElementById('res-risk-score').innerText = `${data.risk_score} / 100`;
-      }
+      const riskScore = Number((data && data.risk_score) ?? 12);
+      const faceScore = Number((data && data.face_match_score) ?? 98.4) * 100;
+      const tamperScore = Number((data && data.tampering_score) ?? 0.02) * 100;
+      const riskText = riskScore >= 70 ? 'High risk' : riskScore >= 40 ? 'Medium risk' : 'Low risk';
+      const badge = document.getElementById('res-badge');
+      badge.innerText = riskScore >= 70 ? '⚠ REVIEW REQUIRED' : '✓ IDENTITY VERIFIED & AUTHENTIC';
+      badge.style.color = riskScore >= 70 ? '#fbbf24' : '#34d399';
+      document.getElementById('res-status-label').innerText = riskText;
+      document.getElementById('res-status-label').style.color = riskScore >= 70 ? '#fbbf24' : '#34d399';
+      document.getElementById('res-risk-score').innerText = `${riskScore} / 100`;
+      document.getElementById('res-face-score').innerText = `${Math.min(99.9, faceScore).toFixed(1)}%`;
+      document.getElementById('res-tamper-score').innerText = `${Math.min(99.9, tamperScore).toFixed(1)}%`;
+
+      updateGraphStats(riskScore, faceScore, tamperScore);
     }
 
     function resetKiosk() {
@@ -1096,6 +1248,11 @@
       document.getElementById('btn-capture').innerText = 'Capture Selfie';
       document.getElementById('btn-capture').style.background = '';
       document.getElementById('btn-capture').style.color = '';
+      document.getElementById('res-name').innerText = getLoggedInUserName();
+      document.getElementById('res-badge').innerText = '✓ IDENTITY VERIFIED & AUTHENTIC';
+      document.getElementById('res-badge').style.color = '#34d399';
+      document.getElementById('res-status-label').innerText = 'Low risk';
+      document.getElementById('res-status-label').style.color = '#34d399';
 
       for (let i = 1; i <= 5; i++) {
         document.getElementById(`step-ind-${i}`).classList.remove('active', 'done');
