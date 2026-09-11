@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../constants/theme.dart';
 import '../models/verification_result.dart';
+import '../models/document_model.dart';
+import '../services/document_parser_service.dart';
 import '../services/screening_service.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/risk_gauge.dart';
@@ -15,6 +17,20 @@ class VerificationResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM dd, yyyy • HH:mm');
+    final isReject = report.status == VerificationStatus.reject;
+
+    // Checksum validations
+    bool? isAadhaarChecksumValid;
+    bool? isPanChecksumValid;
+    if (report.documentType == DocumentType.nationalId &&
+        report.documentData.documentNumber.isNotEmpty) {
+      isAadhaarChecksumValid = DocumentParserService()
+          .validateAadhaarVerhoeff(report.documentData.documentNumber);
+    } else if (report.documentType == DocumentType.residencePermit &&
+        report.documentData.documentNumber.isNotEmpty) {
+      isPanChecksumValid = DocumentParserService()
+          .validatePanFormat(report.documentData.documentNumber);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -115,7 +131,9 @@ class VerificationResultScreen extends StatelessWidget {
                   // Radial Confidence Gauge
                   Center(
                     child: RiskGauge(
-                      score: report.overallConfidence,
+                      score: isReject
+                          ? (report.predictiveRisk.riskScore / 100.0)
+                          : report.overallConfidence,
                       status: report.status,
                     ),
                   ),
@@ -124,16 +142,78 @@ class VerificationResultScreen extends StatelessWidget {
                   Text(
                     report.predictiveRisk.recommendation,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      color: isReject ? AppTheme.rejectRed : AppTheme.textPrimary,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // ── CRITICAL FRAUD / FORGERY ANOMALY ALERT CARD (When rejected/tampered) ──
+            if (isReject || report.tampering.isTampered) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.rejectRed.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: AppTheme.rejectRed.withValues(alpha: 0.6),
+                      width: 1.5),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.gpp_bad_rounded,
+                            color: AppTheme.rejectRed, size: 22),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'DETECTED FORGERY & SECURITY ANOMALIES',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.rejectRed,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...report.tampering.detectedAnomalies.map(
+                      (anomaly) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('⚠️ ',
+                                style: TextStyle(fontSize: 12, height: 1.3)),
+                            Expanded(
+                              child: Text(
+                                anomaly,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
 
             // Biometric Face Match Section
             const Text(
@@ -248,8 +328,18 @@ class VerificationResultScreen extends StatelessWidget {
                   _buildDataField(
                       'Full Legal Name', report.documentData.fullName, 0.99),
                   const Divider(color: AppTheme.border, height: 16),
-                  _buildDataField('Document Number',
-                      report.documentData.documentNumber, 0.99),
+                  _buildDataFieldWithChecksum(
+                    'Document Number',
+                    report.documentData.documentNumber,
+                    report.documentType == DocumentType.nationalId
+                        ? isAadhaarChecksumValid
+                        : report.documentType == DocumentType.residencePermit
+                            ? isPanChecksumValid
+                            : null,
+                    checksumLabel: report.documentType == DocumentType.nationalId
+                        ? 'Verhoeff'
+                        : 'PAN Structure',
+                  ),
                   const Divider(color: AppTheme.border, height: 16),
                   _buildDataField(
                       'Date of Birth', report.documentData.dateOfBirth, 0.98),
@@ -355,6 +445,60 @@ class VerificationResultScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── Risk Factors & Watchlist Checklist ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: AppTheme.glassCardDecoration(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Multi-Modal Compliance Risk Signals',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ...report.predictiveRisk.riskFactors.map(
+                    (factor) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isReject
+                                ? Icons.close_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: isReject
+                                ? AppTheme.rejectRed
+                                : AppTheme.passGreen,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              factor,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isReject
+                                    ? AppTheme.rejectRed
+                                    : AppTheme.textSecondary,
+                                fontWeight: isReject
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 30),
 
@@ -515,6 +659,73 @@ class VerificationResultScreen extends StatelessWidget {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildDataFieldWithChecksum(
+    String label,
+    String value,
+    bool? isChecksumValid, {
+    String checksumLabel = 'Checksum',
+  }) {
+    final bool hasCheck = isChecksumValid != null;
+    final bool isValid = isChecksumValid == true;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: AppTheme.textMuted),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value.isNotEmpty ? value : 'N/A',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        if (hasCheck)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isValid
+                  ? AppTheme.passGreen.withValues(alpha: 0.15)
+                  : AppTheme.rejectRed.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isValid ? AppTheme.passGreen : AppTheme.rejectRed,
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isValid ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                  size: 12,
+                  color: isValid ? AppTheme.passGreen : AppTheme.rejectRed,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$checksumLabel: ${isValid ? "VALID" : "INVALID"}',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: isValid ? AppTheme.passGreen : AppTheme.rejectRed,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

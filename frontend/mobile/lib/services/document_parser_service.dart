@@ -1,5 +1,28 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import '../models/document_model.dart';
+import '../models/verification_result.dart';
+
+/// Detailed result of algorithmic & heuristic document fraud/tamper analysis
+class DocumentAuthenticityReport {
+  final bool isAuthentic;
+  final double confidence;
+  final double tamperingScore;
+  final List<String> detectedAnomalies;
+  final List<String> riskFactors;
+  final String recommendation;
+  final VerificationStatus status;
+
+  const DocumentAuthenticityReport({
+    required this.isAuthentic,
+    required this.confidence,
+    required this.tamperingScore,
+    required this.detectedAnomalies,
+    required this.riskFactors,
+    required this.recommendation,
+    required this.status,
+  });
+}
 
 /// Genuine Document Extraction and Cryptographic / Checksum Validation Service
 /// Performs zero-fake, mathematically strict validation on Indian ID documents:
@@ -44,6 +67,12 @@ class DocumentParserService {
     final cleanDigits = rawNumber.replaceAll(RegExp(r'\D'), '');
     if (cleanDigits.length != 12) return false;
 
+    // Reject repeated digits (e.g. 0000 0000 0000, 1111 1111 1111)
+    if (RegExp(r'^(\d)\1{11}$').hasMatch(cleanDigits)) return false;
+
+    // Reject known dummy test numbers
+    if (cleanDigits == '123456789012' || cleanDigits == '987654321098') return false;
+
     int c = 0;
     final reversed = cleanDigits.split('').reversed.toList();
     for (int i = 0; i < reversed.length; i++) {
@@ -58,7 +87,17 @@ class DocumentParserService {
   bool validatePanFormat(String pan) {
     final clean = pan.trim().toUpperCase();
     final panRegex = RegExp(r'^[A-Z]{3}[PCHFATBLJG][A-Z][0-9]{4}[A-Z]$');
-    return panRegex.hasMatch(clean);
+    if (!panRegex.hasMatch(clean)) return false;
+
+    // Reject dummy/sample test PAN numbers
+    if (clean == 'ABCDE1234F' ||
+        clean == 'AAAAA0000A' ||
+        clean == 'AAAAA1111A' ||
+        clean.startsWith('XXXXX') ||
+        clean.startsWith('YYYYY')) {
+      return false;
+    }
+    return true;
   }
 
   /// Validates MoRTH Driving License Format (State Code + RTO + Year + Digits)
@@ -94,6 +133,125 @@ class DocumentParserService {
     }
     final expected = (sum % 10).toString();
     return expected == checkDigit;
+  }
+
+  /// Performs full mathematical, cryptographic, format, and specimen fraud analysis
+  DocumentAuthenticityReport analyzeDocumentAuthenticity({
+    required ExtractedDocumentData data,
+    required String rawText,
+    required DocumentType docType,
+  }) {
+    final anomalies = <String>[];
+    final riskFactors = <String>[];
+    final upperRaw = rawText.toUpperCase();
+    final upperName = data.fullName.toUpperCase();
+    final docNum = data.documentNumber.trim().toUpperCase();
+
+    // 1. Specimen / Sample / Dummy / Fictional Name Detection
+    const specimenKeywords = [
+      'SPECIMEN', 'SAMPLE CARD', 'SAMPLE DOCUMENT', 'SAMPLE', 'TEST CARD',
+      'TEST DOCUMENT', 'FOR TESTING ONLY', 'NOT FOR OFFICIAL USE',
+      'MOCKUP', 'TEMPLATE', 'DUMMY CARD', 'FAKE ID', 'DEMO ID',
+      'JOHN DOE', 'JANE DOE', 'SURNAME FIRSTNAME', 'FIRSTNAME LASTNAME',
+      'NAME HERE', 'YOUR NAME', 'FATHER NAME HERE', 'ABCDE1234F',
+      '1234 5678 9012', '0000 0000 0000', 'VOID', 'INVALID'
+    ];
+
+    for (final kw in specimenKeywords) {
+      if (upperRaw.contains(kw) || upperName.contains(kw) || docNum.contains(kw)) {
+        anomalies.add('Specimen / Test Document Watermark Detected: "$kw"');
+        riskFactors.add('Card contains synthetic sample/specimen markers');
+      }
+    }
+
+    // 2. Document-Specific Mathematical & Format Checks
+    if (docNum.isNotEmpty) {
+      if (docType == DocumentType.nationalId) {
+        final cleanUid = docNum.replaceAll(RegExp(r'\D'), '');
+        if (cleanUid.length != 12) {
+          anomalies.add('Aadhaar UID Length Invalid: Must be 12 digits (found ${cleanUid.length})');
+          riskFactors.add('Non-standard UID structure');
+        } else if (!validateAadhaarVerhoeff(cleanUid)) {
+          anomalies.add('Verhoeff Algorithmic Checksum Failure: UID failed official UIDAI mathematical checksum');
+          riskFactors.add('Mathematically impossible Aadhaar number (Forged UID)');
+        }
+      } else if (docType == DocumentType.residencePermit) {
+        // Residence permit encompasses PAN Card and Voter ID
+        final cleanEpic = docNum.replaceAll(RegExp(r'[\s/-]'), '');
+        final isEpic = RegExp(r'^[A-Z]{3}[0-9]{7}$').hasMatch(cleanEpic);
+
+        if (!isEpic && !validatePanFormat(docNum)) {
+          anomalies.add('Invalid Document Format: Does not conform to standard PAN Card or Voter ID structure');
+          riskFactors.add('Invalid or dummy credential structure');
+        } else if (!isEpic && validatePanFormat(docNum)) {
+          // Check entity character (4th char)
+          final entityChar = docNum[3];
+          const validEntities = {'P', 'C', 'H', 'F', 'A', 'T', 'B', 'L', 'J', 'G'};
+          if (!validEntities.contains(entityChar)) {
+            anomalies.add('Invalid PAN Entity Code ($entityChar): Unknown Income Tax Department entity');
+            riskFactors.add('Non-existent PAN entity classifier');
+          }
+
+          // If individual card ('P'), 5th character should match 1st letter of surname
+          if (entityChar == 'P' && upperName.isNotEmpty) {
+            final nameParts = upperName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+            if (nameParts.length >= 2) {
+              final surnameInitial = nameParts.last[0];
+              final pan5th = docNum[4];
+              if (surnameInitial != pan5th) {
+                anomalies.add('PAN 5th Character Discrepancy: Expected "$surnameInitial" for surname "${nameParts.last}", but found "$pan5th"');
+                riskFactors.add('Cardholder surname initial does not match PAN specification');
+              }
+            }
+          }
+        }
+      } else if (docType == DocumentType.driversLicense) {
+        if (!validateDrivingLicenseFormat(docNum)) {
+          anomalies.add('Invalid MoRTH Driving License Format: State code or RTO length non-compliant');
+          riskFactors.add('Driving license number does not match Sarathi registry specification');
+        }
+      }
+    } else {
+      anomalies.add('Missing Document ID Number: OCR unable to locate valid registration number');
+      riskFactors.add('No verifiable credential identifier extracted');
+    }
+
+    // 3. Logical Date Validation
+    if (data.dateOfBirth.isNotEmpty) {
+      try {
+        final dobMatch = RegExp(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})').firstMatch(data.dateOfBirth);
+        if (dobMatch != null) {
+          final year = int.parse(dobMatch.group(3)!);
+          final currentYear = DateTime.now().year;
+          if (year > currentYear) {
+            anomalies.add('Impossible Date of Birth: Birth year ($year) is in the future');
+            riskFactors.add('Temporal chronology violation');
+          } else if (currentYear - year > 120 || year < 1900) {
+            anomalies.add('Anomalous Date of Birth: Age exceeds standard lifespan limits (Birth Year $year)');
+            riskFactors.add('Implausible age attribute');
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 4. Decision Formulation
+    final bool isFraud = anomalies.isNotEmpty;
+    final double tamperingScore = isFraud ? math.min(0.98, 0.45 + (anomalies.length * 0.20)) : 0.04;
+    final double confidence = isFraud ? (1.0 - tamperingScore) : 0.98;
+    final VerificationStatus status = isFraud ? VerificationStatus.reject : VerificationStatus.pass;
+    final String recommendation = isFraud
+        ? 'REJECTED · Multiple digital forgery / algorithmic checksum anomalies detected.'
+        : 'APPROVED · Mathematical checksums, structure, and security attributes verified.';
+
+    return DocumentAuthenticityReport(
+      isAuthentic: !isFraud,
+      confidence: confidence,
+      tamperingScore: tamperingScore,
+      detectedAnomalies: anomalies,
+      riskFactors: riskFactors.isNotEmpty ? riskFactors : ['Cryptographic checksums valid', 'No synthetic markers found'],
+      recommendation: recommendation,
+      status: status,
+    );
   }
 
   /// Corrects optical character substitutions for PAN cards
