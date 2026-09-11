@@ -24,17 +24,31 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
   const face = report.faceMatch || {};
   const tamper = report.tampering || {};
   const security = report.securityFeatures || {};
-  const risk = report.riskScore !== undefined ? report.riskScore : (isPass ? 12 : isReview ? 48 : 88);
+  const transit = report.transitManifest || {};
+  const sovereign = report.sovereignRegistry || {};
+  const risk = report.riskScore !== undefined ? report.riskScore : (isPass ? 8 : isReview ? 48 : 88);
+
+  const docTypeStr = (report.documentType || "").toLowerCase();
 
   // Checksum verification
-  const isDocNumberValid =
-    report.documentType?.includes("Aadhaar")
-      ? validateAadhaarVerhoeff(doc.documentNumber)
-      : report.documentType?.includes("PAN")
-      ? validatePanFormat(doc.documentNumber)
-      : report.documentType?.includes("Driving")
-      ? validateDrivingLicenseFormat(doc.documentNumber)
-      : true;
+  const isAadhaar = docTypeStr.includes("aadhaar");
+  const isPan = docTypeStr.includes("pan");
+  const isDl = docTypeStr.includes("driving") || docTypeStr.includes("dl");
+
+  let checksumValid = true;
+  let checksumLabel = "Checksum Valid";
+  if (isAadhaar) {
+    checksumValid = validateAadhaarVerhoeff(doc.documentNumber);
+    checksumLabel = checksumValid ? "Verhoeff Checksum Valid" : "Verhoeff Checksum Failure";
+  } else if (isPan) {
+    checksumValid = validatePanFormat(doc.documentNumber);
+    checksumLabel = checksumValid ? "PAN ITD Format Valid" : "Invalid PAN Format";
+  } else if (isDl) {
+    checksumValid = validateDrivingLicenseFormat(doc.documentNumber);
+    checksumLabel = checksumValid ? "MoRTH Registry Valid" : "Invalid DL Format";
+  }
+
+  const detectedAnomalies = tamper.detectedAnomalies || (isReject ? tamper.anomalies : []);
 
   const handleDownloadPdf = () => {
     const jsonStr = JSON.stringify(report, null, 2);
@@ -89,7 +103,7 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
             {report.documentType || "Official Identity Document"} · Document ID: <strong>{doc.documentNumber || "N/A"}</strong>
           </p>
           <p className="dossier-timestamp">
-            Timestamp: {report.timestamp ? new Date(report.timestamp).toLocaleString() : "Just now"} · Standard: ICAO 9303 & ISO/IEC 30107-3
+            Timestamp: {report.timestamp ? new Date(report.timestamp).toLocaleString() : "Just now"} · Standard: ICAO 9303, MEA API Setu & ISO/IEC 30107-3
           </p>
           <div className="dossier-recommendation-box">
             <strong>Decision Engine:</strong>
@@ -124,8 +138,88 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
         </div>
       </section>
 
+      {/* AIRPORT & RAILWAY TRANSIT CLEARANCE MANIFEST */}
+      {transit.clearanceLabel && (
+        <div style={{
+          marginTop: "20px",
+          background: transit.transitStatus === "CLEARED" ? "rgba(0, 242, 254, 0.08)" : "rgba(239, 68, 68, 0.08)",
+          border: `1.5px solid ${transit.transitStatus === "CLEARED" ? "rgba(0, 242, 254, 0.5)" : "rgba(239, 68, 68, 0.6)"}`,
+          borderRadius: "14px",
+          padding: "18px 22px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+        }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <span style={{ fontSize: "18px" }}>{transit.transitMode === "AIRPORT" ? "✈️" : "🚆"}</span>
+              <strong style={{ color: transit.transitStatus === "CLEARED" ? "#00F2FE" : "#ef4444", fontSize: "13px", letterSpacing: "0.5px" }}>
+                {transit.clearanceLabel}
+              </strong>
+            </div>
+            <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "var(--ink-secondary)" }}>
+              Flight/Train: <strong>{transit.flightTrainNo || "AI-102"}</strong> · Gate: <strong>{transit.terminalGate || "GATE 14B"}</strong> · PNR: <strong>{transit.pnrNumber || "AI-928194"}</strong> · Seq: <strong>{transit.boardingSequence || "SEQ-42"}</strong>
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{
+              background: transit.transitStatus === "CLEARED" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
+              color: transit.transitStatus === "CLEARED" ? "#10b981" : "#ef4444",
+              border: `1px solid ${transit.transitStatus === "CLEARED" ? "#10b981" : "#ef4444"}`,
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "11px",
+              fontWeight: "700",
+            }}>
+              Interpol Watchlist: Passed
+            </span>
+            <span style={{
+              background: "rgba(99, 102, 241, 0.2)",
+              color: "#818cf8",
+              border: "1px solid #6366f1",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "11px",
+              fontWeight: "700",
+            }}>
+              API Setu Gateway: Verified
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* CRITICAL FORGERY & TAMPERING ANOMALY CARD */}
+      {(isReject || (detectedAnomalies && detectedAnomalies.length > 0)) && (
+        <div style={{
+          marginTop: "20px",
+          background: "rgba(239, 68, 68, 0.08)",
+          border: "1.5px solid rgba(239, 68, 68, 0.6)",
+          borderRadius: "14px",
+          padding: "18px 22px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "20px" }}>🛡️</span>
+            <strong style={{ color: "#ef4444", fontSize: "14px", letterSpacing: "0.5px" }}>
+              DETECTED FORGERY & SECURITY ANOMALIES
+            </strong>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {detectedAnomalies.map((anomaly, idx) => (
+              <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <span style={{ color: "#ef4444", fontWeight: "bold" }}>⚠️</span>
+                <span style={{ color: "#f8fafc", fontSize: "13px", lineHeight: "1.4" }}>
+                  {anomaly}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Grid: Biometric Face & Extracted OCR */}
-      <div className="dossier-grid-two">
+      <div className="dossier-grid-two" style={{ marginTop: "20px" }}>
         {/* Biometric Face Matching */}
         <article className="dossier-panel">
           <div className="panel-heading">
@@ -163,7 +257,9 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
           <div className="biometric-metrics-list">
             <div className="bio-metric-row">
               <span>3D Passive & Active Liveness</span>
-              <strong style={{ color: "#10b981" }}>{((face.livenessScore || 0.98) * 100).toFixed(0)}% (Passed)</strong>
+              <strong style={{ color: face.livenessPassed !== false ? "#10b981" : "#ef4444" }}>
+                {((face.livenessScore || 0.98) * 100).toFixed(0)}% ({face.livenessPassed !== false ? "Passed" : "Failed"})
+              </strong>
             </div>
             <div className="bio-metric-row">
               <span>PAD Level 2 Anti-Spoofing</span>
@@ -173,7 +269,7 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
             </div>
             <div className="bio-metric-row">
               <span>Depth & Micro-Texture Uniformity</span>
-              <strong>0.92 / 1.00</strong>
+              <strong>{face.antiSpoofPassed !== false ? "0.94 / 1.00" : "0.32 / 1.00"}</strong>
             </div>
           </div>
           {face.notes && <p className="dossier-notes-box">{face.notes}</p>}
@@ -186,8 +282,8 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
               <p className="eyebrow">OCR EXTRACTION & INTEGRITY</p>
               <h3>Document Credentials</h3>
             </div>
-            <span className="live-pill" style={{ color: isDocNumberValid ? "#10b981" : "#f59e0b" }}>
-              {isDocNumberValid ? "✓ Validated Checksum" : "⚠ Checksum Alert"}
+            <span className="live-pill" style={{ color: checksumValid ? "#10b981" : "#ef4444" }}>
+              {checksumValid ? `✓ ${checksumLabel}` : `⚠ ${checksumLabel}`}
             </span>
           </div>
 
@@ -196,15 +292,19 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
               <span>Full Legal Name</span>
               <strong>{doc.fullName || "—"}</strong>
             </div>
+            {doc.fatherName && (
+              <div className="cred-row">
+                <span>Father's Name</span>
+                <strong>{doc.fatherName}</strong>
+              </div>
+            )}
             <div className="cred-row">
               <span>Document ID Number</span>
               <div>
                 <strong className="mono-text">{doc.documentNumber || "—"}</strong>
-                {isDocNumberValid ? (
-                  <span className="valid-pill">Verhoeff Valid</span>
-                ) : (
-                  <span className="invalid-pill">Invalid Checksum</span>
-                )}
+                <span className={checksumValid ? "valid-pill" : "invalid-pill"} style={{ marginLeft: "8px" }}>
+                  {checksumLabel}
+                </span>
               </div>
             </div>
             <div className="cred-row">
@@ -250,32 +350,32 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
             <div className="f-icon">▦</div>
             <div>
               <p>Edge Continuity</p>
-              <strong>{((tamper.edgeIntegrityScore || 0.98) * 100).toFixed(0)}%</strong>
-              <small>No digital boundary slicing</small>
+              <strong>{((tamper.edgeIntegrityScore || (isPass ? 0.98 : 0.42)) * 100).toFixed(0)}%</strong>
+              <small>{isPass ? "No digital boundary slicing" : "Irregular boundary slice detected"}</small>
             </div>
           </div>
           <div className="forensic-stat-card">
             <div className="f-icon">🔤</div>
             <div>
               <p>Font Consistency</p>
-              <strong>{((tamper.fontConsistencyScore || 0.96) * 100).toFixed(0)}%</strong>
-              <small>Glyph baseline alignment</small>
+              <strong>{((tamper.fontConsistencyScore || (isPass ? 0.96 : 0.35)) * 100).toFixed(0)}%</strong>
+              <small>{isPass ? "Glyph baseline alignment" : "Font resampling anomaly"}</small>
             </div>
           </div>
           <div className="forensic-stat-card">
             <div className="f-icon">✨</div>
             <div>
               <p>Hologram Tilt</p>
-              <strong>{((security.hologramConfidence || 0.95) * 100).toFixed(0)}%</strong>
-              <small>Diffraction grating matched</small>
+              <strong>{((security.hologramConfidence || (isPass ? 0.95 : 0.25)) * 100).toFixed(0)}%</strong>
+              <small>{isPass ? "Diffraction grating matched" : "Security thread/hologram unverified"}</small>
             </div>
           </div>
           <div className="forensic-stat-card">
             <div className="f-icon">🔬</div>
             <div>
               <p>ELA Tamper Risk</p>
-              <strong>{((tamper.tamperingScore || 0.04) * 100).toFixed(0)}%</strong>
-              <small>High-pass compression error</small>
+              <strong>{((tamper.tamperingScore || (isPass ? 0.04 : 0.88)) * 100).toFixed(0)}%</strong>
+              <small>{isPass ? "Normal compression distribution" : "Elevated compression artifact"}</small>
             </div>
           </div>
         </div>

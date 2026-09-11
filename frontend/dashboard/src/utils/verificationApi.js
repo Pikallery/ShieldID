@@ -1,8 +1,31 @@
 const API_BASE_URL =
   (typeof window !== "undefined" && window.SHIELDID_API_URL)
     ? window.SHIELDID_API_URL
-    : (import.meta.env?.VITE_API_URL || "https://shieldid-api.onrender.com");
+    : (import.meta.env?.VITE_API_URL || "http://localhost:8000");
 
+/**
+ * Runs high-throughput optical character recognition using the ShieldID PyTesseract / EasyOCR engine
+ */
+export async function extractTesseractOcr(imageFileOrBlob, documentType = "passport") {
+  const formData = new FormData();
+  formData.append("document", imageFileOrBlob);
+  formData.append("document_type", documentType);
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/verify/ocr`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`PyTesseract OCR failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Full multimodal verification endpoint
+ */
 export async function verifyDocument(documentFile, selfieFile = null, options = {}) {
   const {
     frontFile = null,

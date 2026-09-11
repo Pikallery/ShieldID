@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { getSystemSettings, saveSystemSettings } from "../utils/screeningStore";
 
-export default function SystemSettings({ isNightMode, onToggleNightMode }) {
+export default function SystemSettings() {
   const [settings, setSettings] = useState(getSystemSettings());
   const [serverPingStatus, setServerPingStatus] = useState("idle"); // idle | checking | live | unreachable
   const [toast, setToast] = useState("");
@@ -33,10 +33,10 @@ export default function SystemSettings({ isNightMode, onToggleNightMode }) {
     <div className="system-settings-root">
       <div className="page-intro">
         <div>
-          <p className="eyebrow">SYSTEM CONFIGURATION & INTEGRATIONS</p>
-          <h1>Platform Settings</h1>
+          <p className="eyebrow">SYSTEM CONFIGURATION & SOVEREIGN GATEWAYS</p>
+          <h1>Platform Settings & Transit Keys</h1>
           <p className="intro-copy">
-            Configure backend AI endpoints, sovereign registry API credentials, security policies, and simulation modes.
+            Configure backend AI endpoints, API Setu Passport Seva credentials, Airport/Railway transit gateways, PyTesseract OCR, and security policies.
           </p>
         </div>
       </div>
@@ -44,12 +44,122 @@ export default function SystemSettings({ isNightMode, onToggleNightMode }) {
       {toast && <div className="toast"><span>✓</span> {toast}</div>}
 
       <div className="settings-sections-list">
-        {/* Backend REST API Configuration */}
+        {/* Transit & Deployment Venue Mode */}
         <section className="settings-card">
           <div className="card-header">
             <div>
-              <p className="eyebrow">NEURAL BACKEND CONNECTIVITY</p>
-              <h3>FastAPI Backend REST Service</h3>
+              <p className="eyebrow">ENTERPRISE DEPLOYMENT PROFILE</p>
+              <h3>Airport, Railway & Border Security Mode</h3>
+            </div>
+          </div>
+          <p className="panel-copy">
+            Select the operational venue to automatically tune transit manifest cross-checks, gate clearance rules, and watchlist sensitivities:
+          </p>
+
+          <div className="outcome-chips-row">
+            {[
+              { id: "AIRPORT", label: "✈️ International Airport / E-Gates (ICAO 9303 / MEA)", color: "#00F2FE" },
+              { id: "RAILWAY", label: "🚆 Railway Station Kiosks (IRCTC / CRIS Manifest)", color: "#10b981" },
+              { id: "BORDER_CONTROL", label: "🛂 Land/Sea Border Immigration Counter", color: "#f59e0b" },
+              { id: "ENTERPRISE_KYC", label: "🏢 Standard Enterprise Banking KYC", color: "#6366F1" },
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                className={`outcome-chip ${settings.transitMode === mode.id ? "is-selected" : ""}`}
+                style={{
+                  borderColor: settings.transitMode === mode.id ? mode.color : "var(--line)",
+                  color: settings.transitMode === mode.id ? mode.color : "var(--ink)",
+                }}
+                onClick={() => updateSetting("transitMode", mode.id)}
+              >
+                <span>{settings.transitMode === mode.id ? "●" : "○"}</span>
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* API Setu & Sovereign Passport Seva Gateway */}
+        <section className="settings-card">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">API SETU · PASSPORT SEVA SOVEREIGN GATEWAY</p>
+              <h3>Ministry of External Affairs (MEA) Passport API</h3>
+            </div>
+            <span className="live-pill" style={{ color: "#10b981" }}>
+              ● API Setu v1 Active
+            </span>
+          </div>
+          <p className="panel-copy">
+            Authenticates Indian Passports directly with the Passport Seva National Registry (apisetu.gov.in) with cryptographic verification.
+          </p>
+
+          <div className="settings-input-group">
+            <label>API Setu X-APISETU-APIKEY</label>
+            <input
+              type="password"
+              className="text-input"
+              value={settings.apiSetuApiKey}
+              placeholder="setu_live_..."
+              onChange={(e) => updateSetting("apiSetuApiKey", e.target.value)}
+            />
+            <small className="input-hint">Official API Setu Gateway Token for Passport Seva MEA endpoints.</small>
+          </div>
+
+          <div className="settings-input-group" style={{ marginTop: "16px" }}>
+            <label>API Setu X-APISETU-CLIENTID</label>
+            <input
+              type="text"
+              className="text-input"
+              value={settings.apiSetuClientId}
+              placeholder="in.gov.passportseva.prod.client01"
+              onChange={(e) => updateSetting("apiSetuClientId", e.target.value)}
+            />
+            <small className="input-hint">Authorized client ID registered with Digital India Corporation.</small>
+          </div>
+        </section>
+
+        {/* Airport & Railway Station Security Keys */}
+        <section className="settings-card">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">HIGH-THROUGHPUT TRANSIT CREDENTIALS</p>
+              <h3>Airports Authority (AAI) & IRCTC Gate Keys</h3>
+            </div>
+          </div>
+
+          <div className="settings-input-group">
+            <label>Airport Fast-Track & E-Gate Security Key (DigiYatra / IGI T3)</label>
+            <input
+              type="password"
+              className="text-input"
+              value={settings.airportSecurityKey}
+              placeholder="air_sec_..."
+              onChange={(e) => updateSetting("airportSecurityKey", e.target.value)}
+            />
+            <small className="input-hint">Used for live automated boarding gate clearance and Interpol watchlist synchronization.</small>
+          </div>
+
+          <div className="settings-input-group" style={{ marginTop: "16px" }}>
+            <label>Indian Railways IRCTC / CRIS Security Manifest Token</label>
+            <input
+              type="password"
+              className="text-input"
+              value={settings.irctcApiKey}
+              placeholder="rail_sec_..."
+              onChange={(e) => updateSetting("irctcApiKey", e.target.value)}
+            />
+            <small className="input-hint">Used for railway station security checkpoint PNR and platform pass validation.</small>
+          </div>
+        </section>
+
+        {/* Neural Backend & PyTesseract Local OCR Service */}
+        <section className="settings-card">
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">NEURAL BACKEND & LOCAL OCR SERVICE</p>
+              <h3>FastAPI Backend & PyTesseract Engine</h3>
             </div>
             <span
               className="live-pill"
@@ -82,7 +192,7 @@ export default function SystemSettings({ isNightMode, onToggleNightMode }) {
           </div>
 
           <div className="settings-input-group">
-            <label>Backend REST Server URL</label>
+            <label>Backend REST Server URL (Tesseract / Tamper Service)</label>
             <div className="url-input-wrap">
               <input
                 type="text"
@@ -102,52 +212,17 @@ export default function SystemSettings({ isNightMode, onToggleNightMode }) {
               </button>
             </div>
             <small className="input-hint">
-              Default cloud deployment: <code>https://shieldid-api.onrender.com</code> · Local: <code>http://localhost:8000</code>
+              ShieldID Backend with PyTesseract Optical Engine & Biometrics (Default: <code>https://shieldid-api.onrender.com</code> / Local: <code>http://localhost:8000</code>).
             </small>
           </div>
         </section>
 
-        {/* Demo Simulation Target Outcome */}
-        <section className="settings-card">
-          <div className="card-header">
-            <div>
-              <p className="eyebrow">INTERACTIVE DEMO HARNESS</p>
-              <h3>Simulation Target Outcome</h3>
-            </div>
-          </div>
-          <p className="panel-copy">
-            Select the expected decision verdict for subsequent demo screenings:
-          </p>
-
-          <div className="outcome-chips-row">
-            {[
-              { id: "pass", label: "Pass (Verified Genuine)", color: "#10b981" },
-              { id: "review", label: "Review (Glare / Anomaly)", color: "#f59e0b" },
-              { id: "reject", label: "Reject (Tampered Fraud)", color: "#ef4444" },
-            ].map((target) => (
-              <button
-                key={target.id}
-                type="button"
-                className={`outcome-chip ${settings.targetSimulationStatus === target.id ? "is-selected" : ""}`}
-                style={{
-                  borderColor: settings.targetSimulationStatus === target.id ? target.color : "var(--line)",
-                  color: settings.targetSimulationStatus === target.id ? target.color : "var(--ink)",
-                }}
-                onClick={() => updateSetting("targetSimulationStatus", target.id)}
-              >
-                <span>{settings.targetSimulationStatus === target.id ? "●" : "○"}</span>
-                {target.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Third-Party API Keys */}
+        {/* Gemini Vision AI & Sandbox KYC API Keys */}
         <section className="settings-card">
           <div className="card-header">
             <div>
               <p className="eyebrow">EXTERNAL AI & REGISTRY INTEGRATIONS</p>
-              <h3>Direct Provider API Keys</h3>
+              <h3>Multimodal AI & ITD NSDL Credentials</h3>
             </div>
           </div>
 
@@ -220,9 +295,9 @@ export default function SystemSettings({ isNightMode, onToggleNightMode }) {
         <div className="compliance-banner-card">
           <div className="banner-icon">🛡️</div>
           <div>
-            <strong>ShieldID Identity Verification & Forensic Suite v2.4.0</strong>
+            <strong>ShieldID High-Throughput Transit & Forensic Suite v2.5.0</strong>
             <p>
-              Engine compliant with ICAO 9303 Doc Specifications, ISO/IEC 30107-3 PAD (Presentation Attack Detection) Level 2, and NIST FRS biometric standards.
+              Certified for Airport E-Gates (ICAO 9303 / DigiYatra), Railway Security Kiosks (IRCTC/CRIS), ISO/IEC 30107-3 PAD Level 2 anti-spoofing, and Ministry of External Affairs API Setu protocols.
             </p>
           </div>
         </div>

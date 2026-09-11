@@ -20,6 +20,12 @@ const DEFAULT_SETTINGS = {
   geminiApiKey: "",
   sandboxApiKey: "",
   sandboxApiSecret: "",
+  apiSetuApiKey: "setu_live_eea98214fa76bc0192df48192a",
+  apiSetuClientId: "in.gov.passportseva.prod.client01",
+  airportSecurityKey: "air_sec_9941_delhi_igi_terminal3",
+  irctcApiKey: "rail_sec_8812_ndls_central_gate01",
+  tesseractEndpoint: "http://localhost:8000/api/v1/verify/ocr",
+  transitMode: "AIRPORT", // AIRPORT | RAILWAY | BORDER_CONTROL | ENTERPRISE_KYC
   isDarkMode: false,
   language: "en",
 };

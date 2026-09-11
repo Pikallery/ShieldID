@@ -210,6 +210,22 @@ async def verify_document(
     }
 
 
+@router.post("/ocr")
+async def extract_ocr_text(
+    document: UploadFile,
+    document_type: str = Form("passport"),
+):
+    """Direct optical character recognition extraction using PyTesseract / EasyOCR."""
+    doc_bytes = await document.read()
+    ocr_result = verification_service.ocr.process(doc_bytes)
+    return {
+        "status": "success",
+        "document_type": document_type,
+        "ocr_data": ocr_result,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @router.get("/status/{verification_id}")
 async def get_verification_status(verification_id: str):
     """Check verification status"""
