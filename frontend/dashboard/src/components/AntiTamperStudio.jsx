@@ -3,11 +3,14 @@ import {
   applyElaFilter,
   applySobelFilter,
   applyHeatmapFilter,
-  applyInvertNoiseFilter,
+  applyInvertFilter,
+  applyUvFilter,
+  applyInfraredFilter,
+  applyCoaxialFilter,
 } from "../utils/forensicCanvas";
 
 export default function AntiTamperStudio() {
-  const [activeFilter, setActiveFilter] = useState("ela"); // original | ela | sobel | heatmap | invert
+  const [activeFilter, setActiveFilter] = useState("uv"); // original | uv | ir | coaxial | ela | sobel | heatmap | invert
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [isHologramVerified, setIsHologramVerified] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -15,7 +18,6 @@ export default function AntiTamperStudio() {
   const [toast, setToast] = useState("");
 
   const canvasRef = useRef(null);
-  const imgRef = useRef(null);
   const cardRef = useRef(null);
 
   // Render forensic filters whenever filter or image changes
@@ -37,14 +39,20 @@ export default function AntiTamperStudio() {
       canvas.height = img.height || 380;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      if (activeFilter === "ela") {
+      if (activeFilter === "uv") {
+        applyUvFilter(canvas);
+      } else if (activeFilter === "ir") {
+        applyInfraredFilter(canvas);
+      } else if (activeFilter === "coaxial") {
+        applyCoaxialFilter(canvas);
+      } else if (activeFilter === "ela") {
         applyElaFilter(canvas, 0.75, 18);
       } else if (activeFilter === "sobel") {
         applySobelFilter(canvas);
       } else if (activeFilter === "heatmap") {
         applyHeatmapFilter(canvas);
       } else if (activeFilter === "invert") {
-        applyInvertNoiseFilter(canvas);
+        applyInvertFilter(canvas);
       }
     };
   };
@@ -84,14 +92,14 @@ export default function AntiTamperStudio() {
     <div className="anti-tamper-studio-root">
       <div className="page-intro">
         <div>
-          <p className="eyebrow">FORENSIC SECURITY SUITE</p>
-          <h1>Anti-Tampering & Hologram Forensic Studio</h1>
+          <p className="eyebrow">MULTI-SPECTRAL FORENSIC SECURITY SUITE</p>
+          <h1>Anti-Tampering & Multi-Spectral Lighting Studio</h1>
           <p className="intro-copy">
-            Analyze digital splicing, Error Level Analysis (ELA), edge boundary gradients, and optical variable diffraction gratings.
+            Multi-spectral inspection under White Light, Ultraviolet (365nm), Infrared (850nm B900), Coaxial Glare, and Error Level Analysis.
           </p>
         </div>
-        <label className="primary-button">
-          <span>📁</span> Upload Card to Inspect
+        <label className="primary-button" style={{ cursor: "pointer" }}>
+          <span>📁</span> Upload Document to Inspect
           <input
             type="file"
             accept="image/*"
@@ -108,8 +116,8 @@ export default function AntiTamperStudio() {
         <section className="studio-card-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow">OPTICAL VARIABLE INK</p>
-              <h3>Interactive Hologram & Tilt Verifier</h3>
+              <p className="eyebrow">OPTICAL VARIABLE INK & HOLOGRAM</p>
+              <h3>Kinetic Hologram & Tilt Verifier</h3>
             </div>
             <span
               className="live-pill"
@@ -123,7 +131,7 @@ export default function AntiTamperStudio() {
           </div>
 
           <p className="panel-copy">
-            Hover and move your mouse over the card to simulate variable incident light angles and reveal the hidden anti-counterfeiting guilloche pattern and kinetic hologram.
+            Hover over the card to simulate multi-angle incident illumination and reveal kinetic guilloche patterns, embossed state emblems, and microtext.
           </p>
 
           <div
@@ -186,12 +194,12 @@ export default function AntiTamperStudio() {
           </div>
         </section>
 
-        {/* Right: Pixel-Level Forensic Canvas Filters */}
+        {/* Right: Multi-Spectral Forensic Canvas Filters */}
         <section className="studio-canvas-panel">
           <div className="panel-heading">
             <div>
-              <p className="eyebrow">FORENSIC SPECTRAL FILTERS</p>
-              <h3>Pixel & Compression Anomaly Inspector</h3>
+              <p className="eyebrow">MULTI-SPECTRAL & FORENSIC BANDS</p>
+              <h3>Multi-Spectral Optical & Compression Inspector</h3>
             </div>
             <div className="zoom-controls">
               <button onClick={() => setZoomLevel((z) => Math.max(0.75, z - 0.25))}>-</button>
@@ -200,18 +208,21 @@ export default function AntiTamperStudio() {
             </div>
           </div>
 
-          {/* Filter selector pills */}
-          <div className="forensic-filter-tabs">
+          {/* Filter Pills */}
+          <div className="filter-pill-bar" style={{ flexWrap: "wrap", gap: "6px" }}>
             {[
-              { id: "original", label: "Original" },
-              { id: "ela", label: "Error Level Analysis (ELA)" },
-              { id: "sobel", label: "Sobel Edge Gradient" },
-              { id: "heatmap", label: "Thermal Forgery Heatmap" },
-              { id: "invert", label: "Inverted Noise Floor" },
+              { id: "uv", label: "🟣 Ultraviolet (UV 365nm)" },
+              { id: "ir", label: "🔴 Infrared (IR 850nm / B900)" },
+              { id: "coaxial", label: "✨ Coaxial Retro-Reflective" },
+              { id: "ela", label: "🔬 Error Level (ELA)" },
+              { id: "sobel", label: "📐 Sobel Edge Gradient" },
+              { id: "heatmap", label: "🔥 Forgery Heatmap" },
+              { id: "invert", label: "🌓 Invert Noise Floor" },
+              { id: "original", label: "⚪ White Light (Visible)" },
             ].map((f) => (
               <button
                 key={f.id}
-                className={`filter-tab-btn ${activeFilter === f.id ? "is-active" : ""}`}
+                className={`filter-pill ${activeFilter === f.id ? "is-active" : ""}`}
                 onClick={() => setActiveFilter(f.id)}
               >
                 {f.label}
@@ -219,90 +230,60 @@ export default function AntiTamperStudio() {
             ))}
           </div>
 
-          <div className="canvas-viewport-container">
+          <div className="canvas-viewport-wrap">
             <div
-              className="canvas-zoom-wrapper"
-              style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center center" }}
+              className="canvas-zoom-container"
+              style={{ transform: `scale(${zoomLevel})` }}
             >
               <canvas ref={canvasRef} className="forensic-canvas" />
             </div>
           </div>
 
-          <div className="filter-explanation-box">
+          {/* Filter Description Box */}
+          <div className="filter-desc-card">
+            {activeFilter === "uv" && (
+              <p>
+                <strong>Ultraviolet 365nm Spectrometry:</strong> Isolates optical brightener dead substrates, fluorescent fibers, and glowing sovereign seals invisible under standard light.
+              </p>
+            )}
+            {activeFilter === "ir" && (
+              <p>
+                <strong>Infrared 850nm / B900 Ink Drop-Out:</strong> Differentiates carbon-based inks (MRZ & black portrait text) from standard dye-based inks which disappear under IR illumination.
+              </p>
+            )}
+            {activeFilter === "coaxial" && (
+              <p>
+                <strong>Coaxial Retro-Reflective Glare:</strong> Verifies laminate integrity, hologram micro-prisms, and uncovers physical abrasion or razor-spliced photos.
+              </p>
+            )}
             {activeFilter === "ela" && (
               <p>
-                <strong>Error Level Analysis (ELA):</strong> Highlights high-frequency JPEG compression differentials. Modified or spliced text/photos display higher brightness errors compared to original background.
+                <strong>Error Level Analysis (ELA):</strong> Highlights compression discrepancies and pixel modifications created during digital photo manipulation (Photoshop).
               </p>
             )}
             {activeFilter === "sobel" && (
               <p>
-                <strong>Sobel 3x3 Edge Gradient:</strong> Detects sharp artificial boundary cuts or copy-move cloning stamps around document portraits and numbers.
+                <strong>Sobel Gradient Edge Detection:</strong> Maps high-frequency spatial gradients to detect artificial boundaries around portrait cutouts and altered numbers.
               </p>
             )}
             {activeFilter === "heatmap" && (
               <p>
-                <strong>Thermal Forgery Heatmap:</strong> Visualizes spectral density across color channels to detect abnormal gradient shifts.
+                <strong>Thermal Forgery Heatmap:</strong> Generates a false-color representation of high-risk pixel density clusters.
               </p>
             )}
             {activeFilter === "invert" && (
               <p>
-                <strong>Inverted Noise Floor:</strong> Isolates subtle camera sensor noise patterns to confirm that all regions of the image originated from the same sensor.
+                <strong>Inverted Noise Floor:</strong> Isolates background noise distribution across the document matrix to expose clone stamp artifacts.
               </p>
             )}
             {activeFilter === "original" && (
               <p>
-                <strong>Original RGB Pass:</strong> Unmodified raw color image.
+                <strong>White Light (Visible Spectrum 400-700nm):</strong> Standard daylight inspection showing original un-filtered color composition.
               </p>
             )}
           </div>
         </section>
       </div>
-
-      {/* Forensic Findings Summary Card */}
-      <section className="dossier-panel" style={{ marginTop: "24px" }}>
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">FORENSIC AUDIT VERDICT</p>
-            <h3>Real-Time Document Integrity Report</h3>
-          </div>
-          <span className="live-pill" style={{ color: "#10b981" }}>✓ Zero Forgery Detected</span>
-        </div>
-
-        <div className="forensic-cards-grid">
-          <div className="forensic-stat-card">
-            <div className="f-icon">📐</div>
-            <div>
-              <p>Edge Sharpness Ratio</p>
-              <strong>0.99 (Normal)</strong>
-              <small>No digital bounding cuts</small>
-            </div>
-          </div>
-          <div className="forensic-stat-card">
-            <div className="f-icon">📊</div>
-            <div>
-              <p>JPEG Compression Grid</p>
-              <strong>8x8 Quantization Uniform</strong>
-              <small>Single-generation encoding</small>
-            </div>
-          </div>
-          <div className="forensic-stat-card">
-            <div className="f-icon">🔠</div>
-            <div>
-              <p>OCR Micro-Font Kerning</p>
-              <strong>100% Alignment</strong>
-              <small>No spliced characters</small>
-            </div>
-          </div>
-          <div className="forensic-stat-card">
-            <div className="f-icon">✨</div>
-            <div>
-              <p>Hologram Dispersion</p>
-              <strong>Verified (OVI Present)</strong>
-              <small>Diffraction matched</small>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

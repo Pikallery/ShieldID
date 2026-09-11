@@ -4,6 +4,7 @@ import {
   validatePanFormat,
   validateDrivingLicenseFormat,
 } from "../utils/documentValidation";
+import { downloadSarReport } from "../utils/sarGenerator";
 
 export default function VerificationDossier({ report, onClose, onScreenAnother }) {
   const [showXmlModal, setShowXmlModal] = useState(false);
@@ -66,6 +67,12 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
     setTimeout(() => setDownloadToast(""), 3000);
   };
 
+  const handleDownloadSar = () => {
+    downloadSarReport(report);
+    setDownloadToast("Official Legal SAR Incident Report exported.");
+    setTimeout(() => setDownloadToast(""), 3000);
+  };
+
   return (
     <div className="dossier-view-root">
       {/* Top action header */}
@@ -77,9 +84,12 @@ export default function VerificationDossier({ report, onClose, onScreenAnother }
             <h2>Verification ID: <span className="mono-text">{report.id || "SH-9281"}</span></h2>
           </div>
         </div>
-        <div className="dossier-header-actions">
+        <div className="dossier-header-actions" style={{ flexWrap: "wrap", gap: "8px" }}>
           <button className="primary-button" onClick={handleDownloadPdf}>
-            <span>↓</span> Export Audit Dossier
+            <span>↓</span> Export Dossier (JSON)
+          </button>
+          <button className="secondary-btn" onClick={handleDownloadSar} style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", borderColor: "#ef4444" }}>
+            <span>⚖️</span> Legal SAR Report (FIU)
           </button>
           {onScreenAnother && (
             <button className="dark-button" onClick={onScreenAnother}>

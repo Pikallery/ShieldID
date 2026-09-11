@@ -12,17 +12,21 @@ import RegisterPage from "./RegisterPage";
 import ProfileAuthPanel from "./ProfileAuthPanel";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 
-// Modular feature components ported from mobile
+// Modular feature components ported from mobile & enterprise security
 import IdentityScanner from "./IdentityScanner";
 import VerificationDossier from "./VerificationDossier";
 import AntiTamperStudio from "./AntiTamperStudio";
 import AuditHistory from "./AuditHistory";
 import SystemSettings from "./SystemSettings";
+import BulkManifestScanner from "./BulkManifestScanner";
+import NfcChipInspector from "./NfcChipInspector";
 
 const icon = (name) => {
   const icons = {
     grid: "▦",
     scan: "⌁",
+    manifest: "✈",
+    chip: "📶",
     studio: "🔬",
     history: "📜",
     report: "▥",
@@ -144,6 +148,8 @@ function ScreeningDashboard() {
           {[
             { label: "Overview", icon: "grid" },
             { label: "Identity Scanner", icon: "scan" },
+            { label: "Bulk Manifest", icon: "manifest" },
+            { label: "e-Passport Chip", icon: "chip" },
             { label: "Anti-Tamper Studio", icon: "studio" },
             { label: "Audit History", icon: "history" },
             { label: "Reports", icon: "report" },
@@ -544,6 +550,16 @@ function ScreeningDashboard() {
               {/* VIEW: IDENTITY SCANNER */}
               {activeNav === "Identity Scanner" && (
                 <IdentityScanner onCompleteVerification={handleCompleteVerification} />
+              )}
+
+              {/* VIEW: BULK MANIFEST */}
+              {activeNav === "Bulk Manifest" && (
+                <BulkManifestScanner onSelectDossier={(report) => setActiveDossier(report)} />
+              )}
+
+              {/* VIEW: E-PASSPORT CHIP */}
+              {activeNav === "e-Passport Chip" && (
+                <NfcChipInspector />
               )}
 
               {/* VIEW: ANTI-TAMPER STUDIO */}

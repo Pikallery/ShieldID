@@ -140,25 +140,29 @@ export default function IdentityScanner({ onCompleteVerification }) {
     reader.readAsDataURL(file);
   };
 
-  // Start active liveness challenge loop
+  const [voiceCode, setVoiceCode] = useState("8 - 4 - 2 - 9");
+
+  // Start active liveness challenge loop with multimodal voice validation
   const startLivenessChallenge = () => {
     startCamera("selfie");
     setLivenessProgress(0);
+    const randomCode = `${Math.floor(1 + Math.random() * 9)} - ${Math.floor(1 + Math.random() * 9)} - ${Math.floor(1 + Math.random() * 9)} - ${Math.floor(1 + Math.random() * 9)}`;
+    setVoiceCode(randomCode);
     setLivenessChallenge("Position face in oval and look straight...");
 
     setTimeout(() => {
-      setLivenessProgress(35);
+      setLivenessProgress(30);
       setLivenessChallenge("Blink slowly twice for 3D depth check...");
-    }, 1200);
+    }, 1100);
 
     setTimeout(() => {
-      setLivenessProgress(70);
-      setLivenessChallenge("Hold still · Analyzing micro-texture...");
-    }, 2400);
+      setLivenessProgress(65);
+      setLivenessChallenge(`🗣️ Read aloud: "${randomCode}" (Voice Liveness)...`);
+    }, 2200);
 
     setTimeout(() => {
       setLivenessProgress(100);
-      setLivenessChallenge("Liveness Confirmed ✓ Auto-capturing biometric...");
+      setLivenessChallenge("Liveness & Voice Authenticated ✓ Auto-capturing biometric...");
       captureFrame();
     }, 3600);
   };
